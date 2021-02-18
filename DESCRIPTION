@@ -40,6 +40,8 @@ Suggests:
     doMC,
     doParallel,
     foreach
+Remotes:
+    config-i1/smooth
 VignetteBuilder: knitr
 RoxygenNote: 7.1.1
 Encoding: UTF-8
