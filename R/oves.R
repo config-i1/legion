@@ -28,19 +28,19 @@
 #' tendencies in occurrence, then you can use more complicated models. Model
 #' selection is not yet available.
 #' @param persistence Persistence matrix type. If \code{NULL}, then it is estimated.
-#' See \link[smooth]{ves} for the details.
+#' See \link[legion]{ves} for the details.
 #' @param transition Transition matrix type. If \code{NULL}, then it is estimated.
-#' See \link[smooth]{ves} for the details.
+#' See \link[legion]{ves} for the details.
 #' @param phi Damping parameter type. If \code{NULL}, then it is estimated.
-#' See \link[smooth]{ves} for the details.
+#' See \link[legion]{ves} for the details.
 #' @param initial Initial vector type. If \code{NULL}, then it is estimated.
-#' See \link[smooth]{ves} for the details.
+#' See \link[legion]{ves} for the details.
 #' @param initialSeason Type of the initial vector of seasonal components.
-#' If \code{NULL}, then it is estimated. See \link[smooth]{ves} for the details.
+#' If \code{NULL}, then it is estimated. See \link[legion]{ves} for the details.
 #' @param xreg Vector of matrix of exogenous variables, explaining some parts
 #' of occurrence variable (probability).
 #' @param ... Other parameters. This is not needed for now.
-#' @return The object of class "iss" is returned. It contains following list of
+#' @return The object of class "oves" is returned. It contains following list of
 #' values:
 #'
 #' \itemize{
@@ -62,7 +62,7 @@
 #' calculations. Useful only in the case of \code{occurrence="l"} and
 #' \code{probability="d"}.
 #' }
-#' @seealso \code{\link[smooth]{oes}, \link[smooth]{es}}
+#' @seealso \code{\link[smooth]{oes}, \link[legion]{ves}}
 #' @examples
 #'
 #'     Y <- cbind(c(rpois(25,0.1),rpois(25,0.5),rpois(25,1),rpois(25,5)),
@@ -71,6 +71,7 @@
 #'     oves(Y, occurrence="l")
 #'     oves(Y, occurrence="l", probability="i")
 #'
+#' @importFrom smooth oes
 #' @export oves
 oves <- function(y, occurrence=c("logistic","none","fixed"),
                  ic=c("AICc","AIC","BIC","BICc"), h=10, holdout=FALSE,

@@ -5,11 +5,11 @@
 #' The list of methods includes:
 #' \itemize{
 #' \item \code{is.legion()} tests if the object was produced by a vector model (e.g.
-#' \link[smooth]{ves});
-#' \item \code{is.oves()} tests if the object was produced by \link[smooth]{oves}
+#' \link[legion]{ves});
+#' \item \code{is.oves()} tests if the object was produced by \link[legion]{oves}
 #' function;
 #' \item \code{is.legion.sim()} tests if the object was produced by the functions
-#' \link[smooth]{sim.ves};
+#' \link[legion]{sim.ves};
 #' }
 #'
 #' @param x The object to check.

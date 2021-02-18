@@ -100,6 +100,7 @@ utils::globalVariables(c("mvrnorm"));
 #' # Note that smoothing parameters should be low and the standard diviation should
 #' # definitely be less than 0.1. Otherwise you might face the explosions.
 #'
+#' @importFrom greybox rlaplace rs
 #' @export sim.ves
 sim.ves <- function(model="ANN", obs=10, nsim=1, nSeries=2,
                     frequency=1, persistence=NULL, phi=1,

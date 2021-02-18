@@ -4,7 +4,11 @@ utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","
                          "initialEstimate","initialSeasonEstimate","initialSeasonValue","initialSeasonType",
                          "modelIsMultiplicative","matG","matW","B","ub","lb", "maxeval", "algorithm1",
                          "algorithm2", "xtol_rel1", "xtol_rel2", "Sigma","yFitted","PI","dataDeltat",
-                         "dataFreq","dataStart","otObs","dataNames","seasonalType"));
+                         "dataFreq","dataStart","otObs","dataNames","seasonalType",
+                         "CF","Etype","FI","ICs","Stype","Ttype","cumulative","errors","h","holdout",
+                         "initial","initialType","interval","intervalType","is.vsmooth.sim","lagsModelMax",
+                         "level","matF","matvt","measures","nParam","normalizer","obsStates","ot",
+                         "silentGraph","silentText","transition","transitionEstimate","yInSample"));
 
 #' Vector Exponential Smoothing in SSOE state space model
 #'
@@ -243,9 +247,6 @@ ves <- function(y, model="ANN", persistence=c("common","individual","dependent")
 
 # If a previous model provided as a model, write down the variables
     if(any(is.legion(model))){
-        if(smoothType(model)!="VES"){
-            stop("The provided model is not VES.",call.=FALSE);
-        }
         persistence <- model$persistence;
         transition <- model$transition;
         phi <- model$phi;

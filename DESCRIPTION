@@ -27,7 +27,8 @@ Imports:
     statmod,
     MASS,
     nloptr,
-    utils
+    utils,
+    zoo
 LinkingTo: Rcpp, RcppArmadillo (>= 0.8.100.0.0)
 Suggests:
     Mcomp,

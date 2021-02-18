@@ -36,19 +36,19 @@ tendencies in occurrence, then you can use more complicated models. Model
 selection is not yet available.}
 
 \item{persistence}{Persistence matrix type. If \code{NULL}, then it is estimated.
-See \link[smooth]{ves} for the details.}
+See \link[legion]{ves} for the details.}
 
 \item{transition}{Transition matrix type. If \code{NULL}, then it is estimated.
-See \link[smooth]{ves} for the details.}
+See \link[legion]{ves} for the details.}
 
 \item{phi}{Damping parameter type. If \code{NULL}, then it is estimated.
-See \link[smooth]{ves} for the details.}
+See \link[legion]{ves} for the details.}
 
 \item{initial}{Initial vector type. If \code{NULL}, then it is estimated.
-See \link[smooth]{ves} for the details.}
+See \link[legion]{ves} for the details.}
 
 \item{initialSeason}{Type of the initial vector of seasonal components.
-If \code{NULL}, then it is estimated. See \link[smooth]{ves} for the details.}
+If \code{NULL}, then it is estimated. See \link[legion]{ves} for the details.}
 
 \item{xreg}{Vector of matrix of exogenous variables, explaining some parts
 of occurrence variable (probability).}
@@ -56,7 +56,7 @@ of occurrence variable (probability).}
 \item{...}{Other parameters. This is not needed for now.}
 }
 \value{
-The object of class "iss" is returned. It contains following list of
+The object of class "oves" is returned. It contains following list of
 values:
 
 \itemize{
@@ -97,7 +97,7 @@ state-space models.
 
 }
 \seealso{
-\code{\link[smooth]{oes}, \link[smooth]{es}}
+\code{\link[smooth]{oes}, \link[legion]{ves}}
 }
 \author{
 Ivan Svetunkov, \email{ivan@svetunkov.ru}

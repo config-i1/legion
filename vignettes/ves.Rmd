@@ -20,8 +20,8 @@ This vignette covers `ves()` function, which is a part of [legion package](legio
 Let's load the necessary packages:
 
 ```{r load_libraries, message=FALSE, warning=FALSE}
-require(legion)
 require(Mcomp)
+require(legion)
 ```
 
 We will use to time series from the M3 united in a vector:

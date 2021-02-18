@@ -2,13 +2,13 @@
 #'
 #' Package contains functions for multivariate time series forecasting
 #'
-#' \tabular{ll}{ Package: \tab smooth\cr Type: \tab Package\cr Date: \tab
-#' 2016-01-27 - Inf\cr License: \tab GPL-2 \cr } The following functions are
+#' \tabular{ll}{ Package: \tab legion\cr Type: \tab Package\cr Date: \tab
+#' 2021-02-18 - Inf\cr License: \tab GPL-2 \cr } The following functions are
 #' included in the package:
 #' \itemize{
-#' \item \link[smooth]{ves} - Vector Exponential Smoothing.
-#' \item \link[smooth]{ves} - Vector ETS-PIC model.
-#' \item \link[smooth]{viss} - Multivariate occurrence ETS model.
+#' \item \link[legion]{ves} - Vector Exponential Smoothing.
+#' \item \link[legion]{ves} - Vector ETS-PIC model.
+#' \item \link[legion]{oves} - Multivariate occurrence ETS model.
 #' }
 #'
 #' @name smooth
@@ -31,7 +31,8 @@
 #' @import zoo Rcpp
 #' @importFrom nloptr nloptr
 #' @importFrom graphics abline layout legend lines par points polygon
-#' @importFrom stats AIC BIC cov end frequency is.ts median coef cor start time ts var simulate lm residuals
+#' @importFrom stats AIC BIC cov median coef cor var simulate lm residuals optim qt rnorm rt runif
+#' @importFrom stats deltat end frequency is.ts start time ts
 #' @importFrom utils packageVersion
 #' @useDynLib legion
 NULL

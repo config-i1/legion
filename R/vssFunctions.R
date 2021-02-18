@@ -63,7 +63,7 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     }
 
     #### Check data ####
-    if(any(is.vsmooth.sim(y))){
+    if(any(is.legion.sim(y))){
         y <- y$data;
         if(length(dim(y))==3){
             warning("Simulated data contains several samples. Selecting a random one.",call.=FALSE);

@@ -4,7 +4,11 @@ utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","
                          "initialEstimate","initialSeasonEstimate","initialSeasonValue","initialSeasonType",
                          "modelIsMultiplicative","matG","matW","B","ub","lb", "maxeval", "algorithm1",
                          "algorithm2", "xtol_rel1", "xtol_rel2", "Sigma","yFitted","PI","dataDeltat",
-                         "dataFreq","dataStart","otObs","dataNames","seasonalType"));
+                         "dataFreq","dataStart","otObs","dataNames","seasonalType",
+                         "CF","Etype","FI","ICs","Stype","Ttype","cumulative","errors","h","holdout",
+                         "initial","initialType","interval","intervalType","is.vsmooth.sim","lagsModelMax",
+                         "level","matF","matvt","measures","nParam","normalizer","obsStates","ot",
+                         "silentGraph","silentText","transition","transitionEstimate","yInSample"));
 
 #' Vector ETS-PIC model
 #'
@@ -184,9 +188,6 @@ vets <- function(y, model="ANN",
 
 # If a previous model provided as a model, write down the variables
     if(any(is.legion(model))){
-        if(smoothType(model)!="VETS"){
-            stop("The provided model is not VETS.",call.=FALSE);
-        }
         persistence <- model$persistence;
         transition <- model$transition;
         measurement <- model$measurement;

@@ -8,13 +8,13 @@
 Package contains functions for multivariate time series forecasting
 }
 \details{
-\tabular{ll}{ Package: \tab smooth\cr Type: \tab Package\cr Date: \tab
-2016-01-27 - Inf\cr License: \tab GPL-2 \cr } The following functions are
+\tabular{ll}{ Package: \tab legion\cr Type: \tab Package\cr Date: \tab
+2021-02-18 - Inf\cr License: \tab GPL-2 \cr } The following functions are
 included in the package:
 \itemize{
-\item \link[smooth]{ves} - Vector Exponential Smoothing.
-\item \link[smooth]{ves} - Vector ETS-PIC model.
-\item \link[smooth]{viss} - Multivariate occurrence ETS model.
+\item \link[legion]{ves} - Vector Exponential Smoothing.
+\item \link[legion]{ves} - Vector ETS-PIC model.
+\item \link[legion]{viss} - Multivariate occurrence ETS model.
 }
 }
 \references{

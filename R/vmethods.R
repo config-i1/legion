@@ -1,3 +1,4 @@
+#' @importFrom stats logLik
 #' @export
 logLik.legion <- function(object,...){
     obs <- nobs(object);
@@ -12,6 +13,7 @@ logLik.oves <- function(object,...){
     structure(object$logLik,nobs=obs,df=nParamPerSeries,class="logLik");
 }
 
+#' @importFrom greybox AICc actuals
 #' @export
 AICc.legion <- function(object, ...){
     llikelihood <- logLik(object);
@@ -30,6 +32,7 @@ AICc.legion <- function(object, ...){
     return(IC);
 }
 
+#' @importFrom greybox BICc
 #' @export
 BICc.legion <- function(object, ...){
     llikelihood <- logLik(object);
@@ -49,6 +52,7 @@ BICc.legion <- function(object, ...){
     return(IC);
 }
 
+#' @importFrom stats nobs
 #' @export
 nobs.legion <- function(object, ...){
     return(nrow(object$fitted));
@@ -58,12 +62,14 @@ nobs.oves <- function(object, ...){
     return(nrow(object$fitted));
 }
 
+#' @importFrom greybox nparam
 #' @export
 nparam.oves <- function(object, ...){
     nParamReturn <- object$nParam[1,4];
     return(nParamReturn);
 }
 
+#' @importFrom stats sigma
 #' @export
 sigma.legion <- function(object, ...){
     return(object$Sigma);
@@ -87,6 +93,7 @@ coef.legion <- function(object, ...){
     return(parameters);
 }
 
+#' @importFrom smooth modelType
 #' @export
 modelType.legion <- function(object, ...){
     model <- object$model;
