@@ -1354,7 +1354,7 @@ CreatorVETS <- function(silent=FALSE,...){
                   states=matvt,persistence=persistenceValue,transition=transitionValue,
                   measurement=matW, phi=dampedValue, B=B,
                   initialType=initialType,initial=initialValue,initialSeason=initialSeasonValue,
-                  nParam=parametersNumber, occurrence=oesModel,
+                  nParam=parametersNumber, occurrence=ovesModel,
                   y=y,fitted=yFitted,holdout=yHoldout,residuals=errors,Sigma=Sigma,
                   forecast=yForecast,PI=PI,interval=intervalType,level=level,
                   ICs=ICs,logLik=logLik,lossValue=cfObjective,loss=loss,accuracy=errorMeasures,

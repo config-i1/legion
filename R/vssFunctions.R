@@ -1,5 +1,5 @@
 utils::globalVariables(c("initialSeason","persistence","phi","otObs",
-                         "occurrence","oesModel","occurrenceModelProvided","seasonal"));
+                         "occurrence","ovesModel","occurrenceModelProvided","seasonal"));
 
 ##### *Checker of input of vector functions* #####
 vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
@@ -243,14 +243,14 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
         nComponentsAll <- nComponentsNonSeasonal + modelIsSeasonal*1;
     }
 
-    ##### oesModel #####
+    ##### ovesModel #####
     if(is.oves(occurrence)){
-        oesModel <- occurrence$model;
+        ovesModel <- occurrence$model;
         occurrence <- occurrence$occurrence;
         occurrenceModelProvided <- TRUE;
     }
     else{
-        oesModel <- occurrence;
+        ovesModel <- occurrence;
         occurrenceModelProvided <- FALSE;
     }
 
@@ -1067,7 +1067,7 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     assign("occurrence",occurrence,ParentEnvironment);
     assign("ot",ot,ParentEnvironment);
     assign("otObs",otObs,ParentEnvironment);
-    assign("oesModel",oesModel,ParentEnvironment);
+    assign("ovesModel",ovesModel,ParentEnvironment);
     assign("occurrenceModelProvided",occurrenceModelProvided,ParentEnvironment);
 
     # assign("yot",yot,ParentEnvironment);
@@ -1378,15 +1378,15 @@ vssForecaster <- function(...){
 
     if(occurrence!="n"){
         if(!occurrenceModelProvided){
-            oesModel <- oves(ts(t(ot),frequency=dataFreq),
+            ovesModel <- oves(ts(t(ot),frequency=dataFreq),
                            occurrence=occurrence, h=h, holdout=FALSE,
-                           probability="dependent", model=oesModel);
+                           probability="dependent", model=ovesModel);
         }
-        yForecast[] <- yForecast * t(oesModel$forecast);
+        yForecast[] <- yForecast * t(ovesModel$forecast);
     }
 
     assign("Sigma",Sigma,ParentEnvironment);
     assign("yForecast",yForecast,ParentEnvironment);
     assign("PI",PI,ParentEnvironment);
-    assign("oesModel",oesModel,ParentEnvironment);
+    assign("ovesModel",ovesModel,ParentEnvironment);
 }

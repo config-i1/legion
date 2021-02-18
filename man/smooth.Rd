@@ -14,7 +14,7 @@ included in the package:
 \itemize{
 \item \link[legion]{ves} - Vector Exponential Smoothing.
 \item \link[legion]{ves} - Vector ETS-PIC model.
-\item \link[legion]{viss} - Multivariate occurrence ETS model.
+\item \link[legion]{oves} - Multivariate occurrence ETS model.
 }
 }
 \references{
