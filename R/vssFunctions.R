@@ -250,7 +250,7 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
         occurrenceModelProvided <- TRUE;
     }
     else{
-        ovesModel <- occurrence;
+        ovesModel <- model;
         occurrenceModelProvided <- FALSE;
     }
 
@@ -1379,8 +1379,8 @@ vssForecaster <- function(...){
     if(occurrence!="n"){
         if(!occurrenceModelProvided){
             ovesModel <- oves(ts(t(ot),frequency=dataFreq),
-                           occurrence=occurrence, h=h, holdout=FALSE,
-                           probability="dependent", model=ovesModel);
+                              occurrence=occurrence, h=h, holdout=FALSE,
+                              probability="dependent", model=ovesModel);
         }
         yForecast[] <- yForecast * t(ovesModel$forecast);
     }
