@@ -41,3 +41,9 @@ test_that("Test VES with a dependent transition and independent interval", {
     expect_false(isTRUE(all.equal(testModel$transition[1,4], 0)))
     expect_equal(dim(testModel$PI),c(10,4))
 })
+
+# Simulate the data from VES
+testModel <- ves(Y,"AAN", silent=TRUE)
+test_that("VES based on pre-estimated model", {
+    expect_match(substr(simulate(testModel,nsim=10,obs=100)$model,1,3), "VES")
+})

@@ -76,6 +76,8 @@ sigma.legion <- function(object, ...){
 }
 
 #### Extraction of parameters of models ####
+#' @importFrom greybox errorType
+#' @export
 errorType.legion <- function(object, ...){
     if(any(substr(modelType(object),1,1)==c("A"))){
         return("A");
@@ -321,6 +323,7 @@ print.legion <- function(x, ...){
 }
 
 #### Simulate data using provided vector object ####
+#' @importFrom stats simulate
 #' @export
 simulate.legion <- function(object, nsim=1, seed=NULL, obs=NULL, ...){
     ellipsis <- list(...);

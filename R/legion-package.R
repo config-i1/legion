@@ -31,7 +31,7 @@
 #' @import zoo Rcpp
 #' @importFrom nloptr nloptr
 #' @importFrom graphics abline layout legend lines par points polygon
-#' @importFrom stats AIC BIC cov median coef cor var simulate lm residuals optim qt rnorm rt runif
+#' @importFrom stats AIC BIC cov median coef cor var lm residuals optim qt rnorm rt runif
 #' @importFrom stats deltat end frequency is.ts start time ts
 #' @importFrom utils packageVersion
 #' @useDynLib legion

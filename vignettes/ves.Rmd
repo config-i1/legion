@@ -59,4 +59,22 @@ AICc and BICc for the vector models are calculated as proposed in [@Bedrick1994]
 
 Currently we don't do model selection, don't have exogenous variables and don't produce conditional prediction interval. But at least it works and allows you to play around with it :).
 
+
+## Simulate data from VES
+There is a function `sim.ves()`, which allows generating data from VES model:
+```{r simulate_smooth_ves}
+x <- sim.ves("ANN",frequency=4,obs=40,nSeries=3,randomizer="rnorm",mean=0,sd=100)
+```
+This way the we generate two independent time series with similar DGPs and the same parameters (initials, persistence etc). We can use options similar to the ones used in `sim.es()` from `smooth` in order to specify a more flexible model.
+
+In addition, we can simulate multivariate series from an estimated VES model:
+```{r simulate_smooth_ves_estimated}
+ourModel <- ves(x$data,model="AAN",persistence="dependent")
+Y <- simulate(ourModel)
+plot(Y)
+```
+
+When using simulate with ves, you can specify randomizer and additional parameters for distributions. For example, you can use `mvrnorm()` from MASS package and if you don't provide `mu` and `Sigma` then they will be extracted from the model.
+
+
 ### References
