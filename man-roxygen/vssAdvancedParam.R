@@ -23,5 +23,5 @@
 #' }
 #' In this case, the ETS model inside the occurrence part will correspond to
 #' \code{model} and \code{probability="dependent"}.
-#' Alternatively, model estimated using \link[smooth]{viss} function can be provided
+#' Alternatively, model estimated using \link[legion]{oves} function can be provided
 #' here.
