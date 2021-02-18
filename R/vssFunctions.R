@@ -1,5 +1,5 @@
 utils::globalVariables(c("initialSeason","persistence","phi","otObs",
-                         "occurrence","ovesModel","occurrenceModelProvided","seasonal"));
+                         "occurrence","ovesModel","occurrenceModelProvided","seasonal","lags"));
 
 ##### *Checker of input of vector functions* #####
 vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
