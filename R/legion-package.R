@@ -26,7 +26,7 @@
 #'
 #' \dontrun{y <- cbind(rnorm(100,10,3),rnorm(100,10,3))
 #'
-#' ves(y,h=20,holdout=TRUE)
+#' ves(y,h=20,holdout=TRUE)}
 #'
 #' @import zoo Rcpp
 #' @importFrom nloptr nloptr

@@ -17,6 +17,13 @@ included in the package:
 \item \link[legion]{oves} - Multivariate occurrence ETS model.
 }
 }
+\examples{
+
+\dontrun{y <- cbind(rnorm(100,10,3),rnorm(100,10,3))
+
+ves(y,h=20,holdout=TRUE)}
+
+}
 \references{
 \itemize{
 \item de Silva A., Hyndman R.J. and Snyder, R.D. (2010). The vector
