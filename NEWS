@@ -1,0 +1,8 @@
+legion v0.0.1 (Release data: 2021-02-18)
+=======
+
+Changes:
+* Imported ves() and vets() functions from smooth package.
+
+Bugfixes:
+* 
