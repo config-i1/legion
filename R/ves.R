@@ -64,7 +64,7 @@ utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","
 #' As a result the multiplicative model is much easier to work with.
 #'
 #' For some more information about the model and its implementation, see the
-#' vignette: \code{vignette("ves","smooth")}
+#' vignette: \code{vignette("ves","legion")}
 #'
 #' @template vssBasicParam
 #' @template vssAdvancedParam
@@ -186,7 +186,7 @@ utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","
 #' \item \code{accuracy} - the values of the error measures. Currently not available.
 #' \item \code{FI} - Fisher information if user asked for it using \code{FI=TRUE}.
 #' }
-#' @seealso \code{\link[smooth]{es}, \link[smooth]{adam}}
+#' @seealso \code{\link[legion]{vets}, \link[smooth]{es}, \link[smooth]{adam}}
 #'
 #' @examples
 #'

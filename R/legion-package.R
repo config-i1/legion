@@ -1,4 +1,4 @@
-#' legion package
+#' Legion package
 #'
 #' Package contains functions for multivariate time series forecasting
 #'
@@ -11,7 +11,7 @@
 #' \item \link[legion]{oves} - Multivariate occurrence ETS model.
 #' }
 #'
-#' @name smooth
+#' @name legion
 #' @docType package
 #' @author Ivan Svetunkov
 #' @author Kandrika Pritularga

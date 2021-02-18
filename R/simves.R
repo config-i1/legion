@@ -76,7 +76,7 @@ utils::globalVariables(c("mvrnorm"));
 #' or array, depending on \code{nsim}.
 #' }
 #'
-#' @seealso \code{\link[legion]{ves}, \link[stats]{ts}, \link[stats]{Distributions}}
+#' @seealso \code{\link[legion]{ves}, \link[stats]{Distributions}}
 #'
 #' @examples
 #'

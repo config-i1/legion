@@ -137,7 +137,7 @@ Exponential Smoothing for Seasonal Time Series.
 }
 }
 \seealso{
-\code{\link[legion]{ves}, \link[stats]{ts}, \link[stats]{Distributions}}
+\code{\link[legion]{ves}, \link[stats]{Distributions}}
 }
 \author{
 Ivan Svetunkov, \email{ivan@svetunkov.ru}

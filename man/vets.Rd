@@ -239,7 +239,7 @@ In case of multiplicative model, instead of the vector y_t we use its logarithms
 As a result the multiplicative model is much easier to work with.
 
 For some more information about the model and its implementation, see the
-vignette: \code{vignette("ves","smooth")}
+vignette: \code{vignette("ves","legion")}
 }
 \examples{
 
@@ -269,7 +269,7 @@ Exponential Smoothing for Seasonal Time Series.
 }
 }
 \seealso{
-\code{\link[smooth]{ves}, \link[smooth]{es}, \link[smooth]{adam}}
+\code{\link[legion]{ves}, \link[smooth]{es}, \link[smooth]{adam}}
 }
 \author{
 Ivan Svetunkov, \email{ivan@svetunkov.ru}
