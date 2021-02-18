@@ -147,7 +147,7 @@ passed in ellipsis for finer tuning.
 If equal to 41, then the detailed results of the optimisation are returned.}}
 }
 \value{
-Object of class "vsmooth" is returned. It contains the following list of
+Object of class "legion" is returned. It contains the following list of
 values:
 \itemize{
 \item \code{model} - The name of the fitted model;

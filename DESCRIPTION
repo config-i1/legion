@@ -3,10 +3,10 @@ Type: Package
 Title: Forecasting Using Multivariate Models
 Version: 0.0.1.41001
 Date: 2021-02-18
-Authors@R: person("Ivan", "Svetunkov", email = "ivan@svetunkov.ru", role = c("aut", "cre"),
-                  comment="Lecturer at Centre for Marketing Analytics and Forecasting, Lancaster University, UK")
-           person("Kandrika Fadhlan", "Pritularga", email = "k.pritularga@lancaster.ac.uk", role = c("aut"),
-                  comment="PhD Student at Centre for Marketing Analytics and Forecasting, Lancaster University, UK")
+Authors@R: c(person("Ivan", "Svetunkov", email = "ivan@svetunkov.ru", role = c("aut", "cre"),
+                  comment="Lecturer at Centre for Marketing Analytics and Forecasting, Lancaster University, UK"),
+             person("Kandrika Fadhlan", "Pritularga", email = "k.pritularga@lancaster.ac.uk", role = c("aut"),
+                  comment="PhD Student at Centre for Marketing Analytics and Forecasting, Lancaster University, UK"))
 URL: https://github.com/config-i1/legion
 BugReports: https://github.com/config-i1/legion/issues
 Language: en-GB
@@ -15,8 +15,8 @@ Description: Functions implementing Single Source of Error state space models fo
              (de Silva et al., 2010, <doi: 10.1177/1471082X0901000401>), Vector ETS and simulation function for VES.
 License: GPL (>=2)
 Depends:
-    R (>= 3.0.2),
-    greybox (>= 0.6.7)
+    R (>= 3.5.0),
+    greybox (>= 0.6.7),
     smooth (>= 3.1.0)
 Imports:
     Rcpp (>= 0.12.3),

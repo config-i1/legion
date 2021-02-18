@@ -6,9 +6,8 @@
 #' The function estimates probability of demand occurrence, using one of the VES
 #' state-space models.
 #'
-#' @template ssIntermittentRef
 #' @template ssAuthor
-#' @template ssKeywords
+#' @template vssKeywords
 #'
 #' @param y The matrix with data, where series are in columns and
 #' observations are in rows.
