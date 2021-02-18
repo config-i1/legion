@@ -85,22 +85,22 @@ utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","
 #'
 #' Also \code{model} can accept a previously estimated VETS model and use all its
 #' parameters.
-#'
-#' @param parameters the character vector, specifying, which of the parameters
+#' @param lags The lags of the model. Needed for seasonal models.
+#' @param parameters The character vector, specifying, which of the parameters
 #' should be common between time series. This includes smoothing parameters for
 #' \code{"level"}, \code{"trend"}, \code{"seasonal"} components and \code{"damped"}
 #' trend parameter. If \code{parameters="none"}, then all parameters are set to be
 #' individual. An example is the model with all parameters being common:
 #' \code{parameters=c("level","trend","seasonal","damped")}. The order is not important
 #' and the first letters can be used instead of the full words as well.
-#' @param initials the character vector, specifying, which of the initial values of
+#' @param initials The character vector, specifying, which of the initial values of
 #' components should be common. This can be \code{"level"}, \code{"trend"} and / or
 #' \code{"seasonal"}, setting initials of respective components to be common. This
 #' can also be \code{"none"}, making the initials individual for all series. An
 #' example is the model with only seasonal initials bein common:
 #' \code{initials="seasonal"}. The order is not important, and the first letters can
 #' be used instead of the full words.
-#' @param components the character vector, specifying, which of the components
+#' @param components The character vector, specifying, which of the components
 #' components should be shared between time series. This can be \code{"level"},
 #' \code{"trend"} and / or \code{"seasonal"}, setting respective components to be
 #' shared. This can also be \code{"none"}, making them individual for all series.
@@ -172,7 +172,7 @@ utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","
 #      initials="seasonal")
 #'
 #'
-vets <- function(y, model="ANN",
+vets <- function(y, model="ANN", lags=c(frequency(y)),
                  parameters=c("level","trend","seasonal","damped"),
                  initials=c("seasonal"), components=c("none"),
                  loss=c("likelihood","diagonal","trace"),

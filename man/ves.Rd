@@ -4,15 +4,16 @@
 \alias{ves}
 \title{Vector Exponential Smoothing in SSOE state space model}
 \usage{
-ves(y, model = "ANN", persistence = c("common", "individual", "dependent"),
-  transition = c("common", "individual", "dependent"), phi = c("common",
-  "individual"), initial = c("individual", "common"),
-  initialSeason = c("common", "individual"), loss = c("likelihood",
-  "diagonal", "trace"), ic = c("AICc", "AIC", "BIC", "BICc"), h = 10,
-  holdout = FALSE, interval = c("none", "conditional", "unconditional",
-  "individual", "likelihood"), level = 0.95, occurrence = c("none",
-  "fixed", "logistic"), cumulative = FALSE, bounds = c("admissible",
-  "usual", "none"), silent = c("all", "graph", "output", "none"), ...)
+ves(y, model = "ANN", lags = c(frequency(y)), persistence = c("common",
+  "individual", "dependent"), transition = c("common", "individual",
+  "dependent"), phi = c("common", "individual"), initial = c("individual",
+  "common"), initialSeason = c("common", "individual"),
+  loss = c("likelihood", "diagonal", "trace"), ic = c("AICc", "AIC", "BIC",
+  "BICc"), h = 10, holdout = FALSE, interval = c("none", "conditional",
+  "unconditional", "individual", "likelihood"), level = 0.95,
+  occurrence = c("none", "fixed", "logistic"), cumulative = FALSE,
+  bounds = c("admissible", "usual", "none"), silent = c("all", "graph",
+  "output", "none"), ...)
 }
 \arguments{
 \item{y}{The matrix with the data, where series are in columns and
@@ -28,6 +29,8 @@ Pure multiplicative models are done as additive model applied to log(data).
 
 Also \code{model} can accept a previously estimated VES model and use all its
 parameters.}
+
+\item{lags}{The lags of the model. Needed for seasonal models.}
 
 \item{persistence}{Persistence matrix \eqn{G}, containing smoothing
 parameters. Can be:

@@ -4,13 +4,14 @@
 \alias{vets}
 \title{Vector ETS-PIC model}
 \usage{
-vets(y, model = "ANN", parameters = c("level", "trend", "seasonal",
-  "damped"), initials = c("seasonal"), components = c("none"),
-  loss = c("likelihood", "diagonal", "trace"), ic = c("AICc", "AIC", "BIC",
-  "BICc"), h = 10, holdout = FALSE, interval = c("none", "conditional",
-  "unconditional", "individual", "likelihood"), level = 0.95,
-  occurrence = c("none", "fixed", "logistic"), bounds = c("admissible",
-  "usual", "none"), silent = c("all", "graph", "output", "none"), ...)
+vets(y, model = "ANN", lags = c(frequency(y)), parameters = c("level",
+  "trend", "seasonal", "damped"), initials = c("seasonal"),
+  components = c("none"), loss = c("likelihood", "diagonal", "trace"),
+  ic = c("AICc", "AIC", "BIC", "BICc"), h = 10, holdout = FALSE,
+  interval = c("none", "conditional", "unconditional", "individual",
+  "likelihood"), level = 0.95, occurrence = c("none", "fixed", "logistic"),
+  bounds = c("admissible", "usual", "none"), silent = c("all", "graph",
+  "output", "none"), ...)
 }
 \arguments{
 \item{y}{The matrix with the data, where series are in columns and
@@ -27,7 +28,9 @@ Pure multiplicative models are done as additive model applied to log(data).
 Also \code{model} can accept a previously estimated VETS model and use all its
 parameters.}
 
-\item{parameters}{the character vector, specifying, which of the parameters
+\item{lags}{The lags of the model. Needed for seasonal models.}
+
+\item{parameters}{The character vector, specifying, which of the parameters
 should be common between time series. This includes smoothing parameters for
 \code{"level"}, \code{"trend"}, \code{"seasonal"} components and \code{"damped"}
 trend parameter. If \code{parameters="none"}, then all parameters are set to be
@@ -35,7 +38,7 @@ individual. An example is the model with all parameters being common:
 \code{parameters=c("level","trend","seasonal","damped")}. The order is not important
 and the first letters can be used instead of the full words as well.}
 
-\item{initials}{the character vector, specifying, which of the initial values of
+\item{initials}{The character vector, specifying, which of the initial values of
 components should be common. This can be \code{"level"}, \code{"trend"} and / or
 \code{"seasonal"}, setting initials of respective components to be common. This
 can also be \code{"none"}, making the initials individual for all series. An
@@ -43,7 +46,7 @@ example is the model with only seasonal initials bein common:
 \code{initials="seasonal"}. The order is not important, and the first letters can
 be used instead of the full words.}
 
-\item{components}{the character vector, specifying, which of the components
+\item{components}{The character vector, specifying, which of the components
 components should be shared between time series. This can be \code{"level"},
 \code{"trend"} and / or \code{"seasonal"}, setting respective components to be
 shared. This can also be \code{"none"}, making them individual for all series.

@@ -124,7 +124,8 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     }
     # Define the actual values. Transpose the matrix!
     yInSample <- t(y[1:obsInSample,,drop=FALSE]);
-    dataFreq <- frequency(y);
+    #### For now we just get the first lag. This would need to be modified for multiple seasonal models
+    dataFreq <- lags[1];
     dataDeltat <- deltat(y);
     dataStart <- start(y);
     yForecastStart <- time(y)[obsInSample]+deltat(y);

@@ -84,7 +84,7 @@ utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","
 #'
 #' Also \code{model} can accept a previously estimated VES model and use all its
 #' parameters.
-
+#' @param lags The lags of the model. Needed for seasonal models.
 #' @param phi In cases of damped trend this parameter defines whether the \eqn{phi}
 #' should be estimated separately for each series (\code{"individual"}) or for the whole
 #' set (\code{"common"}). If vector or a value is provided here, then it is used by the
@@ -209,7 +209,8 @@ utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","
 #'
 #' @importFrom smooth sowhat
 #' @export
-ves <- function(y, model="ANN", persistence=c("common","individual","dependent"),
+ves <- function(y, model="ANN", lags=c(frequency(y)),
+                persistence=c("common","individual","dependent"),
                 transition=c("common","individual","dependent"), phi=c("common","individual"),
                 initial=c("individual","common"), initialSeason=c("common","individual"),
                 # seasonal=c("individual","common"), weights=rep(1/ncol(y),ncol(y)),
