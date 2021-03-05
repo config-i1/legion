@@ -1,10 +1,10 @@
 ---
-title: "legion: forecasting using state-space models"
+title: "legion: Forecasting Using Multivariate Models"
 author: "Ivan Svetunkov"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{legion: forecasting using state-space models}
+  %\VignetteIndexEntry{legion: Forecasting Using Multivariate Models}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
