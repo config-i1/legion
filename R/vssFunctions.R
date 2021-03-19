@@ -314,6 +314,10 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     else{
         modelIsMultiplicative <- FALSE;
     }
+    
+    # Binaries for trend and seasonal
+    modelIsTrendy <- Ttype!="N";
+    modelIsSeasonal <- Stype!="N";
 
     # This is the number of parameters to estimate per series
     nParamMax <- 0;
@@ -630,31 +634,29 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
                 initialEstimate <- TRUE;
             }
             else if(is.numeric(initialValue)){
-                if(smoothType=="ves"){
-                    if(length(initialValue)>2*nSeries){
-                        warning(paste0("Length of initial vector is wrong! It should not be greater than",
-                                       2*nSeries,"\n",
+                if(length(initialValue)>2*nSeries){
+                    warning(paste0("Length of initial vector is wrong! It should not be greater than",
+                                   2*nSeries,"\n",
+                                   "Values of initial vector will be estimated."),call.=FALSE);
+                    initialValue <- NULL;
+                    initialType <- "i";
+                    initialEstimate <- TRUE;
+                }
+                else{
+                    if(all(length(initialValue) != c(nComponentsNonSeasonal,nComponentsNonSeasonal * nSeries))){
+                        warning(paste0("Length of initial vector is wrong! It should be either ",
+                                       nComponentsNonSeasonal*nSeries, " or ", nComponentsNonSeasonal,
+                                       " instead of ",length(initialValue),".\n",
                                        "Values of initial vector will be estimated."),call.=FALSE);
                         initialValue <- NULL;
                         initialType <- "i";
                         initialEstimate <- TRUE;
                     }
                     else{
-                        if(all(length(initialValue) != c(nComponentsNonSeasonal,nComponentsNonSeasonal * nSeries))){
-                            warning(paste0("Length of initial vector is wrong! It should be either ",
-                                           nComponentsNonSeasonal*nSeries, " or ", nComponentsNonSeasonal,
-                                           " instead of ",length(initialValue),".\n",
-                                           "Values of initial vector will be estimated."),call.=FALSE);
-                            initialValue <- NULL;
-                            initialType <- "i";
-                            initialEstimate <- TRUE;
-                        }
-                        else{
-                            initialType <- "p";
-                            initialValue <- matrix(initialValue,nComponentsNonSeasonal * nSeries,1);
-                            initialEstimate <- FALSE;
-                            parametersNumber[2,1] <- parametersNumber[2,1] + length(as.vector(initialValue));
-                        }
+                        initialType <- "p";
+                        initialValue <- matrix(initialValue,nComponentsNonSeasonal * nSeries,1);
+                        initialEstimate <- FALSE;
+                        parametersNumber[2,1] <- parametersNumber[2,1] + length(as.vector(initialValue));
                     }
                 }
             }
@@ -758,31 +760,29 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
                     initialSeasonEstimate <- TRUE;
                 }
                 else if(is.numeric(initialSeasonValue)){
-                    if(smoothType=="ves"){
-                        if(all(length(initialSeasonValue)!=c(dataFreq,dataFreq*nSeries))){
-                            warning(paste0("The length of initialSeason is wrong! ",
-                                           "It should correspond to the frequency of the data.",
-                                           "Values of initialSeason will be estimated as a common one."),call.=FALSE);
-                            initialSeasonValue <- NULL;
-                            initialSeasonType <- "c";
-                            initialSeasonEstimate <- TRUE;
+                    if(all(length(initialSeasonValue)!=c(dataFreq,dataFreq*nSeries))){
+                        warning(paste0("The length of initialSeason is wrong! ",
+                                       "It should correspond to the frequency of the data.",
+                                       "Values of initialSeason will be estimated as a common one."),call.=FALSE);
+                        initialSeasonValue <- NULL;
+                        initialSeasonType <- "c";
+                        initialSeasonEstimate <- TRUE;
+                    }
+                    else{
+                        if(seasonalType=="i"){
+                            initialSeasonValue <- matrix(initialSeasonValue,nSeries,dataFreq);
                         }
                         else{
-                            if(seasonalType=="i"){
-                                initialSeasonValue <- matrix(initialSeasonValue,nSeries,dataFreq);
+                            if(length(initialSeasonValue)!=dataFreq){
+                                warning(paste0("The initialSeason you provided contains too many elements ",
+                                               "for the common seasonal model.",
+                                               "Using only the first ",dataFreq," values."), call.=FALSE);
                             }
-                            else{
-                                if(length(initialSeasonValue)!=dataFreq){
-                                    warning(paste0("The initialSeason you provided contains too many elements ",
-                                                   "for the common seasonal model.",
-                                                   "Using only the first ",dataFreq," values."), call.=FALSE);
-                                }
-                                initialSeasonValue <- matrix(initialSeasonValue[1:dataFreq],1,dataFreq);
-                            }
-                            initialSeasonType <- "p";
-                            initialSeasonEstimate <- FALSE;
-                            parametersNumber[2,1] <- parametersNumber[2,1] + length(as.vector(initialSeasonValue));
+                            initialSeasonValue <- matrix(initialSeasonValue[1:dataFreq],1,dataFreq);
                         }
+                        initialSeasonType <- "p";
+                        initialSeasonEstimate <- FALSE;
+                        parametersNumber[2,1] <- parametersNumber[2,1] + length(as.vector(initialSeasonValue));
                     }
                 }
                 else if(!is.numeric(initialSeasonValue)){
@@ -828,24 +828,49 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
         componentsCommonTrend <- any(components=="t");
         componentsCommonSeasonal <- any(components=="s");
 
+        # If this is the model with common level, trend needs to be common as well
+        if(componentsCommonLevel){
+            componentsCommonTrend[] <- TRUE;
+        }
+        
         # Sanity checks. Make initials common if the respective components are
         if(componentsCommonLevel && !initialsCommonLevel){
-            initialsCommonLevel <- TRUE;
+            initialsCommonLevel[] <- TRUE;
         }
         if(componentsCommonTrend && !initialsCommonTrend){
-            initialsCommonTrend <- TRUE;
+            initialsCommonTrend[] <- TRUE;
         }
         if(componentsCommonSeasonal && !initialsCommonSeasonal){
-            initialsCommonSeasonal <- TRUE;
+            initialsCommonSeasonal[] <- TRUE;
         }
         if(componentsCommonTrend && !parametersCommonDamped){
-            parametersCommonDamped <- TRUE;
+            parametersCommonDamped[] <- TRUE;
+        }
+        
+        # Check model and kick off unused components.
+        if(Ttype=="N"){
+            parametersCommonTrend <- parametersCommonDamped <- initialsCommonTrend <- componentsCommonTrend <- FALSE;
+        }
+        if(Stype=="N"){
+            parametersCommonSeasonal <- initialsCommonSeasonal <- componentsCommonSeasonal <- FALSE;
         }
 
         nParamMax <-  nParamMax +
-            nSeries^(!parametersCommonLevel) + nSeries^(!parametersCommonTrend) + nSeries^(!parametersCommonSeasonal) +
-            nSeries^(!parametersCommonDamped) +
-            nSeries^(!initialsCommonLevel) + nSeries^(!initialsCommonTrend) + nSeries^(!initialsCommonSeasonal);
+            nSeries^(!parametersCommonLevel) +
+            (Ttype!="N")*nSeries^(!parametersCommonTrend) +
+            (Stype!="N")*nSeries^(!parametersCommonSeasonal) +
+            (Ttype!="N")*nSeries^(!parametersCommonDamped) +
+            nSeries^(!initialsCommonLevel) +
+            (Ttype!="N")*nSeries^(!initialsCommonTrend) +
+            (Stype!="N")*nSeries^(!initialsCommonSeasonal);
+        
+        # Number of overall components in the model.
+        nComponentsLevel <- nSeries^(!componentsCommonLevel);
+        nComponentsTrend <- (Ttype!="N")*nSeries^(!componentsCommonTrend);
+        nComponentsSeasonal <- (Stype!="N")*nSeries^(!componentsCommonSeasonal);
+        
+        nComponentsNonSeasonal <- nComponentsLevel + nComponentsTrend;
+        nComponentsAll <- nComponentsLevel + nComponentsTrend + nComponentsSeasonal;
     }
 
     ##### Loss function type #####
@@ -1029,33 +1054,54 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     assign("Ttype",Ttype,ParentEnvironment);
     assign("Stype",Stype,ParentEnvironment);
     assign("lagsModelMax",lagsModelMax,ParentEnvironment);
+    assign("modelIsTrendy",modelIsTrendy,ParentEnvironment);
     assign("modelIsSeasonal",modelIsSeasonal,ParentEnvironment);
     assign("modelIsMultiplicative",modelIsMultiplicative,ParentEnvironment);
     assign("nComponentsAll",nComponentsAll,ParentEnvironment);
     assign("nComponentsNonSeasonal",nComponentsNonSeasonal,ParentEnvironment);
-
-    assign("persistenceValue",persistenceValue,ParentEnvironment);
-    assign("persistenceType",persistenceType,ParentEnvironment);
-    assign("persistenceEstimate",persistenceEstimate,ParentEnvironment);
-
-    assign("transitionValue",transitionValue,ParentEnvironment);
-    assign("transitionType",transitionType,ParentEnvironment);
-    assign("transitionEstimate",transitionEstimate,ParentEnvironment);
-
     assign("damped",damped,ParentEnvironment);
-    assign("dampedValue",dampedValue,ParentEnvironment);
-    assign("dampedType",dampedType,ParentEnvironment);
-    assign("dampedEstimate",dampedEstimate,ParentEnvironment);
 
-    assign("initialValue",initialValue,ParentEnvironment);
-    assign("initialType",initialType,ParentEnvironment);
-    assign("initialEstimate",initialEstimate,ParentEnvironment);
-
-    assign("initialSeasonValue",initialSeasonValue,ParentEnvironment);
-    assign("initialSeasonType",initialSeasonType,ParentEnvironment);
-    assign("initialSeasonEstimate",initialSeasonEstimate,ParentEnvironment);
-
-    assign("seasonalType",seasonalType,ParentEnvironment);
+    if(smoothType=="ves"){
+        assign("persistenceValue",persistenceValue,ParentEnvironment);
+        assign("persistenceType",persistenceType,ParentEnvironment);
+        assign("persistenceEstimate",persistenceEstimate,ParentEnvironment);
+        
+        assign("transitionValue",transitionValue,ParentEnvironment);
+        assign("transitionType",transitionType,ParentEnvironment);
+        assign("transitionEstimate",transitionEstimate,ParentEnvironment);
+        
+        assign("dampedValue",dampedValue,ParentEnvironment);
+        assign("dampedType",dampedType,ParentEnvironment);
+        assign("dampedEstimate",dampedEstimate,ParentEnvironment);
+        
+        assign("initialValue",initialValue,ParentEnvironment);
+        assign("initialType",initialType,ParentEnvironment);
+        assign("initialEstimate",initialEstimate,ParentEnvironment);
+        
+        assign("initialSeasonValue",initialSeasonValue,ParentEnvironment);
+        assign("initialSeasonType",initialSeasonType,ParentEnvironment);
+        assign("initialSeasonEstimate",initialSeasonEstimate,ParentEnvironment);
+        
+        assign("seasonalType",seasonalType,ParentEnvironment);
+    }
+    else{
+        assign("nComponentsLevel",nComponentsLevel,ParentEnvironment);
+        assign("nComponentsTrend",nComponentsTrend,ParentEnvironment);
+        assign("nComponentsSeasonal",nComponentsSeasonal,ParentEnvironment);
+        
+        assign("parametersCommonLevel",parametersCommonLevel,ParentEnvironment);
+        assign("parametersCommonTrend",parametersCommonTrend,ParentEnvironment);
+        assign("parametersCommonSeasonal",parametersCommonSeasonal,ParentEnvironment);
+        assign("parametersCommonDamped",parametersCommonDamped,ParentEnvironment);
+        
+        assign("initialsCommonLevel",initialsCommonLevel,ParentEnvironment);
+        assign("initialsCommonTrend",initialsCommonTrend,ParentEnvironment);
+        assign("initialsCommonSeasonal",initialsCommonSeasonal,ParentEnvironment);
+        
+        assign("componentsCommonLevel",componentsCommonLevel,ParentEnvironment);
+        assign("componentsCommonTrend",componentsCommonTrend,ParentEnvironment);
+        assign("componentsCommonSeasonal",componentsCommonSeasonal,ParentEnvironment);
+    }
 
     assign("loss",loss,ParentEnvironment);
     assign("normalizer",normalizer,ParentEnvironment);
