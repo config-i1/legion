@@ -7,7 +7,7 @@ utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","
                          "dataFreq","dataStart","otObs","dataNames","seasonalType",
                          "CF","Etype","FI","ICs","Stype","Ttype","cumulative","errors","h","holdout",
                          "initial","initialType","interval","intervalType","is.vsmooth.sim","lagsModelMax",
-                         "level","matF","matvt","measures","nParam","normalizer","obsStates","ot",
+                         "level","matF","matVt","measures","nParam","normalizer","obsStates","ot",
                          "silentGraph","silentText","transition","transitionEstimate","yInSample"));
 
 #' Vector ETS-PIC model
@@ -187,6 +187,7 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
     startTime <- Sys.time();
 
 # If a previous model provided as a model, write down the variables
+    #### This needs to be updated, when VETS works! ####
     if(any(is.legion(model))){
         persistence <- model$persistence;
         transition <- model$transition;
@@ -215,48 +216,503 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
     environment(vssInput) <- environment();
     vssInput("vets",ParentEnvironment=environment(),...);
 
-##### Cost Function for VETS #####
-CF <- function(B){
-    elements <- BasicInitialiserVETS(matvt, matF, matG, matW, B);
+##### Basic VETS architector
+### This function will accept Etype, Ttype, Stype and damped and would return:
+# nComponentsNonSeasonal, nComponentsAll, lagsModelMax, modelIsSeasonal, modelIsTrendy, obsStates
+# This is needed for model selection
+# architectorVETS <- function(...){}
 
-    # Check the bounds
-    if(bounds=="a"){
-        eigenValues <- eigen(elements$matF - elements$matG %*% elements$matW, only.values=TRUE, symmetric=TRUE)$values;
-        if(max(abs(eigenValues)>(1 + 1E-50))){
-            return(max(abs(eigenValues))*1E+100);
+##### Basic matrices creator #####
+    # This thing returns matVt, matF, matG, matW, dampedValue, initialValue
+    # and initialSeasonValue if they are not provided + lagsModel
+creatorVETS <- function(...){
+    ParentEnvironment <- list(...)[['ParentEnvironment']];
+
+    #### Blocks for persistence matrix ####
+    if(componentsCommonLevel){
+        matGBlockAlpha <- matrix(1,1,nSeries);
+    }
+    else{
+        matGBlockAlpha <- diag(nSeries);
+    }
+    if(modelIsTrendy){
+        if(componentsCommonTrend){
+            matGBlockBeta <- matrix(1,1,nSeries);
+        }
+        else{
+            matGBlockBeta <- diag(nSeries);
+        }
+    }
+    else{
+        matGBlockBeta <- NULL;
+    }
+    if(modelIsSeasonal){
+        if(componentsCommonSeasonal){
+            matGBlockGamma <- matrix(1,1,nSeries);
+        }
+        else{
+            matGBlockGamma <- diag(nSeries);
+        }
+    }
+    else{
+        matGBlockGamma <- NULL;
+    }
+    matG <- rbind(matGBlockAlpha, matGBlockBeta, matGBlockGamma);
+
+    if(damped){
+        dampedValue <- 0.95;
+    }
+    else{
+        dampedValue <- 1;
+    }
+
+    #### Blocks for transition matrix ####
+    if(componentsCommonLevel){
+        matFBlock11 <- 1;
+    }
+    else{
+        matFBlock11 <- diag(nSeries);
+    }
+    # L & T elements
+    if(modelIsTrendy){
+        if(componentsCommonTrend){
+            if(componentsCommonLevel){
+                matFBlock12 <- dampedValue;
+                matFBlock21 <- 0;
+            }
+            else{
+                matFBlock12 <- matrix(dampedValue,nSeries,1);
+                matFBlock21 <- matrix(0,1,nSeries);
+            }
+            matFBlock22 <- dampedValue;
+        }
+        else{
+            if(componentsCommonLevel){
+                matFBlock12 <- matrix(dampedValue,1,nSeries);
+                matFBlock21 <- matrix(0,nSeries,1);
+            }
+            else{
+                matFBlock12 <- dampedValue*diag(nSeries);
+                matFBlock21 <- matrix(0,nSeries,nSeries);
+            }
+            matFBlock22 <- dampedValue*diag(nSeries);
+        }
+    }
+    else{
+        matFBlock12 <- NULL;
+        matFBlock21 <- NULL;
+        matFBlock22 <- NULL;
+    }
+    # L & S elements
+    if(modelIsSeasonal){
+        if(componentsCommonSeasonal){
+            if(componentsCommonLevel){
+                matFBlock13 <- 0;
+                matFBlock31 <- 0;
+            }
+            else{
+                matFBlock13 <- matrix(0,nSeries,1);
+                matFBlock31 <- matrix(0,1,nSeries);
+            }
+            matFBlock33 <- 1;
+        }
+        else{
+            if(componentsCommonLevel){
+                matFBlock13 <- matrix(0,1,nSeries);
+                matFBlock31 <- matrix(0,nSeries,1);
+            }
+            else{
+                matFBlock13 <- matrix(0,nSeries,nSeries);
+                matFBlock31 <- matrix(0,nSeries,nSeries);
+            }
+            matFBlock33 <- diag(nSeries);
+        }
+    }
+    else{
+        matFBlock13 <- NULL;
+        matFBlock31 <- NULL;
+        matFBlock33 <- NULL;
+    }
+    # T & S elements
+    if(modelIsTrendy && modelIsSeasonal){
+        if(componentsCommonTrend){
+            if(componentsCommonSeasonal){
+                matFBlock23 <- 0;
+                matFBlock32 <- 0;
+            }
+            else{
+                matFBlock23 <- matrix(0,1,nSeries);
+                matFBlock32 <- matrix(0,nSeries,1);
+            }
+        }
+        else{
+            if(componentsCommonSeasonal){
+                matFBlock23 <- matrix(0,nSeries,1);
+                matFBlock32 <- matrix(0,1,nSeries);
+            }
+            else{
+                matFBlock23 <- matrix(0,nSeries,nSeries);
+                matFBlock32 <- matrix(0,nSeries,nSeries);
+            }
+        }
+    }
+    else{
+        matFBlock23 <- NULL;
+        matFBlock32 <- NULL;
+    }
+    matF <- rbind(cbind(matFBlock11,matFBlock12,matFBlock13,deparse.level=0),
+                  cbind(matFBlock21,matFBlock22,matFBlock23,deparse.level=0),
+                  cbind(matFBlock31,matFBlock32,matFBlock33,deparse.level=0));
+
+    #### Blocks for measurement matrix ####
+    if(componentsCommonLevel){
+        matWBlock1 <- matrix(1,nSeries,1);
+    }
+    else{
+        matWBlock1 <- diag(nSeries);
+    }
+    if(modelIsTrendy){
+        if(componentsCommonTrend){
+            matWBlock2 <- matrix(dampedValue,nSeries,1);
+        }
+        else{
+            matWBlock2 <- dampedValue*diag(nSeries);
+        }
+    }
+    else{
+        matWBlock2 <- NULL;
+    }
+    if(modelIsSeasonal){
+        if(componentsCommonSeasonal){
+            matWBlock3 <- matrix(1,nSeries,1);
+        }
+        else{
+            matWBlock3 <- diag(nSeries);
+        }
+    }
+    else{
+        matWBlock3 <- NULL;
+    }
+    matW <- cbind(matWBlock1,matWBlock2,matWBlock3,deparse.level=0);
+
+    #### Vector of states ####
+    matVt <- matrix(NA, nComponentsAll, obsStates);
+
+    XValues <- rbind(rep(1,obsInSample),c(1:obsInSample));
+    initialValue <- yInSample %*% t(XValues) %*% solve(XValues %*% t(XValues));
+    j <- 0;
+    # Fill in level initials
+    if(componentsCommonLevel){
+        matVt[j+1:nComponentsLevel,1:lagsModelMax] <- mean(initialValue[,1]);
+    }
+    else{
+        matVt[j+1:nComponentsLevel,1:lagsModelMax] <- initialValue[,1];
+    }
+    j[] <- j+nComponentsLevel;
+
+    # Fill in trend initials
+    if(modelIsTrendy){
+        if(componentsCommonTrend){
+            matVt[j+1:nComponentsTrend,1:lagsModelMax] <- mean(initialValue[,2]);
+        }
+        else{
+            matVt[j+1:nComponentsTrend,1:lagsModelMax] <- initialValue[,2];
+        }
+    }
+    j[] <- j+nComponentsTrend;
+    if(modelIsSeasonal){
+        # Matrix of dummies for seasons
+        XValues <- matrix(rep(diag(lagsModelMax),ceiling(obsInSample/lagsModelMax)),lagsModelMax)[,1:obsInSample];
+        initialSeasonValue <- (yInSample-rowMeans(yInSample)) %*% t(XValues) %*% solve(XValues %*% t(XValues));
+
+        if(componentsCommonSeasonal){
+            matVt[j+1:nComponentsSeasonal,1:lagsModelMax] <- colMeans(initialSeasonValue);
+        }
+        else{
+            matVt[j+1:nComponentsSeasonal,1:lagsModelMax] <- t(initialSeasonValue);
         }
     }
 
-    # Fit the model
-    fitting <- vFitterWrap(yInSample, elements$matvt, elements$matF, elements$matW, elements$matG,
-                           lagsModel, Etype, Ttype, Stype, ot);
-
-    # Calculate the loss
-    if(loss=="l"){
-        cfRes <- suppressWarnings(log(det((fitting$errors / normalizer) %*% t(fitting$errors / normalizer) / otObs)) +
-                                      nSeries * log(normalizer^2));
-    }
-    else if(loss=="d"){
-        cfRes <- sum(log(apply(fitting$errors^2, 2, sum) / obsInSample));
+    #### Names of states ####
+    if(componentsCommonLevel){
+        statesNames <- "level";
     }
     else{
-        cfRes <- sum(apply(fitting$errors^2, 2, sum) / obsInSample);
+        statesNames <- paste0("level",c(1:nSeries));
+    }
+    if(modelIsTrendy){
+        if(componentsCommonTrend){
+            statesNames <- c(statesNames,"trend");
+        }
+        else{
+            statesNames <- c(statesNames,paste0("trend",c(1:nSeries)));
+        }
+    }
+    if(modelIsSeasonal){
+        if(componentsCommonSeasonal){
+            statesNames <- c(statesNames,"seasonal");
+        }
+        else{
+            statesNames <- c(statesNames,paste0("seasonal",c(1:nSeries)));
+        }
+    }
+    rownames(matVt) <- statesNames;
+    rownames(matF) <- colnames(matF) <- statesNames;
+    colnames(matW) <- statesNames;
+    rownames(matG) <- statesNames;
+
+    ### lagsModel vector
+    lagsModel <- matrix(1,nComponentsAll,1);
+    if(componentsCommonSeasonal){
+        lagsModel[nComponentsNonSeasonal + 1:nComponentsSeasonal] <- lagsModelMax;
     }
 
-    # cfRes <- vOptimiserWrap(yInSample, elements$matvt, elements$matF, elements$matW, elements$matG,
-    #                         lagsModel, Etype, Ttype, Stype, loss, normalizer, bounds, ot, otObs);
-    # multisteps, initialType, bounds,
+    return(list(matVt=matVt, matF=matF, matG=matG, matW=matW, lagsModel=lagsModel));
+}
 
-    if(is.nan(cfRes) | is.na(cfRes) | is.infinite(cfRes)){
-        cfRes <- 1e+100;
+##### Basic matrices filler #####
+# This thing fills in matVt, matF, matG and matW with values from B and returns the corrected values
+fillerVETS <- function(matVt,matF,matG,matW,B){
+    nCoefficients <- 0;
+    ##### Individual seasonality #####
+    if(seasonalType=="i"){
+        ### Persistence matrix
+        if(persistenceEstimate){
+            persistenceBuffer <- matrix(0,nSeries*nComponentsAll,nSeries);
+            # Grouped values
+            if(persistenceType=="c"){
+                persistenceValue <- B[1:nComponentsAll];
+                nCoefficients <- nComponentsAll;
+                for(i in 1:nSeries){
+                    persistenceBuffer[1:nComponentsAll+nComponentsAll*(i-1),i] <- persistenceValue;
+                }
+                persistenceValue <- persistenceBuffer;
+            }
+            # Independent values
+            else if(persistenceType=="i"){
+                persistenceValue <- B[1:(nComponentsAll*nSeries)];
+                nCoefficients <- nComponentsAll*nSeries;
+                for(i in 1:nSeries){
+                    persistenceBuffer[1:nComponentsAll+nComponentsAll*(i-1),
+                                      i] <- persistenceValue[1:nComponentsAll+nComponentsAll*(i-1)];
+                }
+                persistenceValue <- persistenceBuffer;
+            }
+            # Dependent values
+            else if(persistenceType=="d"){
+                persistenceValue <- B[1:(nComponentsAll*nSeries^2)];
+                nCoefficients <- nComponentsAll*nSeries^2;
+            }
+            # Grouped seasonal values
+            else if(persistenceType=="s"){
+                persistenceValue <- B[1:((nComponentsAll-1)*nSeries+1)];
+                persistenceSeasonal <- persistenceValue[length(persistenceValue)];
+                nCoefficients <- ((nComponentsAll-1)*nSeries+1);
+                for(i in 1:nSeries){
+                    persistenceBuffer[1:(nComponentsAll-1)+nComponentsAll*(i-1),
+                                      i] <- persistenceValue[1:(nComponentsAll-1)+(nComponentsAll-1)*(i-1)];
+                    persistenceBuffer[nComponentsAll+nComponentsAll*(i-1),i] <- persistenceSeasonal;
+                }
+                persistenceValue <- persistenceBuffer;
+            }
+            matG[,] <- persistenceValue;
+        }
+
+        ### Damping parameter
+        if(damped){
+            if(dampedType=="c"){
+                dampedValue <- matrix(B[nCoefficients+1],nSeries,1);
+                nCoefficients <- nCoefficients + 1;
+            }
+            else if(dampedType=="i"){
+                dampedValue <- matrix(B[nCoefficients+(1:nSeries)],nSeries,1);
+                nCoefficients <- nCoefficients + nSeries;
+            }
+        }
+
+        ### Transition matrix
+        if(any(transitionType==c("i","d","c")) & damped){
+            for(i in 1:nSeries){
+                matF[c(1:nComponentsNonSeasonal)+nComponentsAll*(i-1),
+                     nComponentsNonSeasonal+nComponentsAll*(i-1)] <- dampedValue[i];
+            }
+        }
+        if(transitionType=="d"){
+            # Fill in the other values of F with some values
+            nCoefficientsBuffer <- (nSeries-1)*nComponentsAll^2;
+
+            for(i in 1:nSeries){
+                matF[c(1:nComponentsAll)+nComponentsAll*(i-1),
+                     setdiff(c(1:(nSeries*nComponentsAll)),
+                             c(1:nComponentsAll)+nComponentsAll*(i-1))] <- B[nCoefficients+c(1:nCoefficientsBuffer)];
+                nCoefficients <- nCoefficients + nCoefficientsBuffer;
+            }
+        }
+
+        ### Measurement matrix
+        # Needs to be filled in with dampedValue even if dampedValue has been provided by a user
+        if(damped){
+            for(i in 1:nSeries){
+                matW[i,nComponentsNonSeasonal+nComponentsAll*(i-1)] <- dampedValue[i];
+            }
+        }
+
+        ### Vector of states
+        ## Deal with non-seasonal part of the vector of states
+        if(initialEstimate){
+            initialPlaces <- nComponentsAll*(c(1:nSeries)-1)+1;
+            if(Ttype!="N"){
+                initialPlaces <- c(initialPlaces,nComponentsAll*(c(1:nSeries)-1)+2);
+                initialPlaces <- sort(initialPlaces);
+            }
+            if(initialType=="i"){
+                initialValue <- matrix(B[nCoefficients+c(1:(nComponentsNonSeasonal*nSeries))],
+                                       nComponentsNonSeasonal * nSeries,1);
+                nCoefficients <- nCoefficients + nComponentsNonSeasonal*nSeries;
+            }
+            else if(initialType=="c"){
+                initialValue <- matrix(B[nCoefficients+c(1:nComponentsNonSeasonal)],
+                                       nComponentsNonSeasonal * nSeries,1);
+                nCoefficients <- nCoefficients + nComponentsNonSeasonal;
+            }
+            matVt[initialPlaces,1:lagsModelMax] <- rep(initialValue,lagsModelMax);
+        }
+
+        ## Deal with seasonal part of the vector of states
+        if(modelIsSeasonal & initialSeasonEstimate){
+            initialPlaces <- nComponentsAll*(c(1:nSeries)-1)+nComponentsAll;
+            if(initialSeasonType=="i"){
+                matVt[initialPlaces,1:lagsModelMax] <- matrix(B[nCoefficients+c(1:(nSeries*lagsModelMax))],
+                                                        nSeries,lagsModelMax,byrow=TRUE);
+                nCoefficients <- nCoefficients + nSeries*lagsModelMax;
+            }
+            else if(initialSeasonType=="c"){
+                matVt[initialPlaces,1:lagsModelMax] <- matrix(B[nCoefficients+c(1:lagsModelMax)],nSeries,lagsModelMax,byrow=TRUE);
+                nCoefficients <- nCoefficients + lagsModelMax;
+            }
+        }
+    }
+    ##### Common seasonality #####
+    else{
+        ### Persistence matrix
+        if(persistenceEstimate){
+            persistenceBuffer <- matrix(0,nSeries*nComponentsNonSeasonal+1,nSeries);
+            # Grouped values
+            if(persistenceType=="c"){
+                persistenceValue <- B[1:nComponentsAll];
+                nCoefficients <- nComponentsAll;
+                for(i in 1:nSeries){
+                    persistenceBuffer[1:nComponentsNonSeasonal+nComponentsNonSeasonal*(i-1),
+                                      i] <- persistenceValue[1:nComponentsNonSeasonal];
+                }
+                persistenceBuffer[nSeries*nComponentsNonSeasonal+1,] <- persistenceValue[nComponentsAll];
+                persistenceValue <- persistenceBuffer;
+            }
+            # Independent values
+            else if(persistenceType=="i"){
+                persistenceValue <- B[1:(nComponentsNonSeasonal*nSeries+nSeries)];
+                nCoefficients <- nComponentsNonSeasonal*nSeries+nSeries;
+                for(i in 1:nSeries){
+                    persistenceBuffer[1:nComponentsNonSeasonal+nComponentsNonSeasonal*(i-1),
+                                      i] <- persistenceValue[1:nComponentsNonSeasonal+nComponentsNonSeasonal*(i-1)];
+                }
+                persistenceBuffer[nSeries*nComponentsNonSeasonal+1,
+                                  ] <- persistenceValue[nComponentsNonSeasonal*nSeries+c(1:nSeries)];
+                persistenceValue <- persistenceBuffer;
+            }
+            # Dependent values
+            else if(persistenceType=="d"){
+                persistenceValue <- B[1:(nSeries^2*nComponentsNonSeasonal+nSeries)];
+                nCoefficients <- nSeries^2*nComponentsNonSeasonal+nSeries;
+            }
+            # Grouped seasonal values
+            else if(persistenceType=="s"){
+                persistenceValue <- B[1:(nComponentsNonSeasonal*nSeries+1)];
+                nCoefficients <- nComponentsNonSeasonal*nSeries+1;
+                for(i in 1:nSeries){
+                    persistenceBuffer[1:nComponentsNonSeasonal+nComponentsNonSeasonal*(i-1),
+                                      i] <- persistenceValue[1:nComponentsNonSeasonal+nComponentsNonSeasonal*(i-1)];
+                }
+                persistenceBuffer[nSeries*nComponentsNonSeasonal+1,
+                                  ] <- persistenceValue[nComponentsNonSeasonal*nSeries+1];
+                persistenceValue <- persistenceBuffer;
+            }
+            matG[,] <- persistenceValue;
+        }
+
+        ### Damping parameter
+        if(damped){
+            if(dampedType=="c"){
+                dampedValue <- matrix(B[nCoefficients+1],nSeries,1);
+                nCoefficients <- nCoefficients + 1;
+            }
+            else if(dampedType=="i"){
+                dampedValue <- matrix(B[nCoefficients+(1:nSeries)],nSeries,1);
+                nCoefficients <- nCoefficients + nSeries;
+            }
+        }
+
+        ### Transition matrix
+        if(any(transitionType==c("i","d","c")) & damped){
+            for(i in 1:nSeries){
+                matF[c(1:nComponentsNonSeasonal)+nComponentsNonSeasonal*(i-1),
+                     nComponentsNonSeasonal+nComponentsNonSeasonal*(i-1)] <- dampedValue[i];
+            }
+        }
+        if(transitionType=="d"){
+            # Fill in the other values of F with some values
+            nCoefficientsBuffer <- (nSeries-1)*nComponentsNonSeasonal^2;
+
+            for(i in 1:nSeries){
+                matF[c(1:nComponentsNonSeasonal)+nComponentsNonSeasonal*(i-1),
+                     setdiff(c(1:(nSeries*nComponentsNonSeasonal)),
+                             c(1:nComponentsNonSeasonal)+nComponentsNonSeasonal*(i-1))
+                     ] <- B[nCoefficients+c(1:nCoefficientsBuffer)];
+                nCoefficients <- nCoefficients + nCoefficientsBuffer;
+            }
+        }
+
+        ### Measurement matrix
+        # Needs to be filled in with dampedValue even if dampedValue has been provided by a user
+        if(damped){
+            for(i in 1:nSeries){
+                matW[i,nComponentsNonSeasonal+nComponentsNonSeasonal*(i-1)] <- dampedValue[i];
+            }
+        }
+
+        ### Vector of states
+        ## Deal with non-seasonal part of the vector of states
+        if(initialEstimate){
+            initialPlaces <- nComponentsNonSeasonal*(c(1:nSeries)-1)+1;
+            if(Ttype!="N"){
+                initialPlaces <- c(initialPlaces,nComponentsNonSeasonal*(c(1:nSeries)-1)+2);
+                initialPlaces <- sort(initialPlaces);
+            }
+            if(initialType=="i"){
+                initialValue <- matrix(B[nCoefficients+c(1:(nComponentsNonSeasonal*nSeries))],
+                                       nComponentsNonSeasonal * nSeries,1);
+                nCoefficients <- nCoefficients + nComponentsNonSeasonal*nSeries;
+            }
+            else if(initialType=="c"){
+                initialValue <- matrix(B[nCoefficients+c(1:nComponentsNonSeasonal)],nComponentsNonSeasonal * nSeries,1);
+                nCoefficients <- nCoefficients + nComponentsNonSeasonal;
+            }
+            matVt[initialPlaces,1:lagsModelMax] <- rep(initialValue,lagsModelMax);
+        }
+
+        ## Deal with seasonal part of the vector of states
+        if(modelIsSeasonal & initialSeasonEstimate){
+            matVt[nComponentsNonSeasonal*nSeries+1,1:lagsModelMax] <- matrix(B[nCoefficients+c(1:lagsModelMax)],1,lagsModelMax,byrow=TRUE);
+            nCoefficients <- nCoefficients + lagsModelMax;
+        }
     }
 
-    return(cfRes);
+    return(list(matVt=matVt,matF=matF,matG=matG,matW=matW,dampedValue=dampedValue));
 }
 
 ##### B values for estimation #####
 # Function constructs default bounds where B values should lie
-BValues <- function(Ttype,Stype,lagsModelMax,nComponentsAll,nComponentsNonSeasonal,nSeries){
+initialiserVETS <- function(Ttype,Stype,lagsModelMax,nComponentsAll,nComponentsNonSeasonal,nSeries){
     B <- NA;
     BLower <- NA;
     BUpper <- NA;
@@ -434,444 +890,57 @@ BValues <- function(Ttype,Stype,lagsModelMax,nComponentsAll,nComponentsNonSeason
     return(list(B=B,BLower=BLower,BUpper=BUpper,BNames=BNames));
 }
 
-##### Basic VETS initialiser
-### This function will accept Etype, Ttype, Stype and damped and would return:
-# nComponentsNonSeasonal, nComponentsAll, lagsModelMax, modelIsSeasonal, obsStates
-# This is needed for model selection
+##### Cost Function for VETS #####
+CF <- function(B){
+    elements <- fillerVETS(matVt, matF, matG, matW, B);
 
-##### Basic matrices creator #####
-    # This thing returns matvt, matF, matG, matW, dampedValue, initialValue
-    # and initialSeasonValue if they are not provided + lagsModel
-BasicMakerVETS <- function(...){
-    # ellipsis <- list(...);
-    # ParentEnvironment <- ellipsis[['ParentEnvironment']];
-
-    ### Persistence matrix
-    matG <- switch(seasonalType,
-                   "i" =  matrix(0,nSeries*nComponentsAll,nSeries),
-                   "c" = matrix(0,nSeries*nComponentsNonSeasonal+1,nSeries));
-    if(!persistenceEstimate){
-        matG <- persistenceValue;
+    # Check the bounds
+    if(bounds=="a"){
+        eigenValues <- eigen(elements$matF - elements$matG %*% elements$matW, only.values=TRUE, symmetric=TRUE)$values;
+        if(max(abs(eigenValues)>(1 + 1E-50))){
+            return(max(abs(eigenValues))*1E+100);
+        }
     }
 
-    ### Damping parameter
-    if(!damped){
-        dampedValue <- matrix(1,nSeries,1);
-    }
+    # Fit the model
+    fitting <- vFitterWrap(yInSample, elements$matVt, elements$matF, elements$matW, elements$matG,
+                           lagsModel, Etype, Ttype, Stype, ot);
 
-    ### Transition matrix
-    if(any(transitionType==c("c","i","d"))){
-        if(Ttype=="N"){
-            transitionValue <- matrix(1,1,1);
-        }
-        else if(Ttype!="N"){
-            transitionValue <- matrix(c(1,0,dampedValue[1],dampedValue[1]),2,2);
-        }
-        if(Stype!="N"){
-            transitionValue <- cbind(transitionValue,rep(0,nComponentsNonSeasonal));
-            transitionValue <- rbind(transitionValue,c(rep(0,nComponentsNonSeasonal),1));
-        }
-        transitionValue <- matrix(transitionValue,nComponentsAll,nComponentsAll);
-        transitionBuffer <- diag(nSeries*nComponentsAll);
-        for(i in 1:nSeries){
-            transitionBuffer[c(1:nComponentsAll)+nComponentsAll*(i-1),
-                             c(1:nComponentsAll)+nComponentsAll*(i-1)] <- transitionValue;
-        }
-        if(any(transitionType==c("i","d")) & damped){
-            for(i in 1:nSeries){
-                transitionBuffer[c(1:nComponentsNonSeasonal)+nComponentsAll*(i-1),
-                                 nComponentsNonSeasonal+nComponentsAll*(i-1)] <- dampedValue[i];
-            }
-        }
-        transitionValue <- transitionBuffer;
+    # Calculate the loss
+    if(loss=="l"){
+        cfRes <- suppressWarnings(log(det((fitting$errors / normalizer) %*% t(fitting$errors / normalizer) / otObs)) +
+                                      nSeries * log(normalizer^2));
     }
-    if(transitionType=="d"){
-        # Fill in the other values of F with some values
-        for(i in 1:nSeries){
-            transitionValue[c(1:nComponentsAll)+nComponentsAll*(i-1),
-                            setdiff(c(1:nSeries*nComponentsAll),c(1:nComponentsAll)+nComponentsAll*(i-1))] <- 0.1;
-        }
-    }
-    matF <- switch(seasonalType,
-                   "i"=transitionValue,
-                   "c"=rbind(cbind(transitionValue[-(c(1:nSeries)*nComponentsAll),
-                                                   -(c(1:nSeries)*nComponentsAll)],
-                                   0),
-                             c(transitionValue[nComponentsAll*nSeries,
-                                               -(c(1:nSeries)*nComponentsAll)],1)));
-
-    ### Measurement matrix
-    if(seasonalType=="i"){
-        matW <- matrix(0,nSeries,nSeries*nComponentsAll);
-        for(i in 1:nSeries){
-            matW[i,c(1:nComponentsAll)+nComponentsAll*(i-1)] <- 1;
-        }
-        if(damped){
-            for(i in 1:nSeries){
-                matW[i,nComponentsNonSeasonal+nComponentsAll*(i-1)] <- dampedValue[i];
-            }
-        }
+    else if(loss=="d"){
+        cfRes <- sum(log(apply(fitting$errors^2, 2, sum) / obsInSample));
     }
     else{
-        matW <- matrix(0,nSeries,nSeries*nComponentsNonSeasonal+1);
-        for(i in 1:nSeries){
-            matW[i,c(1:nComponentsNonSeasonal)+nComponentsNonSeasonal*(i-1)] <- 1;
-        }
-        matW[,nSeries*nComponentsNonSeasonal+1] <- 1;
-        if(damped){
-            for(i in 1:nSeries){
-                matW[i,nComponentsNonSeasonal+nComponentsNonSeasonal*(i-1)] <- dampedValue[i];
-            }
-        }
+        cfRes <- sum(apply(fitting$errors^2, 2, sum) / obsInSample);
     }
 
-    ### Vector of states
-    statesNames <- "level";
-    if(Ttype!="N"){
-        statesNames <- c(statesNames,"trend");
-    }
-    if(Stype!="N"){
-        statesNames <- c(statesNames,"seasonal");
-    }
-    matvt <- matrix(NA, nComponentsAll*nSeries, obsStates,
-                    dimnames=list(paste0(rep(dataNames,each=nComponentsAll),
-                                         "_",statesNames),NULL));
-    if(seasonalType=="c"){
-        matvt <- rbind(matvt[-(c(1:nSeries)*nComponentsAll),,drop=F],
-                       matvt[nComponentsAll,,drop=F]);
-        rownames(matvt)[nComponentsNonSeasonal*nSeries+1] <- "seasonal";
+    # cfRes <- vOptimiserWrap(yInSample, elements$matVt, elements$matF, elements$matW, elements$matG,
+    #                         lagsModel, Etype, Ttype, Stype, loss, normalizer, bounds, ot, otObs);
+    # multisteps, initialType, bounds,
+
+    if(is.nan(cfRes) | is.na(cfRes) | is.infinite(cfRes)){
+        cfRes <- 1e+100;
     }
 
-    ## Deal with non-seasonal part of the vector of states
-    if(!initialEstimate){
-        if(seasonalType=="i"){
-            initialPlaces <- nComponentsAll*(c(1:nSeries)-1)+1;
-            if(Ttype!="N"){
-                initialPlaces <- c(initialPlaces,nComponentsAll*(c(1:nSeries)-1)+2);
-                initialPlaces <- sort(initialPlaces);
-            }
-        }
-        else{
-            initialPlaces <- c(1:(nSeries*nComponentsNonSeasonal));
-        }
-        matvt[initialPlaces,1:lagsModelMax] <- rep(initialValue,lagsModelMax);
-    }
-    else{
-        XValues <- rbind(rep(1,obsInSample),c(1:obsInSample));
-        initialValue <- yInSample %*% t(XValues) %*% solve(XValues %*% t(XValues));
-        if(Etype=="L"){
-            initialValue[,1] <- (initialValue[,1] - 0.5) * 20;
-        }
-
-        if(Ttype=="N"){
-            initialValue <- matrix(initialValue[,-2],nSeries,1);
-        }
-        if(initialType=="c"){
-            initialValue <- matrix(colMeans(initialValue),nComponentsNonSeasonal,1);
-        }
-        else{
-            initialValue <- matrix(as.vector(t(initialValue)),nComponentsNonSeasonal * nSeries,1);
-        }
-    }
-
-    ## Deal with seasonal part of the vector of states
-    if(modelIsSeasonal){
-        if(initialSeasonType=="p"){
-            if(seasonalType=="i"){
-                initialPlaces <- nComponentsAll*(c(1:nSeries)-1)+nComponentsAll;
-            }
-            else{
-                initialPlaces <- nSeries*nComponentsNonSeasonal+1;
-            }
-            matvt[initialPlaces,1:lagsModelMax] <- initialSeasonValue;
-        }
-        else{
-            # Matrix of dummies for seasons
-            XValues <- matrix(rep(diag(lagsModelMax),ceiling(obsInSample/lagsModelMax)),lagsModelMax)[,1:obsInSample];
-            # if(Stype=="A"){
-                initialSeasonValue <- (yInSample-rowMeans(yInSample)) %*% t(XValues) %*% solve(XValues %*% t(XValues));
-            # }
-            # else{
-            #     initialSeasonValue <- (yInSample-rowMeans(yInSample)) %*% t(XValues) %*% solve(XValues %*% t(XValues));
-            # }
-            if(initialSeasonType=="c" || seasonalType=="c"){
-                initialSeasonValue <- matrix(colMeans(initialSeasonValue),1,lagsModelMax);
-            }
-            else{
-                initialSeasonValue <- matrix(as.vector(t(initialSeasonValue)),nSeries,lagsModelMax);
-            }
-        }
-    }
-
-    ### lagsModel
-    if(seasonalType=="i"){
-        lagsModel <- rep(1,nComponentsAll);
-        if(modelIsSeasonal){
-            lagsModel[nComponentsAll] <- lagsModelMax;
-        }
-        lagsModel <- matrix(lagsModel,nSeries*nComponentsAll,1);
-    }
-    else{
-        lagsModel <- matrix(c(rep(1,nSeries*nComponentsNonSeasonal),lagsModelMax),
-                            nSeries*nComponentsNonSeasonal+1,1);
-    }
-
-    return(list(matvt=matvt, matF=matF, matG=matG, matW=matW, dampedValue=dampedValue,
-                initialValue=initialValue, initialSeasonValue=initialSeasonValue, lagsModel=lagsModel));
-}
-
-##### Basic matrices filler #####
-# This thing fills in matvt, matF, matG and matW with values from B and returns the corrected values
-BasicInitialiserVETS <- function(matvt,matF,matG,matW,B){
-    nCoefficients <- 0;
-    ##### Individual seasonality #####
-    if(seasonalType=="i"){
-        ### Persistence matrix
-        if(persistenceEstimate){
-            persistenceBuffer <- matrix(0,nSeries*nComponentsAll,nSeries);
-            # Grouped values
-            if(persistenceType=="c"){
-                persistenceValue <- B[1:nComponentsAll];
-                nCoefficients <- nComponentsAll;
-                for(i in 1:nSeries){
-                    persistenceBuffer[1:nComponentsAll+nComponentsAll*(i-1),i] <- persistenceValue;
-                }
-                persistenceValue <- persistenceBuffer;
-            }
-            # Independent values
-            else if(persistenceType=="i"){
-                persistenceValue <- B[1:(nComponentsAll*nSeries)];
-                nCoefficients <- nComponentsAll*nSeries;
-                for(i in 1:nSeries){
-                    persistenceBuffer[1:nComponentsAll+nComponentsAll*(i-1),
-                                      i] <- persistenceValue[1:nComponentsAll+nComponentsAll*(i-1)];
-                }
-                persistenceValue <- persistenceBuffer;
-            }
-            # Dependent values
-            else if(persistenceType=="d"){
-                persistenceValue <- B[1:(nComponentsAll*nSeries^2)];
-                nCoefficients <- nComponentsAll*nSeries^2;
-            }
-            # Grouped seasonal values
-            else if(persistenceType=="s"){
-                persistenceValue <- B[1:((nComponentsAll-1)*nSeries+1)];
-                persistenceSeasonal <- persistenceValue[length(persistenceValue)];
-                nCoefficients <- ((nComponentsAll-1)*nSeries+1);
-                for(i in 1:nSeries){
-                    persistenceBuffer[1:(nComponentsAll-1)+nComponentsAll*(i-1),
-                                      i] <- persistenceValue[1:(nComponentsAll-1)+(nComponentsAll-1)*(i-1)];
-                    persistenceBuffer[nComponentsAll+nComponentsAll*(i-1),i] <- persistenceSeasonal;
-                }
-                persistenceValue <- persistenceBuffer;
-            }
-            matG[,] <- persistenceValue;
-        }
-
-        ### Damping parameter
-        if(damped){
-            if(dampedType=="c"){
-                dampedValue <- matrix(B[nCoefficients+1],nSeries,1);
-                nCoefficients <- nCoefficients + 1;
-            }
-            else if(dampedType=="i"){
-                dampedValue <- matrix(B[nCoefficients+(1:nSeries)],nSeries,1);
-                nCoefficients <- nCoefficients + nSeries;
-            }
-        }
-
-        ### Transition matrix
-        if(any(transitionType==c("i","d","c")) & damped){
-            for(i in 1:nSeries){
-                matF[c(1:nComponentsNonSeasonal)+nComponentsAll*(i-1),
-                     nComponentsNonSeasonal+nComponentsAll*(i-1)] <- dampedValue[i];
-            }
-        }
-        if(transitionType=="d"){
-            # Fill in the other values of F with some values
-            nCoefficientsBuffer <- (nSeries-1)*nComponentsAll^2;
-
-            for(i in 1:nSeries){
-                matF[c(1:nComponentsAll)+nComponentsAll*(i-1),
-                     setdiff(c(1:(nSeries*nComponentsAll)),
-                             c(1:nComponentsAll)+nComponentsAll*(i-1))] <- B[nCoefficients+c(1:nCoefficientsBuffer)];
-                nCoefficients <- nCoefficients + nCoefficientsBuffer;
-            }
-        }
-
-        ### Measurement matrix
-        # Needs to be filled in with dampedValue even if dampedValue has been provided by a user
-        if(damped){
-            for(i in 1:nSeries){
-                matW[i,nComponentsNonSeasonal+nComponentsAll*(i-1)] <- dampedValue[i];
-            }
-        }
-
-        ### Vector of states
-        ## Deal with non-seasonal part of the vector of states
-        if(initialEstimate){
-            initialPlaces <- nComponentsAll*(c(1:nSeries)-1)+1;
-            if(Ttype!="N"){
-                initialPlaces <- c(initialPlaces,nComponentsAll*(c(1:nSeries)-1)+2);
-                initialPlaces <- sort(initialPlaces);
-            }
-            if(initialType=="i"){
-                initialValue <- matrix(B[nCoefficients+c(1:(nComponentsNonSeasonal*nSeries))],
-                                       nComponentsNonSeasonal * nSeries,1);
-                nCoefficients <- nCoefficients + nComponentsNonSeasonal*nSeries;
-            }
-            else if(initialType=="c"){
-                initialValue <- matrix(B[nCoefficients+c(1:nComponentsNonSeasonal)],
-                                       nComponentsNonSeasonal * nSeries,1);
-                nCoefficients <- nCoefficients + nComponentsNonSeasonal;
-            }
-            matvt[initialPlaces,1:lagsModelMax] <- rep(initialValue,lagsModelMax);
-        }
-
-        ## Deal with seasonal part of the vector of states
-        if(modelIsSeasonal & initialSeasonEstimate){
-            initialPlaces <- nComponentsAll*(c(1:nSeries)-1)+nComponentsAll;
-            if(initialSeasonType=="i"){
-                matvt[initialPlaces,1:lagsModelMax] <- matrix(B[nCoefficients+c(1:(nSeries*lagsModelMax))],
-                                                        nSeries,lagsModelMax,byrow=TRUE);
-                nCoefficients <- nCoefficients + nSeries*lagsModelMax;
-            }
-            else if(initialSeasonType=="c"){
-                matvt[initialPlaces,1:lagsModelMax] <- matrix(B[nCoefficients+c(1:lagsModelMax)],nSeries,lagsModelMax,byrow=TRUE);
-                nCoefficients <- nCoefficients + lagsModelMax;
-            }
-        }
-    }
-    ##### Common seasonality #####
-    else{
-        ### Persistence matrix
-        if(persistenceEstimate){
-            persistenceBuffer <- matrix(0,nSeries*nComponentsNonSeasonal+1,nSeries);
-            # Grouped values
-            if(persistenceType=="c"){
-                persistenceValue <- B[1:nComponentsAll];
-                nCoefficients <- nComponentsAll;
-                for(i in 1:nSeries){
-                    persistenceBuffer[1:nComponentsNonSeasonal+nComponentsNonSeasonal*(i-1),
-                                      i] <- persistenceValue[1:nComponentsNonSeasonal];
-                }
-                persistenceBuffer[nSeries*nComponentsNonSeasonal+1,] <- persistenceValue[nComponentsAll];
-                persistenceValue <- persistenceBuffer;
-            }
-            # Independent values
-            else if(persistenceType=="i"){
-                persistenceValue <- B[1:(nComponentsNonSeasonal*nSeries+nSeries)];
-                nCoefficients <- nComponentsNonSeasonal*nSeries+nSeries;
-                for(i in 1:nSeries){
-                    persistenceBuffer[1:nComponentsNonSeasonal+nComponentsNonSeasonal*(i-1),
-                                      i] <- persistenceValue[1:nComponentsNonSeasonal+nComponentsNonSeasonal*(i-1)];
-                }
-                persistenceBuffer[nSeries*nComponentsNonSeasonal+1,
-                                  ] <- persistenceValue[nComponentsNonSeasonal*nSeries+c(1:nSeries)];
-                persistenceValue <- persistenceBuffer;
-            }
-            # Dependent values
-            else if(persistenceType=="d"){
-                persistenceValue <- B[1:(nSeries^2*nComponentsNonSeasonal+nSeries)];
-                nCoefficients <- nSeries^2*nComponentsNonSeasonal+nSeries;
-            }
-            # Grouped seasonal values
-            else if(persistenceType=="s"){
-                persistenceValue <- B[1:(nComponentsNonSeasonal*nSeries+1)];
-                nCoefficients <- nComponentsNonSeasonal*nSeries+1;
-                for(i in 1:nSeries){
-                    persistenceBuffer[1:nComponentsNonSeasonal+nComponentsNonSeasonal*(i-1),
-                                      i] <- persistenceValue[1:nComponentsNonSeasonal+nComponentsNonSeasonal*(i-1)];
-                }
-                persistenceBuffer[nSeries*nComponentsNonSeasonal+1,
-                                  ] <- persistenceValue[nComponentsNonSeasonal*nSeries+1];
-                persistenceValue <- persistenceBuffer;
-            }
-            matG[,] <- persistenceValue;
-        }
-
-        ### Damping parameter
-        if(damped){
-            if(dampedType=="c"){
-                dampedValue <- matrix(B[nCoefficients+1],nSeries,1);
-                nCoefficients <- nCoefficients + 1;
-            }
-            else if(dampedType=="i"){
-                dampedValue <- matrix(B[nCoefficients+(1:nSeries)],nSeries,1);
-                nCoefficients <- nCoefficients + nSeries;
-            }
-        }
-
-        ### Transition matrix
-        if(any(transitionType==c("i","d","c")) & damped){
-            for(i in 1:nSeries){
-                matF[c(1:nComponentsNonSeasonal)+nComponentsNonSeasonal*(i-1),
-                     nComponentsNonSeasonal+nComponentsNonSeasonal*(i-1)] <- dampedValue[i];
-            }
-        }
-        if(transitionType=="d"){
-            # Fill in the other values of F with some values
-            nCoefficientsBuffer <- (nSeries-1)*nComponentsNonSeasonal^2;
-
-            for(i in 1:nSeries){
-                matF[c(1:nComponentsNonSeasonal)+nComponentsNonSeasonal*(i-1),
-                     setdiff(c(1:(nSeries*nComponentsNonSeasonal)),
-                             c(1:nComponentsNonSeasonal)+nComponentsNonSeasonal*(i-1))
-                     ] <- B[nCoefficients+c(1:nCoefficientsBuffer)];
-                nCoefficients <- nCoefficients + nCoefficientsBuffer;
-            }
-        }
-
-        ### Measurement matrix
-        # Needs to be filled in with dampedValue even if dampedValue has been provided by a user
-        if(damped){
-            for(i in 1:nSeries){
-                matW[i,nComponentsNonSeasonal+nComponentsNonSeasonal*(i-1)] <- dampedValue[i];
-            }
-        }
-
-        ### Vector of states
-        ## Deal with non-seasonal part of the vector of states
-        if(initialEstimate){
-            initialPlaces <- nComponentsNonSeasonal*(c(1:nSeries)-1)+1;
-            if(Ttype!="N"){
-                initialPlaces <- c(initialPlaces,nComponentsNonSeasonal*(c(1:nSeries)-1)+2);
-                initialPlaces <- sort(initialPlaces);
-            }
-            if(initialType=="i"){
-                initialValue <- matrix(B[nCoefficients+c(1:(nComponentsNonSeasonal*nSeries))],
-                                       nComponentsNonSeasonal * nSeries,1);
-                nCoefficients <- nCoefficients + nComponentsNonSeasonal*nSeries;
-            }
-            else if(initialType=="c"){
-                initialValue <- matrix(B[nCoefficients+c(1:nComponentsNonSeasonal)],nComponentsNonSeasonal * nSeries,1);
-                nCoefficients <- nCoefficients + nComponentsNonSeasonal;
-            }
-            matvt[initialPlaces,1:lagsModelMax] <- rep(initialValue,lagsModelMax);
-        }
-
-        ## Deal with seasonal part of the vector of states
-        if(modelIsSeasonal & initialSeasonEstimate){
-            matvt[nComponentsNonSeasonal*nSeries+1,1:lagsModelMax] <- matrix(B[nCoefficients+c(1:lagsModelMax)],1,lagsModelMax,byrow=TRUE);
-            nCoefficients <- nCoefficients + lagsModelMax;
-        }
-    }
-
-    return(list(matvt=matvt,matF=matF,matG=matG,matW=matW,dampedValue=dampedValue));
+    return(cfRes);
 }
 
 ##### Basic estimation function for vets() #####
 EstimatorVETS <- function(...){
-    environment(BasicMakerVETS) <- environment();
-    environment(BValues) <- environment();
+    environment(creatorVETS) <- environment();
+    environment(initialiserVETS) <- environment();
     environment(vLikelihoodFunction) <- environment();
     environment(vICFunction) <- environment();
     environment(CF) <- environment();
-    elements <- BasicMakerVETS();
+    elements <- creatorVETS();
     list2env(elements,environment());
 
     if(is.null(B) && is.null(ub) && is.null(lb)){
-        BList <- BValues(Ttype,Stype,lagsModelMax,nComponentsAll,nComponentsNonSeasonal,nSeries);
+        BList <- initialiserVETS(Ttype,Stype,lagsModelMax,nComponentsAll,nComponentsNonSeasonal,nSeries);
         B <- BList$B;
 
         if(any((B>=BList$BUpper),(B<=BList$BLower))){
@@ -880,7 +949,7 @@ EstimatorVETS <- function(...){
         }
     }
     else{
-        BList <- BValues(Ttype,Stype,lagsModelMax,nComponentsAll,nComponentsNonSeasonal,nSeries);
+        BList <- initialiserVETS(Ttype,Stype,lagsModelMax,nComponentsAll,nComponentsNonSeasonal,nSeries);
         if(is.null(B)){
             B <- BList$B;
         }
@@ -979,8 +1048,8 @@ CreatorVETS <- function(silent=FALSE,...){
         environment(CF) <- environment();
         environment(vICFunction) <- environment();
         environment(vLikelihoodFunction) <- environment();
-        environment(BasicMakerVETS) <- environment();
-        elements <- BasicMakerVETS();
+        environment(creatorVETS) <- environment();
+        elements <- creatorVETS();
         list2env(elements,environment());
 
         B <- c(persistenceValue);
@@ -1049,19 +1118,19 @@ CreatorVETS <- function(silent=FALSE,...){
     rownames(yFitted) <- rownames(yForecast) <- rownames(errors) <- dataNames;
 
 ##### Define modelDo #####
-    if(any(persistenceEstimate, transitionEstimate, dampedEstimate, initialEstimate, initialSeasonEstimate)){
+    # if(any(persistenceEstimate, transitionEstimate, dampedEstimate, initialEstimate, initialSeasonEstimate)){
         modelDo <- "estimate";
         modelCurrent <- model;
-    }
-    else{
-        modelDo <- "nothing";
-        modelCurrent <- model;
-        bounds <- "n";
-    }
+    # }
+    # else{
+    #     modelDo <- "nothing";
+    #     modelCurrent <- model;
+    #     bounds <- "n";
+    # }
 
 ##### Now do estimation and model selection #####
-    environment(BasicMakerVETS) <- environment();
-    environment(BasicInitialiserVETS) <- environment();
+    environment(creatorVETS) <- environment();
+    environment(fillerVETS) <- environment();
     environment(vssFitter) <- environment();
     environment(vssForecaster) <- environment();
 
@@ -1069,8 +1138,8 @@ CreatorVETS <- function(silent=FALSE,...){
 
 ##### Fit the model and produce forecast #####
     list2env(vetsValues,environment());
-    list2env(BasicMakerVETS(),environment());
-    list2env(BasicInitialiserVETS(matvt,matF,matG,matW,B),environment());
+    list2env(creatorVETS(),environment());
+    list2env(fillerVETS(matVt,matF,matG,matW,B),environment());
 
     if(Etype=="M"){
         cfObjective <- exp(cfObjective);
@@ -1163,7 +1232,7 @@ CreatorVETS <- function(silent=FALSE,...){
             initialNames <- c(initialNames,"trend");
         }
         if(initialEstimate){
-            initialValue <- matrix(matvt[initialPlaces,lagsModelMax],nComponentsNonSeasonal*nSeries,1);
+            initialValue <- matrix(matVt[initialPlaces,lagsModelMax],nComponentsNonSeasonal*nSeries,1);
             parametersNumber[1,1] <- parametersNumber[1,1] + length(unique(as.vector(initialValue)));
         }
     }
@@ -1173,7 +1242,7 @@ CreatorVETS <- function(silent=FALSE,...){
             initialNames <- c(initialNames,"trend");
         }
         if(initialEstimate){
-            initialValue <- matrix(matvt[1:(nComponentsNonSeasonal*nSeries),lagsModelMax],
+            initialValue <- matrix(matVt[1:(nComponentsNonSeasonal*nSeries),lagsModelMax],
                                    nComponentsNonSeasonal*nSeries,1);
             parametersNumber[1,1] <- parametersNumber[1,1] + length(unique(as.vector(initialValue)));
         }
@@ -1184,20 +1253,20 @@ CreatorVETS <- function(silent=FALSE,...){
         if(seasonalType=="i"){
             if(initialSeasonEstimate){
                 initialPlaces <- nComponentsAll*(c(1:nSeries)-1)+nComponentsAll;
-                initialSeasonValue <- matrix(matvt[initialPlaces,1:lagsModelMax],nSeries,lagsModelMax);
+                initialSeasonValue <- matrix(matVt[initialPlaces,1:lagsModelMax],nSeries,lagsModelMax);
                 parametersNumber[1,1] <- parametersNumber[1,1] + length(unique(as.vector(initialSeasonValue)));
             }
             rownames(initialSeasonValue) <- dataNames;
         }
         else{
-            initialSeasonValue <- matrix(matvt[nComponentsNonSeasonal*nSeries+1,1:lagsModelMax],1,lagsModelMax);
+            initialSeasonValue <- matrix(matVt[nComponentsNonSeasonal*nSeries+1,1:lagsModelMax],1,lagsModelMax);
             parametersNumber[1,1] <- parametersNumber[1,1] + lagsModelMax;
             rownames(initialSeasonValue) <- "Common";
         }
         colnames(initialSeasonValue) <- paste0("Seasonal",c(1:lagsModelMax));
     }
 
-    matvt <- ts(t(matvt),start=(time(y)[1] - dataDeltat*lagsModelMax),frequency=dataFreq);
+    matVt <- ts(t(matVt),start=(time(y)[1] - dataDeltat*lagsModelMax),frequency=dataFreq);
     yFitted <- ts(t(yFitted),start=dataStart,frequency=dataFreq);
     errors <- ts(t(errors),start=dataStart,frequency=dataFreq);
 
@@ -1351,7 +1420,7 @@ CreatorVETS <- function(silent=FALSE,...){
 
     ##### Return values #####
     model <- list(model=modelname,timeElapsed=Sys.time()-startTime,
-                  states=matvt,persistence=persistenceValue,transition=transitionValue,
+                  states=matVt,persistence=persistenceValue,transition=transitionValue,
                   measurement=matW, phi=dampedValue, B=B,
                   initialType=initialType,initial=initialValue,initialSeason=initialSeasonValue,
                   nParam=parametersNumber, occurrence=ovesModel,
