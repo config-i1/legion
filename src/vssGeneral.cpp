@@ -84,20 +84,20 @@ List vFitter(arma::mat const &matrixY, arma::mat &matrixV, arma::mat const &matr
     }
 
     // , Named("matat") = matrixA
-    return List::create(Named("matvt") = matrixV, Named("yfit") = matrixYfit,
+    return List::create(Named("matVt") = matrixV, Named("yfit") = matrixYfit,
                         Named("errors") = matrixE);
 }
 
 /* # Wrapper for fitter */
 // [[Rcpp::export]]
-RcppExport SEXP vFitterWrap(SEXP yt, SEXP matvt, SEXP matF, SEXP matw, SEXP matG,
+RcppExport SEXP vFitterWrap(SEXP yt, SEXP matVt, SEXP matF, SEXP matw, SEXP matG,
                             SEXP modellags, SEXP Etype, SEXP Ttype, SEXP Stype, SEXP ot) {
 // SEXP matxt, SEXP matat, SEXP matFX, SEXP matGX,
     NumericMatrix yt_n(yt);
     arma::mat matrixY(yt_n.begin(), yt_n.nrow(), yt_n.ncol(), false);
 
-    NumericMatrix matvt_n(matvt);
-    arma::mat matrixV(matvt_n.begin(), matvt_n.nrow(), matvt_n.ncol());
+    NumericMatrix matVt_n(matVt);
+    arma::mat matrixV(matVt_n.begin(), matVt_n.nrow(), matVt_n.ncol());
 
     NumericMatrix matF_n(matF);
     arma::mat matrixF(matF_n.begin(), matF_n.nrow(), matF_n.ncol(), false);
@@ -177,12 +177,12 @@ arma::mat vForecaster(arma::mat const & matrixV, arma::mat const &matrixF, arma:
 
 /* # Wrapper for forecaster */
 // [[Rcpp::export]]
-RcppExport SEXP vForecasterWrap(SEXP matvt, SEXP matF, SEXP matw,
+RcppExport SEXP vForecasterWrap(SEXP matVt, SEXP matF, SEXP matw,
                                 SEXP series, SEXP h, SEXP Etype, SEXP Ttype, SEXP Stype, SEXP modellags){
     // SEXP matxt, SEXP matat, SEXP matFX
 
-    NumericMatrix matvt_n(matvt);
-    arma::mat matrixV(matvt_n.begin(), matvt_n.nrow(), matvt_n.ncol(), false);
+    NumericMatrix matVt_n(matVt);
+    arma::mat matrixV(matVt_n.begin(), matVt_n.nrow(), matVt_n.ncol(), false);
 
     NumericMatrix matF_n(matF);
     arma::mat matrixF(matF_n.begin(), matF_n.nrow(), matF_n.ncol(), false);
@@ -229,7 +229,7 @@ double vOptimiser(arma::mat const &matrixY, arma::mat &matrixV, arma::mat const 
 
     List fitting = vFitter(matrixY, matrixV, matrixF, matrixW, matrixG, lags, E, T, S, matrixO);
 
-    NumericMatrix mvtfromfit = as<NumericMatrix>(fitting["matvt"]);
+    NumericMatrix mvtfromfit = as<NumericMatrix>(fitting["matVt"]);
     matrixV = as<arma::mat>(mvtfromfit);
     NumericMatrix errorsfromfit = as<NumericMatrix>(fitting["errors"]);
 
@@ -265,7 +265,7 @@ double vOptimiser(arma::mat const &matrixY, arma::mat &matrixV, arma::mat const 
 
 /* # This is a wrapper for optimizer, which currently uses admissible bounds */
 // [[Rcpp::export]]
-RcppExport SEXP vOptimiserWrap(SEXP yt, SEXP matvt, SEXP matF, SEXP matw, SEXP matG,
+RcppExport SEXP vOptimiserWrap(SEXP yt, SEXP matVt, SEXP matF, SEXP matw, SEXP matG,
                                SEXP modellags, SEXP Etype, SEXP Ttype, SEXP Stype,
                                SEXP cfType, SEXP normalizer, SEXP bounds, SEXP ot, SEXP otObs) {
     // SEXP multisteps, SEXP CFt, SEXP fittertype, SEXP bounds,
@@ -274,8 +274,8 @@ RcppExport SEXP vOptimiserWrap(SEXP yt, SEXP matvt, SEXP matF, SEXP matw, SEXP m
     NumericMatrix yt_n(yt);
     arma::mat matrixY(yt_n.begin(), yt_n.nrow(), yt_n.ncol(), false);
 
-    NumericMatrix matvt_n(matvt);
-    arma::mat matrixV(matvt_n.begin(), matvt_n.nrow(), matvt_n.ncol());
+    NumericMatrix matVt_n(matVt);
+    arma::mat matrixV(matVt_n.begin(), matVt_n.nrow(), matVt_n.ncol());
 
     NumericMatrix matF_n(matF);
     arma::mat matrixF(matF_n.begin(), matF_n.nrow(), matF_n.ncol(), false);

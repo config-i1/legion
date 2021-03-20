@@ -237,7 +237,7 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
 
         lagsModelMax <- dataFreq * modelIsSeasonal + 1 * (!modelIsSeasonal);
 
-        # Define the number of rows that should be in the matvt
+        # Define the number of rows that should be in the matVt
         obsStates <- max(obsAll + lagsModelMax, obsInSample + 2*lagsModelMax);
 
         nComponentsNonSeasonal <- 1 + (Ttype!="N")*1;
@@ -1190,11 +1190,9 @@ vssFitter <- function(...){
     ellipsis <- list(...);
     ParentEnvironment <- ellipsis[['ParentEnvironment']];
 
-    fitting <- vFitterWrap(yInSample, matvt, matF, matW, matG,
+    fitting <- vFitterWrap(yInSample, matVt, matF, matW, matG,
                            lagsModel, Etype, Ttype, Stype, ot);
-    statesNames <- rownames(matvt);
-    matvt <- fitting$matvt;
-    rownames(matvt) <- statesNames;
+    matVt[] <- fitting$matVt;
     yFitted[] <- fitting$yfit;
     errors[] <- fitting$errors;
 
@@ -1205,7 +1203,7 @@ vssFitter <- function(...){
         }
     }
 
-    assign("matvt",matvt,ParentEnvironment);
+    assign("matVt",matVt,ParentEnvironment);
     assign("yFitted",yFitted,ParentEnvironment);
     assign("errors",errors,ParentEnvironment);
 }
@@ -1392,7 +1390,7 @@ vssForecaster <- function(...){
     PI <- NA;
 
     if(h>0){
-        yForecast[] <- vForecasterWrap(matrix(matvt[,(obsInSample+1):(obsInSample+lagsModelMax)],ncol=lagsModelMax),
+        yForecast[] <- vForecasterWrap(matrix(matVt[,(obsInSample+1):(obsInSample+lagsModelMax)],ncol=lagsModelMax),
                                      matF, matW, nSeries, h, Etype, Ttype, Stype, lagsModel);
 
         if(cumulative){
