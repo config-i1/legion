@@ -1,14 +1,9 @@
-utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","nSeries","modelIsSeasonal",
-                         "obsInSample","obsAll","lagsModel","persistenceEstimate","persistenceType",
-                         "persistenceValue","damped","dampedEstimate","dampedType","transitionType",
-                         "initialEstimate","initialSeasonEstimate","initialSeasonValue","initialSeasonType",
-                         "modelIsMultiplicative","matG","matW","B","ub","lb", "maxeval", "algorithm1",
-                         "algorithm2", "xtol_rel1", "xtol_rel2", "Sigma","yFitted","PI","dataDeltat",
-                         "dataFreq","dataStart","otObs","dataNames","seasonalType",
-                         "CF","Etype","FI","ICs","Stype","Ttype","cumulative","errors","h","holdout",
-                         "initial","initialType","interval","intervalType","is.vsmooth.sim","lagsModelMax",
-                         "level","matF","matVt","measures","nParam","normalizer","obsStates","ot",
-                         "silentGraph","silentText","transition","transitionEstimate","yInSample"));
+utils::globalVariables(c("obsInSample","componentsCommonLevel","componentsCommonSeasonal","componentsCommonTrend",
+                         "initialValue","initialsCommonLevel","initialsCommonSeasonal","initialsCommonTrend",
+                         "modelIsTrendy","nComponentsLevel","nComponentsSeasonal","nComponentsTrend",
+                         "nInitialsLevel","nInitialsSeasonal","nInitialsTrend",
+                         "nParametersDamped","nParametersLevel","nParametersSeasonal","nParametersTrend",
+                         "parametersCommonDamped","parametersCommonLevel","parametersCommonSeasonal","parametersCommonTrend"));
 
 #' Vector ETS-PIC model
 #'
@@ -164,14 +159,14 @@ utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","
 #' Y <- ts(cbind(rnorm(100,100,10),rnorm(100,75,8)),frequency=12)
 #'
 #' # The simplest model applied to the data with the default values
-# vets(Y,model="ANN",h=10,holdout=TRUE)
+#' vets(Y,model="ANN",h=10,holdout=TRUE)
 #'
 #' # Multiplicative damped trend model with common parameters
 #' # and initial seasonal indices
-# vets(Y,model="MMdM",h=10,holdout=TRUE,parameters=c("l","t","s","d"),
-#      initials="seasonal")
+#' vets(Y,model="MMdM",h=10,holdout=TRUE,parameters=c("l","t","s","d"),
+#'      initials="seasonal")
 #'
-#'
+#' @export
 vets <- function(y, model="ANN", lags=c(frequency(y)),
                  parameters=c("level","trend","seasonal","damped"),
                  initials=c("seasonal"), components=c("none"),
@@ -403,40 +398,47 @@ creatorVETS <- function(...){
     initialValue <- yInSample %*% t(XValues) %*% solve(XValues %*% t(XValues));
     j <- 0;
     # Fill in level initials
-    if(componentsCommonLevel){
-        matVt[j+1:nComponentsLevel,1:lagsModelMax] <- intiialValueNew01 <- mean(initialValue[,1]);
+    if(initialsCommonLevel){
+        matVt[j+1:nComponentsLevel,1:lagsModelMax] <- initialValueNew01 <- mean(initialValue[,1]);
     }
     else{
-        matVt[j+1:nComponentsLevel,1:lagsModelMax] <- intiialValueNew01 <- initialValue[,1];
+        matVt[j+1:nComponentsLevel,1:lagsModelMax] <- initialValueNew01 <- initialValue[,1];
     }
     j[] <- j+nComponentsLevel;
 
     # Fill in trend initials
     if(modelIsTrendy){
-        if(componentsCommonTrend){
-            matVt[j+1:nComponentsTrend,1:lagsModelMax] <- intiialValueNew02 <- mean(initialValue[,2]);
+        if(initialsCommonTrend){
+            matVt[j+1:nComponentsTrend,1:lagsModelMax] <- initialValueNew02 <- mean(initialValue[,2]);
         }
         else{
-            matVt[j+1:nComponentsTrend,1:lagsModelMax] <- intiialValueNew02 <- initialValue[,2];
+            matVt[j+1:nComponentsTrend,1:lagsModelMax] <- initialValueNew02 <- initialValue[,2];
         }
         j[] <- j+nComponentsTrend;
     }
     else{
-        intiialValueNew02 <- NULL;
+        initialValueNew02 <- NULL;
     }
-    initialValue <- c(intiialValueNew01, intiialValueNew02);
+    initialValue <- c(initialValueNew01, initialValueNew02);
 
     if(modelIsSeasonal){
         # Matrix of dummies for seasons
         XValues <- matrix(rep(diag(lagsModelMax),ceiling(obsInSample/lagsModelMax)),lagsModelMax)[,1:obsInSample];
         initialSeasonValue <- (yInSample-rowMeans(yInSample)) %*% t(XValues) %*% solve(XValues %*% t(XValues));
+        # Renormalise initials
+        initialSeasonValue[] <- initialSeasonValue - rowMeans(initialSeasonValue);
 
-        if(componentsCommonSeasonal){
-            matVt[j+1:nComponentsSeasonal,1:lagsModelMax] <- initialSeasonValue <- colMeans(initialSeasonValue);
+        if(initialsCommonSeasonal){
+            matVt[j+1:nComponentsSeasonal,1:lagsModelMax] <- initialSeasonValue <- matrix(colMeans(initialSeasonValue),1);
         }
         else{
             matVt[j+1:nComponentsSeasonal,1:lagsModelMax] <- t(initialSeasonValue);
         }
+        # Remove one of columns, to preserve degrees of freedom (normalisation)
+        initialSeasonValue <- initialSeasonValue[,-1,drop=FALSE];
+    }
+    else{
+        initialSeasonValue <- NULL;
     }
 
     #### Names of states ####
@@ -469,7 +471,7 @@ creatorVETS <- function(...){
 
     ### lagsModel vector
     lagsModel <- matrix(1,nComponentsAll,1);
-    if(componentsCommonSeasonal){
+    if(modelIsSeasonal){
         lagsModel[nComponentsNonSeasonal + 1:nComponentsSeasonal] <- lagsModelMax;
     }
 
@@ -484,6 +486,7 @@ creatorVETS <- function(...){
                            lagsModelMax, nSeries, modelIsTrendy, modelIsSeasonal, damped,
                            componentsCommonLevel, componentsCommonTrend, componentsCommonSeasonal,
                            nParametersLevel, nParametersTrend, nParametersSeasonal, nParametersDamped,
+                           nInitialsLevel, nInitialsTrend, nInitialsSeasonal,
                            nComponentsLevel, nComponentsTrend, nComponentsSeasonal){
 
     j <- 0;
@@ -555,20 +558,23 @@ creatorVETS <- function(...){
 
     k <- 0;
     # Fill in level initials
-    matVt[1:nComponentsLevel,1:lagsModelMax] <- B[j+1:nComponentsLevel];
+    matVt[1:nComponentsLevel,1:lagsModelMax] <- B[j+1:nInitialsLevel];
     k[] <- k+nComponentsLevel;
-    j[] <- j+nComponentsLevel;
+    j[] <- j+nInitialsLevel;
 
     # Fill in trend initials
     if(modelIsTrendy){
-        matVt[k+1:nComponentsTrend,1:lagsModelMax] <- B[j+1:nComponentsTrend];
+        matVt[k+1:nComponentsTrend,1:lagsModelMax] <- B[j+1:nInitialsTrend];
         k[] <- k+nComponentsTrend;
-        j[] <- j+nComponentsTrend;
+        j[] <- j+nInitialsTrend;
     }
 
     if(modelIsSeasonal){
-        matVt[k+1:nComponentsSeasonal,1:lagsModelMax] <- matrix(B[j+1:(nComponentsSeasonal*lagsModelMax)],
-                                                                nComponentsSeasonal,lagsModelMax,byrow=TRUE);
+        matVt[k+1:nComponentsSeasonal,2:lagsModelMax] <- matrix(B[j+1:(nInitialsSeasonal*(lagsModelMax-1))],
+                                                                nComponentsSeasonal,(lagsModelMax-1),byrow=TRUE);
+        # Normalise initials
+        matVt[k+1:nComponentsSeasonal,1] <- -rowSums(matVt[k+1:nComponentsSeasonal,2:lagsModelMax]);
+
     }
 
     return(list(matVt=matVt,matF=matF,matG=matG,matW=matW));
@@ -578,14 +584,14 @@ creatorVETS <- function(...){
 # Function constructs default bounds where B values should lie
 initialiserVETS <- function(lagsModelMax, nSeries, modelIsTrendy, modelIsSeasonal,
                             componentsCommonLevel, componentsCommonTrend, componentsCommonSeasonal,
-                            nComponentsAll, nComponentsNonSeasonal, nComponentsLevel, nComponentsTrend, nComponentsSeasonal,
+                            nComponentsNonSeasonal, nInitialsLevel, nInitialsTrend, nInitialsSeasonal,
                             parametersCommonLevel, parametersCommonTrend, parametersCommonSeasonal, parametersCommonDamped,
                             nParametersLevel, nParametersTrend, nParametersSeasonal, nParametersDamped,
                             initialsCommonLevel, initialsCommonTrend, initialsCommonSeasonal,
                             initialValue, initialSeasonValue){
     # Smoothing parameters, Dampening parameter, initials
     BLower <- BUpper <- B <- rep(NA, nParametersLevel + nParametersTrend + nParametersSeasonal + nParametersDamped +
-                                     nComponentsNonSeasonal + nComponentsSeasonal*lagsModelMax);
+                                     nInitialsLevel + nInitialsTrend + nInitialsSeasonal*(lagsModelMax-1));
 
     j <- 0;
     # alpha
@@ -623,21 +629,22 @@ initialiserVETS <- function(lagsModelMax, nSeries, modelIsTrendy, modelIsSeasona
     B[j+1:nComponentsNonSeasonal] <- initialValue;
     BLower[j+1:nComponentsNonSeasonal] <- -Inf;
     BUpper[j+1:nComponentsNonSeasonal] <- Inf;
-    names(B)[j+1:nComponentsLevel] <- paste0("level",c(1:nComponentsLevel));
+    names(B)[j+1:nInitialsLevel] <- paste0("level",c(1:nInitialsLevel));
     if(modelIsTrendy){
-        names(B)[j+nComponentsLevel+1:nComponentsTrend] <- paste0("trend",c(1:nComponentsTrend));
+        names(B)[j+nInitialsLevel+1:nInitialsTrend] <- paste0("trend",c(1:nInitialsTrend));
     }
     j[] <- j+nComponentsNonSeasonal;
 
     # Initial seasonal components
     if(modelIsSeasonal){
-        B[j+1:(nComponentsSeasonal*lagsModelMax)] <- initialSeasonValue;
-        BLower[j+1:(nComponentsSeasonal*lagsModelMax)] <- -Inf;
-        BUpper[j+1:(nComponentsSeasonal*lagsModelMax)] <- Inf;
-        names(B)[j+1:(nComponentsSeasonal*lagsModelMax)] <- paste0(rep(paste0("seasonal",c(1:nComponentsSeasonal),"_"),
-                                                                       each=lagsModelMax),
-                                                                   c(1:lagsModelMax));
-        j[] <- j+nComponentsSeasonal*lagsModelMax;
+        # -1 is due to normalisation of seasonal states
+        B[j+1:(nInitialsSeasonal*(lagsModelMax-1))] <- initialSeasonValue;
+        BLower[j+1:(nInitialsSeasonal*(lagsModelMax-1))] <- -Inf;
+        BUpper[j+1:(nInitialsSeasonal*(lagsModelMax-1))] <- Inf;
+        names(B)[j+1:(nInitialsSeasonal*(lagsModelMax-1))] <- paste0(rep(paste0("seasonal",c(1:nInitialsSeasonal),"_"),
+                                                                     each=(lagsModelMax-1)),
+                                                                 c(1:(lagsModelMax-1)));
+        j[] <- j+nInitialsSeasonal*(lagsModelMax-1);
     }
 
     return(list(B=B,BLower=BLower,BUpper=BUpper));
@@ -649,6 +656,7 @@ CF <- function(B){
                            lagsModelMax, nSeries, modelIsTrendy, modelIsSeasonal, damped,
                            componentsCommonLevel, componentsCommonTrend, componentsCommonSeasonal,
                            nParametersLevel, nParametersTrend, nParametersSeasonal, nParametersDamped,
+                           nInitialsLevel, nInitialsTrend, nInitialsSeasonal,
                            nComponentsLevel, nComponentsTrend, nComponentsSeasonal);
 
     # Check the bounds
@@ -698,7 +706,7 @@ EstimatorVETS <- function(...){
 
     BList <- initialiserVETS(lagsModelMax, nSeries, modelIsTrendy, modelIsSeasonal,
                              componentsCommonLevel, componentsCommonTrend, componentsCommonSeasonal,
-                             nComponentsAll, nComponentsNonSeasonal, nComponentsLevel, nComponentsTrend, nComponentsSeasonal,
+                             nComponentsNonSeasonal, nInitialsLevel, nInitialsTrend, nInitialsSeasonal,
                              parametersCommonLevel, parametersCommonTrend, parametersCommonSeasonal, parametersCommonDamped,
                              nParametersLevel, nParametersTrend, nParametersSeasonal, nParametersDamped,
                              initialsCommonLevel, initialsCommonTrend, initialsCommonSeasonal,
@@ -756,7 +764,7 @@ EstimatorVETS <- function(...){
     if(res2$objective <= res$objective){
         res <- res2;
     }
-    B <- res$solution;
+    B[] <- res$solution;
 
     if(print_level_hidden>0){
         print(res);
@@ -768,7 +776,7 @@ EstimatorVETS <- function(...){
                        "If you did your best, but the optimiser still fails, report this to the maintainer, please."),
                 call.=FALSE);
     }
-    names(B) <- BList$BNames;
+    # names(B) <- BList$BNames;
 
     # First part is for the covariance matrix
     if(loss=="l"){
@@ -903,6 +911,7 @@ CreatorVETS <- function(silent=FALSE,...){
                         lagsModelMax, nSeries, modelIsTrendy, modelIsSeasonal, damped,
                         componentsCommonLevel, componentsCommonTrend, componentsCommonSeasonal,
                         nParametersLevel, nParametersTrend, nParametersSeasonal, nParametersDamped,
+                        nInitialsLevel, nInitialsTrend, nInitialsSeasonal,
                         nComponentsLevel, nComponentsTrend, nComponentsSeasonal),environment());
 
     if(Etype=="M"){
@@ -919,6 +928,7 @@ CreatorVETS <- function(silent=FALSE,...){
     vssFitter(ParentEnvironment=environment());
     vssForecaster(ParentEnvironment=environment());
 
+    parametersNumber[1,1] <- length(B);
 
 # This is needed anyway for the reusability of the model
     # if(seasonalType=="i"){
@@ -1023,20 +1033,29 @@ CreatorVETS <- function(silent=FALSE,...){
     }
 
     # If something is restricted, add "PIC
-    if(!all(parametersCommonLevel,parametersCommonTrend,parametersCommonSeasonal,parametersCommonDamped,
+    if(!all(parametersCommonLevel,parametersCommonTrend,parametersCommonSeasonal,damped & parametersCommonDamped,
             initialsCommonLevel,initialsCommonTrend,initialsCommonSeasonal,
             componentsCommonLevel,componentsCommonTrend,componentsCommonSeasonal)){
         modelName <- paste0(modelName,"PIC");
-        submodelName <- paste(paste0(ifelse(c(parametersCommonLevel,parametersCommonTrend,
-                                               parametersCommonSeasonal,parametersCommonDamped),
-                                             c("L","T","S","D"),""),collapse=""),
-                               paste0(ifelse(c(initialsCommonLevel,initialsCommonTrend,
-                                               initialsCommonSeasonal),
-                                             c("L","T","S"),""),collapse=""),
-                               paste0(ifelse(c(componentsCommonLevel,componentsCommonTrend,
-                                               componentsCommonSeasonal),
-                                             c("L","T","S"),""),collapse=""),sep=",");
-        modelName <- paste0(modelName,"(",submodelName,")");
+        submodelNameP <- paste0(ifelse(c(parametersCommonLevel,parametersCommonTrend,
+                                         parametersCommonSeasonal,damped & parametersCommonDamped),
+                                       c("L","T","S","D"),""),collapse="");
+        submodelNameI <- paste0(ifelse(c(initialsCommonLevel,initialsCommonTrend,
+                                         initialsCommonSeasonal),
+                                       c("L","T","S"),""),collapse="");
+        submodelNameC <- paste0(ifelse(c(componentsCommonLevel,componentsCommonTrend,
+                                         componentsCommonSeasonal),
+                                       c("L","T","S"),""),collapse="");
+        if(nchar(submodelNameP)==0){
+            submodelNameP <- "N";
+        }
+        if(nchar(submodelNameI)==0){
+            submodelNameI <- "N";
+        }
+        if(nchar(submodelNameC)==0){
+            submodelNameC <- "N";
+        }
+        modelName <- paste0(modelName,"(",paste(submodelNameP,submodelNameI,submodelNameC,sep=","),")");
     }
 
 #     if(modelIsSeasonal){

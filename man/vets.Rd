@@ -246,10 +246,12 @@ vignette: \code{vignette("ves","legion")}
 Y <- ts(cbind(rnorm(100,100,10),rnorm(100,75,8)),frequency=12)
 
 # The simplest model applied to the data with the default values
+vets(Y,model="ANN",h=10,holdout=TRUE)
 
 # Multiplicative damped trend model with common parameters
 # and initial seasonal indices
-
+vets(Y,model="MMdM",h=10,holdout=TRUE,parameters=c("l","t","s","d"),
+     initials="seasonal")
 
 }
 \references{
