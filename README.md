@@ -10,7 +10,7 @@ Here is the list of the included functions:
 1. ves - Vector Exponential Smoothing.
 2. vets - Vector ETS with PIC taxonomy.
 3. sim.ves - simulates data from VES.
-4. viss - occurrence state space vector exponential smoothing model.
+4. oves - occurrence state space vector exponential smoothing model.
 
 Available methods:
 
@@ -20,23 +20,20 @@ Available methods:
 4. forecast;
 5. actuals;
 6. logLik;
-7. modelType - type of the estimated model (mainly needed for ETS and CES);
+7. modelType - type of the estimated model;
 8. nobs;
 9. nparam - number of the estimated parameters in the model;
-10. outlierdummy - creates a matrix of dummy variables, based on the detected outliers in the residuals of the model;
-11. residuals - the residuals of the model (et in case of additive and log(1+et) for the multiplicative ones);
-12. rstandard - standardised residuals;
-13. rstudent - studentised residuals;
-14. plot - produces several plots for diagnostics purposes. See the documentation for plot.legion();
-15. print;
-16. sigma;
-17. simulate;
-18. summary;
+10. residuals - the residuals of the model (et in case of additive and log(1+et) for the multiplicative ones);
+11. plot - produces several plots for diagnostics purposes. See the documentation for plot.legion();
+12. print;
+13. sigma;
+14. simulate;
+15. summary;
 
 ## Installation
 
-The stable version of the package is available on CRAN, so you can install it by running:
-> install.packages("legion")
+<!-- The stable version of the package is available on CRAN, so you can install it by running:
+> install.packages("legion") -->
 
 A recent, development version, is available via github and can be installed using "devtools" in R. First, make sure that you have devtools:
 > if (!require("devtools")){install.packages("devtools")}
