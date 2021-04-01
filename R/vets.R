@@ -212,13 +212,91 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
     environment(vssInput) <- environment();
     vssInput("vets",ParentEnvironment=environment(),...);
 
-##### Basic VETS architector
+##### Basic VETS architector #####
 ### This function will accept Etype, Ttype, Stype and damped and would return:
 # nComponentsNonSeasonal, nComponentsAll, lagsModelMax, modelIsSeasonal, modelIsTrendy, obsStates
 # and all the variables for PIC part of the model
 # This is needed for model selection
-# architectorVETS <- function(Etype, Ttype, Stype, damped, nSeries){
-# }
+architectorVETS <- function(Etype, Ttype, Stype, damped, nSeries){
+    # Binaries for trend and seasonal
+    modelIsTrendy <- Ttype!="N";
+    modelIsSeasonal <- Stype!="N";
+
+    lagsModelMax <- dataFreq * modelIsSeasonal + 1 * (!modelIsSeasonal);
+
+    # Define the number of rows that should be in the matVt
+    obsStates <- max(obsAll + lagsModelMax, obsInSample + 2*lagsModelMax);
+
+    # Common parameters
+    parametersCommonLevel <- any(parameters=="l");
+    parametersCommonTrend <- modelIsTrendy & any(parameters=="t");
+    parametersCommonSeasonal <- modelIsSeasonal & any(parameters=="s");
+    parametersCommonDamped <- modelIsTrendy & damped & any(parameters=="d");
+    # Common initials
+    initialsCommonLevel <- any(initials=="l");
+    initialsCommonTrend <- modelIsTrendy & any(initials=="t");
+    initialsCommonSeasonal <- modelIsSeasonal & any(initials=="s");
+    # Define common components
+    componentsCommonLevel <- any(components=="l");
+    componentsCommonTrend <- modelIsTrendy & any(components=="t");
+    componentsCommonSeasonal <- modelIsSeasonal & any(components=="s");
+
+    if(componentsCommonLevel){
+        componentsCommonTrend[] <- TRUE;
+    }
+
+    # Sanity checks. Make initials common if the respective components are
+    if(componentsCommonLevel && !initialsCommonLevel){
+        initialsCommonLevel[] <- TRUE;
+    }
+    if(componentsCommonTrend && !initialsCommonTrend){
+        initialsCommonTrend[] <- TRUE;
+    }
+    if(componentsCommonSeasonal && !initialsCommonSeasonal){
+        initialsCommonSeasonal[] <- TRUE;
+    }
+    if(componentsCommonTrend && !parametersCommonDamped){
+        parametersCommonDamped[] <- TRUE;
+    }
+
+    # Number of parameters in the model
+    nParametersLevel <- nSeries^(!parametersCommonLevel);
+    nParametersTrend <- modelIsTrendy*nSeries^(!parametersCommonTrend);
+    nParametersSeasonal <- modelIsSeasonal*nSeries^(!parametersCommonSeasonal);
+    nParametersDamped <- modelIsTrendy*damped*nSeries^(!parametersCommonDamped);
+
+    # Number of overall initials in the model
+    nInitialsLevel <- nSeries^(!initialsCommonLevel);
+    nInitialsTrend <- modelIsTrendy*nSeries^(!initialsCommonTrend);
+    nInitialsSeasonal <- modelIsSeasonal*nSeries^(!initialsCommonSeasonal);
+
+    # Number of overall components in the model
+    nComponentsLevel <- nSeries^(!componentsCommonLevel);
+    nComponentsTrend <- modelIsTrendy*nSeries^(!componentsCommonTrend);
+    nComponentsSeasonal <- modelIsSeasonal*nSeries^(!componentsCommonSeasonal);
+
+    nComponentsNonSeasonal <- nComponentsLevel + nComponentsTrend;
+    nComponentsAll <- nComponentsLevel + nComponentsTrend + nComponentsSeasonal;
+
+    # nParamMax <-  nParamMax +
+    #     nParametersLevel + nParametersTrend + nParametersSeasonal + nParametersDamped +
+    #     nComponentsLevel + nComponentsTrend + nComponentsSeasonal;
+
+    return(list(modelIsTrendy=modelIsTrendy,modelIsSeasonal=modelIsSeasonal, lagsModelMax=lagsModelMax,
+                # PIC booleans
+                parametersCommonLevel=parametersCommonLevel,parametersCommonTrend=parametersCommonTrend,
+                parametersCommonSeasonal=parametersCommonSeasonal,parametersCommonDamped=parametersCommonDamped,
+                initialsCommonLevel=initialsCommonLevel,initialsCommonTrend=initialsCommonTrend,
+                initialsCommonSeasonal=initialsCommonSeasonal,componentsCommonLevel=componentsCommonLevel,
+                componentsCommonTrend=componentsCommonTrend,componentsCommonSeasonal=componentsCommonSeasonal,
+                # PIC number of elements
+                nParametersLevel=nParametersLevel, nParametersTrend=nParametersTrend,
+                nParametersSeasonal=nParametersSeasonal, nParametersDamped=nParametersDamped,
+                nInitialsLevel=nInitialsLevel,nInitialsTrend=nInitialsTrend,
+                nInitialsSeasonal=nInitialsSeasonal,nComponentsLevel=nComponentsLevel,
+                nComponentsTrend=nComponentsTrend,nComponentsSeasonal=nComponentsSeasonal,
+                nComponentsNonSeasonal=nComponentsNonSeasonal,nComponentsAll=nComponentsAll));
+}
 
 ##### Basic matrices creator #####
     # This thing returns matVt, matF, matG, matW, dampedValue, initialValue
@@ -703,6 +781,7 @@ EstimatorVETS <- function(...){
     environment(vLikelihoodFunction) <- environment();
     environment(vICFunction) <- environment();
     environment(CF) <- environment();
+    list2env(architectorVETS(Etype, Ttype, Stype, damped, nSeries),environment());
     elements <- creatorVETS();
     list2env(elements,environment());
 
@@ -804,7 +883,7 @@ EstimatorVETS <- function(...){
 }
 
 ##### Function constructs the VETS function #####
-CreatorVETS <- function(silent=FALSE,...){
+callerVETS <- function(silent=FALSE,...){
     if(modelDo=="estimate"){
         environment(EstimatorVETS) <- environment();
         res <- EstimatorVETS(ParentEnvironment=environment());
@@ -904,7 +983,8 @@ CreatorVETS <- function(silent=FALSE,...){
     environment(vssFitter) <- environment();
     environment(vssForecaster) <- environment();
 
-    vetsValues <- CreatorVETS(silent=silentText);
+    list2env(architectorVETS(Etype, Ttype, Stype, damped, nSeries),environment());
+    vetsValues <- callerVETS(silent=silentText);
 
 ##### Fit the model and produce forecast #####
     list2env(vetsValues,environment());

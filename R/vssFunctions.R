@@ -836,62 +836,10 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     else if(smoothType=="vets"){
         # Define common parameters
         parameters <- substr(parameters,1,1);
-        parametersCommonLevel <- any(parameters=="l");
-        parametersCommonTrend <- modelIsTrendy & any(parameters=="t");
-        parametersCommonSeasonal <- modelIsSeasonal & any(parameters=="s");
-        parametersCommonDamped <- modelIsTrendy & damped & any(parameters=="d");
         # Define common initials
         initials <- substr(initials,1,1);
-        initialsCommonLevel <- any(initials=="l");
-        initialsCommonTrend <- modelIsTrendy & any(initials=="t");
-        initialsCommonSeasonal <- modelIsSeasonal & any(initials=="s");
         # Defin common components
         components <- substr(components,1,1);
-        componentsCommonLevel <- any(components=="l");
-        componentsCommonTrend <- modelIsTrendy & any(components=="t");
-        componentsCommonSeasonal <- modelIsSeasonal & any(components=="s");
-
-        # If this is the model with common level, trend needs to be common as well
-        if(componentsCommonLevel){
-            componentsCommonTrend[] <- TRUE;
-        }
-
-        # Sanity checks. Make initials common if the respective components are
-        if(componentsCommonLevel && !initialsCommonLevel){
-            initialsCommonLevel[] <- TRUE;
-        }
-        if(componentsCommonTrend && !initialsCommonTrend){
-            initialsCommonTrend[] <- TRUE;
-        }
-        if(componentsCommonSeasonal && !initialsCommonSeasonal){
-            initialsCommonSeasonal[] <- TRUE;
-        }
-        if(componentsCommonTrend && !parametersCommonDamped){
-            parametersCommonDamped[] <- TRUE;
-        }
-
-        # Number of parameters in the model
-        nParametersLevel <- nSeries^(!parametersCommonLevel);
-        nParametersTrend <- modelIsTrendy*nSeries^(!parametersCommonTrend);
-        nParametersSeasonal <- modelIsSeasonal*nSeries^(!parametersCommonSeasonal);
-        nParametersDamped <- modelIsSeasonal*nSeries^(!parametersCommonDamped);
-
-        # Number of overall components in the model
-        nComponentsLevel <- nSeries^(!componentsCommonLevel);
-        nComponentsTrend <- modelIsTrendy*nSeries^(!componentsCommonTrend);
-        nComponentsSeasonal <- modelIsSeasonal*nSeries^(!componentsCommonSeasonal);
-
-        # Number of overall initials in the model
-        nInitialsLevel <- nSeries^(!initialsCommonLevel);
-        nInitialsTrend <- modelIsTrendy*nSeries^(!initialsCommonTrend);
-        nInitialsSeasonal <- modelIsSeasonal*nSeries^(!initialsCommonSeasonal);
-
-        nComponentsNonSeasonal <- nComponentsLevel + nComponentsTrend;
-        nComponentsAll <- nComponentsLevel + nComponentsTrend + nComponentsSeasonal;
-
-        nParamMax <-  nParamMax +
-            nParametersLevel + nParametersTrend + nParametersSeasonal + nParametersDamped +
-            nComponentsLevel + nComponentsTrend + nComponentsSeasonal;
     }
 
     ##### Loss function type #####
@@ -1110,31 +1058,9 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
         assign("seasonalType",seasonalType,ParentEnvironment);
     }
     else{
-        assign("parametersCommonLevel",parametersCommonLevel,ParentEnvironment);
-        assign("parametersCommonTrend",parametersCommonTrend,ParentEnvironment);
-        assign("parametersCommonSeasonal",parametersCommonSeasonal,ParentEnvironment);
-        assign("parametersCommonDamped",parametersCommonDamped,ParentEnvironment);
-
-        assign("nParametersLevel",nParametersLevel,ParentEnvironment);
-        assign("nParametersTrend",nParametersTrend,ParentEnvironment);
-        assign("nParametersSeasonal",nParametersSeasonal,ParentEnvironment);
-        assign("nParametersDamped",nParametersDamped,ParentEnvironment);
-
-        assign("initialsCommonLevel",initialsCommonLevel,ParentEnvironment);
-        assign("initialsCommonTrend",initialsCommonTrend,ParentEnvironment);
-        assign("initialsCommonSeasonal",initialsCommonSeasonal,ParentEnvironment);
-
-        assign("nInitialsLevel",nInitialsLevel,ParentEnvironment);
-        assign("nInitialsTrend",nInitialsTrend,ParentEnvironment);
-        assign("nInitialsSeasonal",nInitialsSeasonal,ParentEnvironment);
-
-        assign("componentsCommonLevel",componentsCommonLevel,ParentEnvironment);
-        assign("componentsCommonTrend",componentsCommonTrend,ParentEnvironment);
-        assign("componentsCommonSeasonal",componentsCommonSeasonal,ParentEnvironment);
-
-        assign("nComponentsLevel",nComponentsLevel,ParentEnvironment);
-        assign("nComponentsTrend",nComponentsTrend,ParentEnvironment);
-        assign("nComponentsSeasonal",nComponentsSeasonal,ParentEnvironment);
+        assign("parameters",parameters,ParentEnvironment);
+        assign("initials",initials,ParentEnvironment);
+        assign("components",components,ParentEnvironment);
     }
 
     assign("loss",loss,ParentEnvironment);

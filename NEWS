@@ -1,10 +1,11 @@
-legion v0.0.1 (Release data: 2021-03-20)
+legion v0.0.1 (Release data: 2021-04-01)
 =======
 
 Changes:
 * Imported ves() and vets() functions from smooth package.
 * We now have explicit lags parameter in ves() and vets().
-* First working version of vets()
+* First working version of vets().
+* architectorVETS in vets() - internal function needed for selector.
 
 Bugfixes:
 *
