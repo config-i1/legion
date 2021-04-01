@@ -706,11 +706,14 @@ initialiserVETS <- function(lagsModelMax, nSeries, modelIsTrendy, modelIsSeasona
     }
 
     # Initial level and trend
-    B[j+1:nComponentsNonSeasonal] <- initialValue;
-    BLower[j+1:nComponentsNonSeasonal] <- -Inf;
-    BUpper[j+1:nComponentsNonSeasonal] <- Inf;
+    B[j+1:nInitialsLevel] <- initialValue[1:nInitialsLevel];
+    BLower[j+1:nInitialsLevel] <- -Inf;
+    BUpper[j+1:nInitialsLevel] <- Inf;
     names(B)[j+1:nInitialsLevel] <- paste0("level",c(1:nInitialsLevel));
     if(modelIsTrendy){
+        B[j+nInitialsLevel+1:nInitialsTrend] <- initialValue[nInitialsLevel+1:nInitialsTrend];
+        BLower[j+nInitialsLevel+1:nInitialsTrend] <- -Inf;
+        BUpper[j+nInitialsLevel+1:nInitialsTrend] <- Inf;
         names(B)[j+nInitialsLevel+1:nInitialsTrend] <- paste0("trend",c(1:nInitialsTrend));
     }
     j[] <- j+nComponentsNonSeasonal;
