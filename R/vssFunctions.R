@@ -53,10 +53,12 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
 
     #### Check horizon ####
     if(h<=0){
-        warning(paste0("You have set forecast horizon equal to ",h,". We hope you know, what you are doing."),
+        warning(paste0("You have set forecast horizon equal to ",h,". We hope you know, what you ",
+                       "are doing."),
                 call.=FALSE);
         if(h<0){
-            warning("And by the way, we can't do anything with negative horizon, so we will set it equal to zero.",
+            warning("And by the way, we can't do anything with negative horizon, so we will set ",
+                    "it equal to zero.",
                     call.=FALSE);
             h <- 0;
         }
@@ -76,7 +78,8 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     }
 
     if(is.null(dim(y))){
-        stop("The provided data is not a matrix or a data.frame! If it is a vector, please use es() function instead.",
+        stop("The provided data is not a matrix or a data.frame! If it is a vector, please use ",
+             "es() function instead.",
              call.=FALSE);
     }
 
@@ -89,7 +92,8 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
 
     correlatedSeries <- cor(y)[upper.tri(cor(y))];
     if(any(correlatedSeries>0.999)){
-        warning("Some of series are almost perfectly correlated. This might cause difficulties in the estimation. ",
+        warning("Some of series are almost perfectly correlated. This might cause difficulties ",
+                "in the estimation. ",
                 "Please, try removing some of them if you encounter any problems.",
                 call.=FALSE);
     }
@@ -140,7 +144,8 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     # Number of parameters to estimate / provided
     parametersNumber <- matrix(0,2,4,
                                dimnames=list(c("Estimated","Provided"),
-                                             c("nParamInternal","nParamXreg","nParamIntermittent","nParamAll")));
+                                             c("nParamInternal","nParamXreg",
+                                               "nParamIntermittent","nParamAll")));
 
     ##### model for VES #####
     if(any(smoothType==c("ves","vets"))){
@@ -296,7 +301,8 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
         }
         else{
             if(occurrence=="n"){
-                warning("Sorry, but we cannot construct multiplicative model on non-positive data. Changing to additive.",
+                warning("Sorry, but we cannot construct multiplicative model on non-positive data. ",
+                        "Changing to additive.",
                         call.=FALSE);
                 Etype <- "A";
                 Ttype <- ifelse(Ttype=="M","A",Ttype);
@@ -338,14 +344,16 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
             if(is.character(persistenceValue)){
                 persistenceValue <- substring(persistenceValue[1],1,1);
                 if(all(persistenceValue!=c("c","i","d","s"))){
-                    warning("You asked for a strange persistence value. We don't do that here. Switching to group",
+                    warning("You asked for a strange persistence value. We don't do that here. ",
+                            "Switching to group",
                             call.=FALSE);
                     persistenceType <- "c";
                 }
                 else{
                     if(persistenceValue=="s" & Stype=="N"){
                         warning(paste0("Non-seasonal model is selected, but you've asked for common ",
-                                       "seasonal smoothing parameter. Switching to persistence='individual'."),
+                                       "seasonal smoothing parameter. ",
+                                       "Switching to persistence='individual'."),
                                 call.=FALSE);
                         persistenceValue <- "i";
                     }
@@ -437,7 +445,8 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
             if(is.character(transitionValue)){
                 transitionValue <- substring(transitionValue[1],1,1);
                 if(all(transitionValue!=c("c","i","d"))){
-                    warning("You asked for a strange transition value. We don't do that here. Switching to common",
+                    warning("You asked for a strange transition value. We don't do that here. ",
+                            "Switching to common",
                             call.=FALSE);
                     transitionType <- "c";
                 }
@@ -452,7 +461,8 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
                     warning(paste0("Length of transition matrix is wrong! It should be either ",
                                    (nSeries*nComponentsAll)^2, " or ", nComponentsAll^2,
                                    " instead of ",length(transitionValue),".\n",
-                                   "Values of transition matrix will be estimated as a common one."),call.=FALSE);
+                                   "Values of transition matrix will be estimated as a common one."),
+                            call.=FALSE);
                     transitionValue <- NULL;
                     transitionType <- "c";
                     transitionEstimate <- FALSE;
@@ -527,7 +537,8 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
             }
             else if(!is.numeric(transitionValue)){
                 warning(paste0("transition matrix is not numeric!\n",
-                               "Values of transition vector will be estimated as a common group."),call.=FALSE);
+                               "Values of transition vector will be estimated as a common group."),
+                        call.=FALSE);
                 transitionValue <- NULL;
                 transitionType <- "c";
                 transitionEstimate <- FALSE;
@@ -554,7 +565,8 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
                     if(is.character(dampedValue)){
                         dampedValue <- substring(dampedValue[1],1,1);
                         if(all(dampedValue!=c("i","c"))){
-                            warning("You asked for a strange phi value. We don't do that here. Switching to common.",
+                            warning("You asked for a strange phi value. We don't do that here. ",
+                                    "Switching to common.",
                                     call.=FALSE);
                             dampedType <- "c";
                         }
@@ -569,7 +581,8 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
                             warning(paste0("Length of phi vector is wrong! It should be ",
                                            nSeries,
                                            " instead of ",length(dampedValue),".\n",
-                                           "Values of phi vector will be estimated as a common one."),call.=FALSE);
+                                           "Values of phi vector will be estimated as a common one."),
+                                    call.=FALSE);
                             dampedValue <- matrix(1,nSeries,1);
                             dampedType <- "c";
                             dampedEstimate <- TRUE;
@@ -583,7 +596,8 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
                     }
                     else if(!is.numeric(dampedValue)){
                         warning(paste0("phi vector is not numeric!\n",
-                                       "Values of phi vector will be estimated as a common one."),call.=FALSE);
+                                       "Values of phi vector will be estimated as a common one."),
+                                call.=FALSE);
                         dampedValue <- matrix(1,nSeries,1);
                         dampedType <- "c";
                         dampedEstimate <- TRUE;
@@ -624,7 +638,8 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
             if(is.character(initialValue)){
                 initialValue <- substring(initialValue[1],1,1);
                 if(all(initialValue!=c("i","c"))){
-                    warning("You asked for a strange initial value. We don't do that here. Switching to individual.",
+                    warning("You asked for a strange initial value. We don't do that here. ",
+                            "Switching to individual.",
                             call.=FALSE);
                     initialType <- "i";
                 }
@@ -694,18 +709,21 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
                 if(is.character(seasonalType)){
                     seasonalType <- substring(seasonalType[1],1,1);
                     if(all(seasonalType!=c("i","c"))){
-                        warning("You asked for a strange seasonal value. We don't do that here. Switching to individual.",
+                        warning("You asked for a strange seasonal value. We don't do that here. ",
+                                "Switching to individual.",
                                 call.=FALSE);
                         seasonalType <- "i";
                     }
                     else if(seasonalType=="c"){
                         if(Stype=="N"){
-                            warning("Common seasonal model does not make sense with the non-seasonal ETS. Changing to individual",
+                            warning("Common seasonal model does not make sense with the non-seasonal ",
+                                    "ETS. Changing to individual",
                                     call.=FALSE);
                             seasonalType <- "i";
                         }
                         else{
-                            # If the transition matrix provide is full, cut off all the seasonals except for the first one.
+                            # If the transition matrix provide is full, cut off all the seasonals
+                            # except for the first one.
                             if(transitionType=="p" && nrow(transitionValue)==nSeries*nComponentsAll){
                                 warning(paste0("The transition matrix you provided contains too many rows ",
                                                "for the common seasonal model.",
@@ -745,13 +763,15 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
                 if(is.character(initialSeasonValue)){
                     initialSeasonValue <- substring(initialSeasonValue[1],1,1);
                     if(all(initialSeasonValue!=c("i","c"))){
-                        warning("You asked for a strange initialSeason value. We don't do that here. Switching to common",
+                        warning("You asked for a strange initialSeason value. We don't do that here. ",
+                                "Switching to common",
                                 call.=FALSE);
                         initialSeasonType <- "c";
                     }
                     else{
                         if(seasonalType=="c" && initialSeasonValue=="i"){
-                            warning("initialSeason='i' does not work with seasonalType='c'. Switching to common.",
+                            warning("initialSeason='i' does not work with seasonalType='c'. ",
+                                    "Switching to common.",
                                     call.=FALSE);
                             initialSeasonValue <- "c";
                         }
@@ -764,7 +784,8 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
                     if(all(length(initialSeasonValue)!=c(dataFreq,dataFreq*nSeries))){
                         warning(paste0("The length of initialSeason is wrong! ",
                                        "It should correspond to the frequency of the data.",
-                                       "Values of initialSeason will be estimated as a common one."),call.=FALSE);
+                                       "Values of initialSeason will be estimated as a common one."),
+                                call.=FALSE);
                         initialSeasonValue <- NULL;
                         initialSeasonType <- "c";
                         initialSeasonEstimate <- TRUE;
@@ -788,7 +809,8 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
                 }
                 else if(!is.numeric(initialSeasonValue)){
                     warning(paste0("Initial vector is not numeric!\n",
-                                   "Values of initialSeason vector will be estimated as a common one."),call.=FALSE);
+                                   "Values of initialSeason vector will be estimated as a common one."),
+                            call.=FALSE);
                     initialSeasonValue <- NULL;
                     initialSeasonType <- "c";
                     initialSeasonEstimate <- TRUE;
@@ -875,7 +897,8 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     ##### Loss function type #####
     loss <- loss[1];
     if(!any(loss==c("likelihood","diagonal","trace","l","d","t"))){
-        warning(paste0("Strange loss function specified: ",loss,". Switching to 'likelihood'."),call.=FALSE);
+        warning(paste0("Strange loss function specified: ",loss,". Switching to 'likelihood'."),
+                call.=FALSE);
         loss <- "likelihood";
     }
     loss <- substr(loss,1,1);
@@ -894,7 +917,8 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     ##### Information Criteria #####
     ic <- ic[1];
     if(all(ic!=c("AICc","AIC","BIC","BICc"))){
-        warning(paste0("Strange type of information criteria defined: ",ic,". Switching to 'AICc'."),call.=FALSE);
+        warning(paste0("Strange type of information criteria defined: ",ic,". Switching to 'AICc'."),
+                call.=FALSE);
         ic <- "AICc";
     }
 
@@ -911,8 +935,10 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
         }
     }
 
-    if(all(intervalType!=c("c","u","i","l","n","none","conditional","unconditional","individual","likelihood"))){
-        warning(paste0("Wrong type of interval: '",intervalType, "'. Switching to 'conditional'."),call.=FALSE);
+    if(all(intervalType!=c("c","u","i","l","n","none","conditional","unconditional",
+                           "individual","likelihood"))){
+        warning(paste0("Wrong type of interval: '",intervalType, "'. Switching to 'conditional'."),
+                call.=FALSE);
         intervalType <- "c";
     }
 
@@ -1173,7 +1199,8 @@ vICFunction <- function(nParam=nParam,B,Etype=Etype){
     coefAIC <- 2*nParamPerSeries - 2*llikelihood;
     coefBIC <- log(obsInSample)*nParamPerSeries - 2*llikelihood;
 
-    # max here is needed in order to take into account cases with higher number of parameters than observations
+    # max here is needed in order to take into account cases with higher number
+    # of parameters than observations
     coefAICc <- ((2*obsInSample*(nParamPerSeries*nSeries + nSeries*(nSeries+1)/2)) /
                                  max(obsInSample - (nParamPerSeries + nSeries + 1),0)) -2*llikelihood;
 
@@ -1311,13 +1338,15 @@ vssIntervals <- function(level=0.95, intervalType=c("c","u","i","l"), Sigma=NULL
                 selectionMat[,lagsModel>chuncksOfHorizon[j]] <- i;
 
                 matrixOfVarianceOfStatesLagged[elementsNew,
-                                               elementsNew] <- matrixOfVarianceOfStates[cbind(rep(c(1:nElements),
-                                                                                                  each=nElements),
-                                                                                              rep(c(1:nElements),
-                                                                                                  nElements),
-                                                                                              i - c(selectionMat))];
+                                               elementsNew] <- matrixOfVarianceOfStates[
+                                                   cbind(rep(c(1:nElements),
+                                                             each=nElements),
+                                                         rep(c(1:nElements),
+                                                             nElements),
+                                                         i - c(selectionMat))];
 
-                matrixOfVarianceOfStates[,,i] <- (transitionNew %*% matrixOfVarianceOfStatesLagged %*% t(transitionNew) +
+                matrixOfVarianceOfStates[,,i] <- (transitionNew %*%
+                                                      matrixOfVarianceOfStatesLagged %*% t(transitionNew) +
                                                       persistence %*% Sigma %*% t(persistence));
                 varVec[i,,] <- measurementNew %*% matrixOfVarianceOfStatesLagged %*% t(measurementNew) + Sigma;
                 if(cumulative){
@@ -1327,7 +1356,8 @@ vssIntervals <- function(level=0.95, intervalType=c("c","u","i","l"), Sigma=NULL
         }
 
         if(cumulative){
-            varVec <- apply(varVec,c(2,3),sum) + 2*Sigma %*% apply(covarVec*array(c(0,h:2),c(h,nSeries,nSeries)),
+            varVec <- apply(varVec,c(2,3),sum) + 2*Sigma %*% apply(covarVec*array(c(0,h:2),
+                                                                                  c(h,nSeries,nSeries)),
                                                                    c(2,3),sum);
         }
     }
@@ -1392,7 +1422,8 @@ vssForecaster <- function(...){
     PI <- NA;
 
     if(h>0){
-        yForecast[] <- vForecasterWrap(matrix(matVt[,(obsInSample+1):(obsInSample+lagsModelMax)],ncol=lagsModelMax),
+        yForecast[] <- vForecasterWrap(matrix(matVt[,(obsInSample+1):(obsInSample+lagsModelMax)],
+                                              ncol=lagsModelMax),
                                      matF, matW, nSeries, h, Etype, Ttype, Stype, lagsModel);
 
         if(cumulative){
