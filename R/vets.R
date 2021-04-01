@@ -215,8 +215,10 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
 ##### Basic VETS architector
 ### This function will accept Etype, Ttype, Stype and damped and would return:
 # nComponentsNonSeasonal, nComponentsAll, lagsModelMax, modelIsSeasonal, modelIsTrendy, obsStates
+# and all the variables for PIC part of the model
 # This is needed for model selection
-# architectorVETS <- function(...){}
+# architectorVETS <- function(Etype, Ttype, Stype, damped, nSeries){
+# }
 
 ##### Basic matrices creator #####
     # This thing returns matVt, matF, matG, matW, dampedValue, initialValue
