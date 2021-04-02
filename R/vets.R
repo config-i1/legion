@@ -252,11 +252,11 @@ architectorVETS <- function(Etype, Ttype, Stype, damped, nSeries){
     if(componentsCommonTrend && !initialsCommonTrend){
         initialsCommonTrend[] <- TRUE;
     }
-    if(componentsCommonSeasonal && !initialsCommonSeasonal){
-        initialsCommonSeasonal[] <- TRUE;
-    }
     if(componentsCommonTrend && !parametersCommonDamped){
         parametersCommonDamped[] <- TRUE;
+    }
+    if(componentsCommonSeasonal && !initialsCommonSeasonal){
+        initialsCommonSeasonal[] <- TRUE;
     }
 
     # Number of parameters in the model
