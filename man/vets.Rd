@@ -19,11 +19,11 @@ observations are in rows.}
 
 \item{model}{The type of ETS model. Can consist of 3 or 4 chars: \code{ANN},
 \code{AAN}, \code{AAdN}, \code{AAA}, \code{AAdA}, \code{MMdM} etc.
-\code{ZZZ} means that the model will be selected based on the chosen
+\code{PPP} means that the best pure model will be selected based on the chosen
 information criteria type.
 ATTENTION! ONLY PURE ADDITIVE AND PURE MULTIPLICATIVE MODELS ARE
 AVAILABLE!
-Pure multiplicative models are done as additive model applied to log(data).
+Pure multiplicative models are done as additive model applied to log(y).
 
 Also \code{model} can accept a previously estimated VETS model and use all its
 parameters.}
@@ -252,6 +252,9 @@ vets(Y,model="ANN",h=10,holdout=TRUE)
 # and initial seasonal indices
 vets(Y,model="MMdM",h=10,holdout=TRUE,parameters=c("l","t","s","d"),
      initials="seasonal")
+
+# Automatic selection of ETS components
+vets(Y, model="PPP", h=10, holdout=TRUE, initials="seasonal")
 
 }
 \references{

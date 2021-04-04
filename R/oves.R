@@ -65,11 +65,11 @@
 #' @seealso \code{\link[smooth]{oes}, \link[legion]{ves}}
 #' @examples
 #'
-#'     Y <- cbind(c(rpois(25,0.1),rpois(25,0.5),rpois(25,1),rpois(25,5)),
-#'                c(rpois(25,0.1),rpois(25,0.5),rpois(25,1),rpois(25,5)))
+#' Y <- cbind(c(rpois(25,0.1),rpois(25,0.5),rpois(25,1),rpois(25,5)),
+#'            c(rpois(25,0.1),rpois(25,0.5),rpois(25,1),rpois(25,5)))
 #'
-#'     oves(Y, occurrence="l")
-#'     oves(Y, occurrence="l", probability="i")
+#' oves(Y, occurrence="l")
+#' oves(Y, occurrence="l", probability="i")
 #'
 #' @importFrom smooth oes
 #' @export oves

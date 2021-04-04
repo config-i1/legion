@@ -72,6 +72,8 @@ List vFitter(arma::mat const &matrixY, arma::mat &matrixV, arma::mat const &matr
         /* # Measurement equation and the error term */
         matrixYfit.col(i-maxlag) = matrixO.col(i-maxlag) % vFittedValue(matrixW, matrixV(lagrows), E);
         matrixE.col(i-maxlag) = vErrorValue(matrixY.col(i-maxlag), matrixYfit.col(i-maxlag), E);
+        // Substitute inf with zero. This might happen for occurrence model
+        matrixE.elem(find_nonfinite(matrixE)).fill(0);
 
         /* # Transition equation */
         matrixV.col(i) = matrixF * matrixV(lagrows) + matrixG * matrixE.col(i-maxlag);

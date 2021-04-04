@@ -6,6 +6,7 @@ Changes:
 * We now have explicit lags parameter in ves() and vets().
 * First working version of vets().
 * architectorVETS in vets() - internal function needed for selector.
+* vets() and ves() now support model selection.
 
 Bugfixes:
 *

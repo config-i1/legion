@@ -21,13 +21,13 @@ observations are in rows.}
 
 \item{model}{The type of ETS model. Can consist of 3 or 4 chars: \code{ANN},
 \code{AAN}, \code{AAdN}, \code{AAA}, \code{AAdA}, \code{MMdM} etc.
-\code{ZZZ} means that the model will be selected based on the chosen
+\code{PPP} means that the best pure model will be selected based on the chosen
 information criteria type.
 ATTENTION! ONLY PURE ADDITIVE AND PURE MULTIPLICATIVE MODELS ARE
-AVAILABLE + NO MODEL SELECTION IS AVAILABLE AT THIS STAGE!
-Pure multiplicative models are done as additive model applied to log(data).
+AVAILABLE!
+Pure multiplicative models are done as additive model applied to log(y).
 
-Also \code{model} can accept a previously estimated VES model and use all its
+Also \code{model} can accept a previously estimated VETS model and use all its
 parameters.}
 
 \item{lags}{The lags of the model. Needed for seasonal models.}
@@ -283,10 +283,13 @@ ves(Y,model="AAdN",persistence="d",h=10,holdout=TRUE)
 # Multiplicative damped trend model with individual phi
 ves(Y,model="MMdM",persistence="i",h=10,holdout=TRUE,initialSeason="c")
 
+# Automatic selection between pure models
+ves(Y,model="PPP",persistence="i",h=10,holdout=TRUE,initialSeason="c")
+
+# Intermittent demand vector model
 Y <- cbind(c(rpois(25,0.1),rpois(25,0.5),rpois(25,1),rpois(25,5)),
            c(rpois(25,0.1),rpois(25,0.5),rpois(25,1),rpois(25,5)))
 
-# Intermittent VES with logistic probability
 ves(Y,model="MNN",h=10,holdout=TRUE,occurrence="l")
 
 }

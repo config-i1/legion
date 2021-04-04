@@ -1,8 +1,8 @@
 Package: legion
 Type: Package
 Title: Forecasting Using Multivariate Models
-Version: 0.0.1.41004
-Date: 2021-04-01
+Version: 0.0.1.41005
+Date: 2021-04-04
 Authors@R: c(person("Ivan", "Svetunkov", email = "ivan@svetunkov.ru", role = c("aut", "cre"),
                   comment="Lecturer at Centre for Marketing Analytics and Forecasting, Lancaster University, UK"),
              person("Kandrika Fadhlan", "Pritularga", email = "k.pritularga@lancaster.ac.uk", role = c("aut"),

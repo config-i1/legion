@@ -155,74 +155,91 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
                  call.=FALSE);
         }
 
-        # If chosen model is "AAdN" or anything like that, we are taking the appropriate values
-        if(nchar(model)==4){
-            Etype <- substring(model,1,1);
-            Ttype <- substring(model,2,2);
-            Stype <- substring(model,4,4);
-            damped <- TRUE;
-            if(substring(model,3,3)!="d"){
+        if(length(model)==1){
+            # If chosen model is "AAdN" or anything like that, we are taking the appropriate values
+            if(nchar(model)==4){
+                Etype <- substring(model,1,1);
+                Ttype <- substring(model,2,2);
+                Stype <- substring(model,4,4);
+                damped <- TRUE;
+                if(substring(model,3,3)!="d"){
+                    warning(paste0("You have defined a strange model: ",model));
+                    sowhat(model);
+                    model <- paste0(Etype,Ttype,"d",Stype);
+                }
+                modelDo <- "estimate";
+            }
+            else if(nchar(model)==3){
+                Etype <- substring(model,1,1);
+                Ttype <- substring(model,2,2);
+                Stype <- substring(model,3,3);
+                damped <- FALSE;
+                modelDo <- "estimate";
+            }
+            else{
                 warning(paste0("You have defined a strange model: ",model));
                 sowhat(model);
-                model <- paste0(Etype,Ttype,"d",Stype);
+                warning("Switching to 'PPP'");
+                model <- "PPP";
+
+                Etype <- "P";
+                Ttype <- "P";
+                Stype <- "P";
+                damped <- TRUE;
+                modelDo <- "select";
             }
-        }
-        else if(nchar(model)==3){
-            Etype <- substring(model,1,1);
-            Ttype <- substring(model,2,2);
-            Stype <- substring(model,3,3);
-            damped <- FALSE;
+            modelsPool <- NULL;
         }
         else{
-            warning(paste0("You have defined a strange model: ",model));
-            sowhat(model);
-            warning("Switching to 'ZZZ'");
-            model <- "ZZZ";
-
-            Etype <- "Z";
-            Ttype <- "Z";
-            Stype <- "Z";
+            modelsPool <- model;
+            Etype <- "P";
+            Ttype <- "P";
+            Stype <- "P";
             damped <- TRUE;
+            modelDo <- "select";
+        }
+
+        if((any(Etype==c("P","X","Y")) || any(Ttype==c("P","X","Y")) || any(Stype==c("P","X","Y")))){
+            modelDo[] <- "select";
         }
 
         #### Check error type ####
-        if(all(Etype!=c("A","M","L"))){
-            warning(paste0("Wrong error type: ",Etype,". Should be 'A' or 'M'.\n",
-                           "Changing to 'A'"),
+        if(all(Etype!=c("A","M","L","P","X","Y"))){
+            warning(paste0("Wrong error type: ",Etype,". Should be 'A', 'M', 'P', 'X' or 'Y'.\n",
+                           "Changing to 'P'"),
                     call.=FALSE);
+            Etype <- "P";
+        }
+        else if(Etype=="X"){
             Etype <- "A";
+        }
+        else if(Etype=="Y"){
+            Etype <- "M";
         }
 
         #### Check trend type ####
-        if(all(Ttype!=c("N","A","M"))){
-            warning(paste0("Wrong trend type: ",Ttype,". Should be 'N', 'A' or 'M'.\n",
-                           "Changing to 'A'"),
+        if(all(Ttype!=c("N","A","M","Z","P","X","Y"))){
+            warning(paste0("Wrong trend type: ",Ttype,". Should be 'N', 'A', 'M', 'P', 'X' or 'Y'.\n",
+                           "Changing to 'P'"),
                     call.=FALSE);
-            Ttype <- "A";
+            Ttype <- "P";
         }
 
         #### Check seasonality type ####
-        # Check if the data is ts-object
-        if(!is.ts(y) & Stype!="N"){
-            warning("The provided data is not ts object. Only non-seasonal models are available.");
-            Stype <- "N";
-            substr(model,nchar(model),nchar(model)) <- "N";
-        }
-
         # Check if seasonality makes sense
-        if(all(Stype!=c("N","A","M"))){
-            warning(paste0("Wrong seasonality type: ",Stype,". Should be 'N', 'A' or 'M'.",
-                           "Setting to 'A'."),
+        if(all(Stype!=c("N","A","M","Z","P","X","Y"))){
+            warning(paste0("Wrong seasonality type: ",Stype,". Should be 'N', 'A', 'M', 'P', 'X' or 'Y'.",
+                           "Setting to 'P'."),
                     call.=FALSE);
             if(dataFreq==1){
                 Stype <- "N";
             }
             else{
-                Stype <- "A";
+                Stype <- "P";
             }
         }
         if(Stype!="N" & dataFreq==1){
-            warning(paste0("Cannot build the seasonal model on data with frequency 1.\n",
+            warning(paste0("Cannot build the seasonal model on data with frequency 1. ",
                            "Switching to non-seasonal model: ETS(",substring(model,1,nchar(model)-1),"N)"),
                     call.=FALSE);
             Stype <- "N";
@@ -235,10 +252,6 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
         else{
             modelIsSeasonal <- TRUE;
         }
-
-        # if(any(c(Etype,Ttype,Stype)=="Z")){
-        #     stop("Sorry we don't do model selection for VES yet.", call.=FALSE);
-        # }
 
         lagsModelMax <- dataFreq * modelIsSeasonal + 1 * (!modelIsSeasonal);
 
@@ -286,40 +299,60 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
         occurrence <- "n";
         occurrenceModelProvided <- FALSE;
     }
+    # Boolean for the occurrence
+    if(occurrence=="n"){
+        occurrenceModel <- FALSE;
+    }
+    else{
+        occurrenceModel <- TRUE;
+    }
+
+    # Check if multiplicative models can be fitted
+    allowMultiplicative <- !((any(yInSample<=0) && !occurrenceModel) || (occurrenceModel && any(yInSample<0)));
+    modelIsMultiplicative <- FALSE;
 
     # Check if multiplicative model can be applied
-    if(any(c(Etype,Ttype,Stype)=="M")){
-        if(all(yInSample>0)){
-            if(any(c(Etype,Ttype,Stype)=="A")){
+    if(any(c(Etype,Ttype,Stype) %in% c("M","P","Y"))){
+        if(allowMultiplicative){
+            if(any(c(Etype,Ttype,Stype) %in% c("A","X"))){
                 warning("Mixed models are not available. Switching to pure multiplicative.",call.=FALSE);
+                Etype <- switch(Etype,
+                                "A"="M",
+                                "X"="Y",
+                                Etype);
+                Ttype <- switch(Ttype,
+                                "A"="M",
+                                "X"="Y",
+                                Ttype);
+                Stype <- switch(Stype,
+                                "A"="M",
+                                "X"="Y",
+                                Stype);
             }
-            yInSample <- log(yInSample);
-            Etype <- "M";
-            Ttype <- ifelse(Ttype=="A","M",Ttype);
-            Stype <- ifelse(Stype=="A","M",Stype);
-            modelIsMultiplicative <- TRUE;
+            # If the components are non-additive, then the model is multiplicative
+            # if(all(c(Etype,Ttype,Stype)!="A") || all(c(Etype,Ttype,Stype)!="X")){
+            #     yInSample <- log(yInSample);
+            #     modelIsMultiplicative[] <- TRUE;
+            # }
         }
         else{
-            if(occurrence=="n"){
+            if(!occurrenceModel){
                 warning("Sorry, but we cannot construct multiplicative model on non-positive data. ",
                         "Changing to additive.",
                         call.=FALSE);
                 Etype <- "A";
-                Ttype <- ifelse(Ttype=="M","A",Ttype);
-                Stype <- ifelse(Stype=="M","A",Stype);
-                modelIsMultiplicative <- FALSE;
+                Ttype <- switch(Ttype,"M"="A","Y"=,"P"="X",Ttype);
+                Stype <- switch(Stype,"M"="A","Y"=,"P"="X",Stype);
+                modelIsMultiplicative[] <- FALSE;
             }
             else{
-                yInSample[ot==1] <- log(yInSample[ot==1]);
+                # yInSample[ot==1] <- log(yInSample[ot==1]);
                 Etype <- "M";
                 Ttype <- ifelse(Ttype=="A","M",Ttype);
                 Stype <- ifelse(Stype=="A","M",Stype);
-                modelIsMultiplicative <- TRUE;
+                modelIsMultiplicative[] <- TRUE;
             }
         }
-    }
-    else{
-        modelIsMultiplicative <- FALSE;
     }
 
     # Binaries for trend and seasonal
@@ -1022,17 +1055,19 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     assign("parametersNumber",parametersNumber,ParentEnvironment);
 
     assign("model",model,ParentEnvironment);
-    # assign("modelsPool",modelsPool,ParentEnvironment);
+    assign("modelsPool",modelsPool,ParentEnvironment);
     assign("Etype",Etype,ParentEnvironment);
     assign("Ttype",Ttype,ParentEnvironment);
     assign("Stype",Stype,ParentEnvironment);
     assign("lagsModelMax",lagsModelMax,ParentEnvironment);
     assign("modelIsTrendy",modelIsTrendy,ParentEnvironment);
     assign("modelIsSeasonal",modelIsSeasonal,ParentEnvironment);
+    assign("allowMultiplicative",allowMultiplicative,ParentEnvironment);
     assign("modelIsMultiplicative",modelIsMultiplicative,ParentEnvironment);
     assign("nComponentsAll",nComponentsAll,ParentEnvironment);
     assign("nComponentsNonSeasonal",nComponentsNonSeasonal,ParentEnvironment);
     assign("damped",damped,ParentEnvironment);
+    assign("modelDo",modelDo,ParentEnvironment);
 
     if(smoothType=="ves"){
         assign("persistenceValue",persistenceValue,ParentEnvironment);
@@ -1100,16 +1135,8 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
 
 ##### *Likelihood function* #####
 vLikelihoodFunction <- function(B){
-    if(Etype=="A"){
-        return(- obsInSample/2 * (nSeries*log(2*pi*exp(1)) + CF(B)));
-    }
-    else if(Etype=="M"){
-        return(- obsInSample/2 * (nSeries*log(2*pi*exp(1)) + CF(B)) - sum(yInSample));
-    }
-    else{
-        #### This is not derived yet ####
-        return(- obsInSample/2 * (nSeries*log(2*pi*exp(1)) + CF(B)));
-    }
+    return(- obsInSample/2 * (nSeries*log(2*pi*exp(1)) + CF(B)) -
+               switch(Etype,"M"=sum(log(yInSample[ot==1])),0));
 }
 
 ##### *Function calculates ICs* #####
@@ -1145,13 +1172,14 @@ vssFitter <- function(...){
     ellipsis <- list(...);
     ParentEnvironment <- ellipsis[['ParentEnvironment']];
 
-    fitting <- vFitterWrap(yInSample, matVt, matF, matW, matG,
+    fitting <- vFitterWrap(switch(Etype, "M"=log(yInSample), yInSample),
+                           matVt, matF, matW, matG,
                            lagsModel, Etype, Ttype, Stype, ot);
     matVt[] <- fitting$matVt;
     yFitted[] <- fitting$yfit;
     errors[] <- fitting$errors;
 
-    if(modelIsMultiplicative){
+    if(Etype=="M"){
         yFitted <- exp(yFitted);
         if(occurrence!="n"){
             yFitted[ot==0] <- 0;
@@ -1381,7 +1409,7 @@ vssForecaster <- function(...){
                 call.=FALSE);
     }
 
-    if(modelIsMultiplicative){
+    if(Etype=="M"){
         yForecast[] <- exp(yForecast);
         PI[] <- exp(PI);
     }
