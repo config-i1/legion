@@ -283,11 +283,11 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
                                lagsModel, Etype, Ttype, Stype, ot);
 
         # Calculate the loss
-        if(loss=="l"){
+        if(loss=="likelihood"){
             cfRes <- suppressWarnings(log(det((fitting$errors / normalizer) %*% t(fitting$errors / normalizer) / otObs)) +
                                           nSeries * log(normalizer^2));
         }
-        else if(loss=="d"){
+        else if(loss=="diagonal"){
             cfRes <- sum(log(apply(fitting$errors^2, 2, sum) / obsInSample));
         }
         else{
@@ -999,7 +999,7 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
         names(B) <- BList$BNames;
 
         # First part is for the covariance matrix
-        if(loss=="l"){
+        if(loss=="likelihood"){
             nParam <- nSeries * (nSeries + 1) / 2 + length(B);
         }
         else{
@@ -1187,10 +1187,10 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
 
             # Number of parameters
             # First part is for the covariance matrix
-            if(loss=="l"){
+            if(loss=="likelihood"){
                 nParam <- nSeries * (nSeries + 1) / 2;
             }
-            else if(loss=="d"){
+            else if(loss=="diagonal"){
                 nParam <- nSeries;
             }
             else{
@@ -1382,16 +1382,13 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
         PI <-  ts(PI,start=yForecastStart,frequency=dataFreq);
     }
 
-    if(loss=="l"){
-        loss <- "likelihood";
+    if(loss=="likelihood"){
         parametersNumber[1,1] <- parametersNumber[1,1] + nSeries * (nSeries + 1) / 2;
     }
-    else if(loss=="d"){
-        loss <- "diagonal";
+    else if(loss=="diagonal"){
         parametersNumber[1,1] <- parametersNumber[1,1] + nSeries;
     }
     else{
-        loss <- "trace";
         parametersNumber[1,1] <- parametersNumber[1,1] + nSeries;
     }
 

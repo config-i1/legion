@@ -876,16 +876,10 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     }
 
     ##### Loss function type #####
-    loss <- loss[1];
-    if(!any(loss==c("likelihood","diagonal","trace","l","d","t"))){
-        warning(paste0("Strange loss function specified: ",loss,". Switching to 'likelihood'."),
-                call.=FALSE);
-        loss <- "likelihood";
-    }
-    loss <- substr(loss,1,1);
+    loss <- match.arg(loss, c("likelihood","diagonal","trace"));
 
     # If it is likelihood, we also need to estimate the full covariance matrix
-    if(loss=="l"){
+    if(loss=="likelihood"){
         nParamMax <- nParamMax + nSeries;
     }
     # Otherwise, these are just variances of the data

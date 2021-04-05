@@ -85,10 +85,10 @@ utils::globalVariables(c("mvrnorm"));
 #' \dontrun{VESAAA <- sim.ves(model="AAA",frequency=4,obs=40,nSeries=3,
 #'                    randomizer="rnorm",mean=0,sd=100)}
 #'
-#' # You can also use mvrnorm function from MASS package as randomizer,
+#' # You can also use rmvnorm function from mvtnorm package as randomizer,
 #' # but you need to provide mu and Sigma explicitly
 #' \dontrun{VESANN <- sim.ves(model="ANN",frequency=4,obs=40,nSeries=2,
-#'                    randomizer="mvrnorm",mu=c(100,50),Sigma=matrix(c(40,20,20,30),2,2))}
+#'                    randomizer="rmvnorm",mu=c(100,50),sigma=matrix(c(40,20,20,30),2,2))}
 #'
 #' # When generating the data with multiplicative model a more diligent definitiion
 #' # of parameters is needed. Here's an example with MMM model:
@@ -101,6 +101,7 @@ utils::globalVariables(c("mvrnorm"));
 #' # definitely be less than 0.1. Otherwise you might face the explosions.
 #'
 #' @importFrom greybox rlaplace rs
+#' @importFrom mvtnorm rmvnorm
 #' @export sim.ves
 sim.ves <- function(model="ANN", obs=10, nsim=1, nSeries=2,
                     frequency=1, persistence=NULL, phi=1,
@@ -109,7 +110,7 @@ sim.ves <- function(model="ANN", obs=10, nsim=1, nSeries=2,
                     seasonal=c("individual, common"),
                     weights=rep(1/nSeries,nSeries),
                     bounds=c("usual","admissible","restricted"),
-                    randomizer=c("rnorm","rt","rlaplace","rs"),
+                    randomizer=c("rnorm","rmvnorm","rt","rlaplace","rs"),
                     ...){
     # Function generates data using VES model.
     #    Copyright (C) 2018 - Inf Ivan Svetunkov
