@@ -747,6 +747,11 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
         return(list(B=B,BLower=BLower,BUpper=BUpper));
     }
 
+    ##### Calculation of scale #####
+    scalerVETS <- function(distribution="dnorm", Etype, obsInSample, other=NULL,
+                           errors, yFitted=NULL, normalizer=1){
+    }
+
     ##### Cost Function for VETS #####
     CF <- function(B){
         elements <- fillerVETS(matVt, matF, matG, matW, B,

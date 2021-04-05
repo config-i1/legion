@@ -107,7 +107,7 @@ Function generates data using VES model as a data generating process.
 # You can also use mvrnorm function from MASS package as randomizer,
 # but you need to provide mu and Sigma explicitly
 \dontrun{VESANN <- sim.ves(model="ANN",frequency=4,obs=40,nSeries=2,
-                   randomizer="mvrnorm",mu=c(100,50),Sigma=matrix(c(40,20,20,30),2,2))}
+                   randomizer="mvrnorm",mu=c(100,50),sigma=matrix(c(40,20,20,30),2,2))}
 
 # When generating the data with multiplicative model a more diligent definitiion
 # of parameters is needed. Here's an example with MMM model:

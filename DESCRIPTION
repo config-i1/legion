@@ -25,7 +25,6 @@ Imports:
     grDevices,
     pracma,
     statmod,
-    mvtnorm,
     nloptr,
     utils,
     zoo

@@ -444,3 +444,9 @@ summary.legion <- function(object, ...){
 summary.oves <- function(object, ...){
     print(object);
 }
+
+#### Residuals ####
+#' @export
+residuals.legion <- function(object, ...){
+    return(object$residuals);
+}
