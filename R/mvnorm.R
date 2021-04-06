@@ -1,6 +1,6 @@
 #' @importFrom stats dnorm
 # @export
-dmvnorm <- function(q, mean=0, Sigma=1, log=FALSE){
+dmvnormInternal <- function(q, mean=0, Sigma=1, log=FALSE){
     # The function returns PDF of multivariate normal distribution
     # q should contain obs in columns and series in rows
     if(!is.null(ncol(q))){
@@ -15,7 +15,7 @@ dmvnorm <- function(q, mean=0, Sigma=1, log=FALSE){
     #     mean <- matrix(mean,nSeries,obs,byrow=TRUE);
     # }
     # Take invert. If it doesn't work, return NAs
-    SigmaInv <- try(chol2inv(chol(Sigma)));
+    SigmaInv <- try(chol2inv(chol(Sigma)), silent=TRUE);
     if(inherits(SigmaInv,"try-error")){
         SigmaInv <- try(solve(Sigma, diag(nSeries), tol=1e-20), silent=TRUE);
         if(inherits(SigmaInv,"try-error")){

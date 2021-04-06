@@ -7,7 +7,8 @@ Changes:
 * First working version of vets().
 * architectorVETS in vets() - internal function needed for selector.
 * vets() and ves() now support model selection.
-* vets() now has proper likelihood estimation and implementation of multiplicative error model.
+* vets() now has a proper likelihood estimation and implementation of multiplicative error model.
+* ves() now also has a proper MLE.
 
 Bugfixes:
 *

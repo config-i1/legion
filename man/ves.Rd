@@ -27,7 +27,7 @@ ATTENTION! ONLY PURE ADDITIVE AND PURE MULTIPLICATIVE MODELS ARE
 AVAILABLE!
 Pure multiplicative models are done as additive model applied to log(y).
 
-Also \code{model} can accept a previously estimated VETS model and use all its
+Also \code{model} can accept a previously estimated VES model and use all its
 parameters.}
 
 \item{lags}{The lags of the model. Needed for seasonal models.}

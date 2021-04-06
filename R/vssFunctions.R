@@ -201,6 +201,9 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
 
         if((any(Etype==c("P","X","Y")) || any(Ttype==c("P","X","Y")) || any(Stype==c("P","X","Y")))){
             modelDo[] <- "select";
+            if(Ttype!="N"){
+                damped <- TRUE
+            }
         }
 
         #### Check error type ####
@@ -1126,40 +1129,40 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     assign("xtol_rel2",xtol_rel2,ParentEnvironment);
     assign("print_level",print_level,ParentEnvironment);
 }
-
-##### *Likelihood function* #####
-vLikelihoodFunction <- function(B){
-    return(- obsInSample/2 * (nSeries*log(2*pi*exp(1)) + CF(B)) -
-               switch(Etype,"M"=sum(log(yInSample[ot==1])),0));
-}
-
-##### *Function calculates ICs* #####
-vICFunction <- function(nParam=nParam,B,Etype=Etype){
-    # Information criteria are calculated with the constant part "log(2*pi*exp(1)*h+log(obs))*obs".
-    # And it is based on the mean of the sum squared residuals either than sum.
-    # Hyndman likelihood is: llikelihood <- obs*log(obs*cfObjective)
-
-    # Number of parameters per series needs to be used in the calculations of information criteria
-    nParamPerSeries <- nParam / nSeries;
-    llikelihood <- vLikelihoodFunction(B);
-
-    coefAIC <- 2*nParamPerSeries - 2*llikelihood;
-    coefBIC <- log(obsInSample)*nParamPerSeries - 2*llikelihood;
-
-    # max here is needed in order to take into account cases with higher number
-    # of parameters than observations
-    coefAICc <- ((2*obsInSample*(nParamPerSeries*nSeries + nSeries*(nSeries+1)/2)) /
-                                 max(obsInSample - (nParamPerSeries + nSeries + 1),0)) -2*llikelihood;
-
-    coefBICc <- (((nParamPerSeries + nSeries*(nSeries+1)/2) *
-                      log(obsInSample * nSeries) * obsInSample * nSeries) /
-                     (obsInSample * nSeries - nParamPerSeries - nSeries*(nSeries+1)/2)) -2*llikelihood;
-
-    ICs <- c(coefAIC, coefAICc, coefBIC, coefBICc);
-    names(ICs) <- c("AIC", "AICc", "BIC", "BICc");
-
-    return(list(llikelihood=llikelihood,ICs=ICs));
-}
+#
+# ##### *Likelihood function* #####
+# vLikelihoodFunction <- function(B){
+#     return(- obsInSample/2 * (nSeries*log(2*pi*exp(1)) + CF(B)) -
+#                switch(Etype,"M"=sum(log(yInSample[ot==1])),0));
+# }
+#
+# ##### *Function calculates ICs* #####
+# vICFunction <- function(nParam=nParam,B,Etype=Etype){
+#     # Information criteria are calculated with the constant part "log(2*pi*exp(1)*h+log(obs))*obs".
+#     # And it is based on the mean of the sum squared residuals either than sum.
+#     # Hyndman likelihood is: llikelihood <- obs*log(obs*cfObjective)
+#
+#     # Number of parameters per series needs to be used in the calculations of information criteria
+#     nParamPerSeries <- nParam / nSeries;
+#     llikelihood <- vLikelihoodFunction(B);
+#
+#     coefAIC <- 2*nParamPerSeries - 2*llikelihood;
+#     coefBIC <- log(obsInSample)*nParamPerSeries - 2*llikelihood;
+#
+#     # max here is needed in order to take into account cases with higher number
+#     # of parameters than observations
+#     coefAICc <- ((2*obsInSample*(nParamPerSeries*nSeries + nSeries*(nSeries+1)/2)) /
+#                                  max(obsInSample - (nParamPerSeries + nSeries + 1),0)) -2*llikelihood;
+#
+#     coefBICc <- (((nParamPerSeries + nSeries*(nSeries+1)/2) *
+#                       log(obsInSample * nSeries) * obsInSample * nSeries) /
+#                      (obsInSample * nSeries - nParamPerSeries - nSeries*(nSeries+1)/2)) -2*llikelihood;
+#
+#     ICs <- c(coefAIC, coefAICc, coefBIC, coefBICc);
+#     names(ICs) <- c("AIC", "AICc", "BIC", "BICc");
+#
+#     return(list(llikelihood=llikelihood,ICs=ICs));
+# }
 
 ##### *vssFitter function* #####
 vssFitter <- function(...){

@@ -83,7 +83,7 @@ utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","
 #' AVAILABLE!
 #' Pure multiplicative models are done as additive model applied to log(y).
 #'
-#' Also \code{model} can accept a previously estimated VETS model and use all its
+#' Also \code{model} can accept a previously estimated VES model and use all its
 #' parameters.
 #' @param lags The lags of the model. Needed for seasonal models.
 #' @param phi In cases of damped trend this parameter defines whether the \eqn{phi}
@@ -265,9 +265,25 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
     environment(vssInput) <- environment();
     vssInput("ves",ParentEnvironment=environment(),...);
 
+    ##### Calculation of scale #####
+    scalerVES <- function(distribution="dnorm", Etype, obsInSample, other=NULL,
+                           errors, yFitted=NULL, normalizer=1){
+        if(Etype=="A"){
+            scaleValue <- (errors / normalizer) %*% t(errors / normalizer) / obsInSample;
+            return(scaleValue*normalizer^2);
+        }
+        # Do optimisation in this case
+        else{
+            scaleValue <- errors %*% t(errors) / obsInSample;
+            return(scaleValue);
+        }
+    }
+
     ##### Cost Function for VES #####
-    CF <- function(B){
-        elements <- fillerVES(matVt, matF, matG, matW, B);
+    CF <- function(B, loss="likelihood", Etype="A", Ttype="N", damped=FALSE,
+                   nComponentsNonSeasonal, nComponentsAll, lagsModelMax){
+        elements <- fillerVES(matVt, matF, matG, matW, B, Ttype, damped,
+                              nComponentsNonSeasonal, nComponentsAll, lagsModelMax);
 
         # Check the bounds
         if(bounds=="a"){
@@ -284,8 +300,20 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
 
         # Calculate the loss
         if(loss=="likelihood"){
-            cfRes <- suppressWarnings(log(det((fitting$errors / normalizer) %*% t(fitting$errors / normalizer) / otObs)) +
-                                          nSeries * log(normalizer^2));
+            scaleValue <- scalerVES("dnorm", Etype, otObs, NULL,
+                                    fitting$errors, NULL, normalizer=normalizer);
+
+            cfRes <- -sum(switch(Etype,
+                                 "A"=dmvnormInternal(fitting$errors, 0, scaleValue, log=TRUE),
+                                 "M"=dmvnormInternal(fitting$errors, -0.5*diag(scaleValue), scaleValue, log=TRUE)-
+                                     colSums(log(yInSample)),
+                                 # This is needed for the oves() model
+                                 "L"=colSums(log(fitting$yfit))));
+        }
+        else if(loss=="GV"){
+            scaleValue <- scalerVES("dnorm", Etype, otObs, NULL,
+                                    fitting$errors, NULL, normalizer=normalizer);
+            cfRes <- suppressWarnings(log(det(scaleValue)) + nSeries * log(normalizer^2));
         }
         else if(loss=="diagonal"){
             cfRes <- sum(log(colSums(fitting$errors^2) / obsInSample));
@@ -299,6 +327,18 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
         }
 
         return(cfRes);
+    }
+
+    ##### LogLik for VES #####
+    logLikVES <- function(B, loss="likelihood", Etype="A"){
+        if(loss=="likelihood"){
+            return(-CF(B, loss=loss, Etype=Etype, Ttype=Ttype, damped=damped,
+                       nComponentsNonSeasonal, nComponentsAll, lagsModelMax));
+        }
+        else{
+            return(-CF(B, loss="likelihood", Etype=Etype, Ttype=Ttype, damped=damped,
+                       nComponentsNonSeasonal, nComponentsAll, lagsModelMax));
+        }
     }
 
     ##### B values for estimation #####
@@ -377,7 +417,7 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
             }
 
             ### Vector of initial seasonals
-            if(initialSeasonEstimate){
+            if(modelIsSeasonal && initialSeasonEstimate){
                 if(initialSeasonType=="c"){
                     initialSeasonLength <- lagsModelMax;
                 }
@@ -481,10 +521,26 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
         return(list(B=B,BLower=BLower,BUpper=BUpper,BNames=BNames));
     }
 
-    ##### Basic VES initialiser
+    ##### Basic VES architector #####
     ### This function will accept Etype, Ttype, Stype and damped and would return:
     # nComponentsNonSeasonal, nComponentsAll, lagsModelMax, modelIsSeasonal, obsStates
     # This is needed for model selection
+    architectorVES <- function(Etype, Ttype, Stype, damped, nSeries){
+        # Binaries for trend and seasonal
+        modelIsTrendy <- Ttype!="N";
+        modelIsSeasonal <- Stype!="N";
+
+        lagsModelMax <- dataFreq * modelIsSeasonal + 1 * (!modelIsSeasonal);
+
+        # Define the number of rows that should be in the matVt
+        obsStates <- max(obsAll + lagsModelMax, obsInSample + 2*lagsModelMax);
+
+        nComponentsNonSeasonal <- 1 + (Ttype!="N")*1;
+        nComponentsAll <- nComponentsNonSeasonal + modelIsSeasonal*1;
+
+        return(list(modelIsTrendy=modelIsTrendy, modelIsSeasonal=modelIsSeasonal, lagsModelMax=lagsModelMax,
+                    nComponentsNonSeasonal=nComponentsNonSeasonal, nComponentsAll=nComponentsAll));
+    }
 
     ##### Basic matrices creator #####
     # This thing returns matVt, matF, matG, matW, dampedValue, initialValue
@@ -677,7 +733,8 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
 
     ##### Basic matrices filler #####
     # This thing fills in matVt, matF, matG and matW with values from B and returns the corrected values
-    fillerVES <- function(matVt,matF,matG,matW,B){
+    fillerVES <- function(matVt,matF,matG,matW,B,Ttype,damped,
+                          nComponentsNonSeasonal,nComponentsAll,lagsModelMax){
         nCoefficients <- 0;
         ##### Individual seasonality #####
         if(seasonalType=="i"){
@@ -724,7 +781,7 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
             }
 
             ### Damping parameter
-            if(damped){
+            if(modelIsTrendy && damped){
                 if(dampedType=="c"){
                     dampedValue <- matrix(B[nCoefficients+1],nSeries,1);
                     nCoefficients <- nCoefficients + 1;
@@ -736,7 +793,7 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
             }
 
             ### Transition matrix
-            if(any(transitionType==c("i","d","c")) & damped){
+            if(any(transitionType==c("i","d","c")) && modelIsTrendy && damped){
                 for(i in 1:nSeries){
                     matF[c(1:nComponentsNonSeasonal)+nComponentsAll*(i-1),
                          nComponentsNonSeasonal+nComponentsAll*(i-1)] <- dampedValue[i];
@@ -756,7 +813,7 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
 
             ### Measurement matrix
             # Needs to be filled in with dampedValue even if dampedValue has been provided by a user
-            if(damped){
+            if(modelIsTrendy && damped){
                 for(i in 1:nSeries){
                     matW[i,nComponentsNonSeasonal+nComponentsAll*(i-1)] <- dampedValue[i];
                 }
@@ -919,11 +976,11 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
     estimatorVES <- function(...){
         environment(creatorVES) <- environment();
         environment(initialiserVES) <- environment();
-        environment(vLikelihoodFunction) <- environment();
-        environment(vICFunction) <- environment();
+        environment(logLikVES) <- environment();
         environment(CF) <- environment();
-        elements <- creatorVES();
-        list2env(elements,environment());
+        environment(fillerVES) <- environment();
+        list2env(architectorVES(Etype, Ttype, Stype, damped, nSeries),environment());
+        list2env(creatorVES(),environment());
 
         if(is.null(B) && is.null(ub) && is.null(lb)){
             BList <- initialiserVES(Ttype,Stype,lagsModelMax,nComponentsAll,nComponentsNonSeasonal,nSeries);
@@ -957,9 +1014,18 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
             print_level[] <- 0;
         }
 
+        lossNew <- loss;
+        # Change loss to "GV" if it is an additive case (to speed things up)
+        # In this case minimum of GV coincides with the MLE of MVNorm
+        if(loss=="likelihood" && Etype=="A"){
+            lossNew[] <- "GV";
+        }
+
         # Parameters are chosen to speed up the optimisation process and have decent accuracy
         res <- nloptr(B, CF, lb=BList$BLower, ub=BList$BUpper,
-                      opts=list(algorithm=algorithm1, xtol_rel=xtol_rel1, maxeval=maxeval, print_level=print_level));
+                      opts=list(algorithm=algorithm1, xtol_rel=xtol_rel1, maxeval=maxeval, print_level=print_level),
+                      loss=lossNew, Etype=Etype, Ttype=Ttype, damped=damped,
+                      nComponentsNonSeasonal=nComponentsNonSeasonal, nComponentsAll=nComponentsAll, lagsModelMax=lagsModelMax);
         B <- res$solution;
 
         # This is just in case something went out of the bounds
@@ -973,7 +1039,9 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
         }
 
         res2 <- nloptr(B, CF, lb=BList$BLower, ub=BList$BUpper,
-                       opts=list(algorithm=algorithm2, xtol_rel=xtol_rel2, maxeval=maxeval, print_level=print_level));
+                       opts=list(algorithm=algorithm2, xtol_rel=xtol_rel2, maxeval=maxeval, print_level=print_level),
+                       loss=lossNew, Etype=Etype, Ttype=Ttype, damped=damped,
+                       nComponentsNonSeasonal=nComponentsNonSeasonal, nComponentsAll=nComponentsAll, lagsModelMax=lagsModelMax);
         # This condition is needed in order to make sure that we did not make the solution worse
         if(res2$objective <= res$objective){
             res <- res2;
@@ -1002,9 +1070,18 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
             nParam <- nSeries + length(B);
         }
 
-        ICValues <- vICFunction(nParam=nParam,B=B,Etype=Etype);
-        ICs <- ICValues$ICs;
-        logLik <- ICValues$llikelihood;
+        # likelihood and ICs
+        logLikVESValue <- structure(logLikVES(B=B,loss=loss,Etype=Etype),
+                                    nobs=obsInSample,df=nParam,class="logLik");
+        ICs <- setNames(c(AIC(logLikVESValue), AICc(logLikVESValue), BIC(logLikVESValue), BICc(logLikVESValue)),
+                        c("AIC","AICc","BIC","BICc"));
+
+        # If this is a special case, recalculate CF to get the proper loss value
+        if(loss=="likelihood" && Etype=="A"){
+            res$objective <- CF(B, loss=loss, Etype=Etype, Ttype=Ttype, damped=damped,
+                                nComponentsNonSeasonal=nComponentsNonSeasonal, nComponentsAll=nComponentsAll,
+                                lagsModelMax=lagsModelMax);
+        }
 
         # Write down Fisher Information if needed
         if(FI){
@@ -1014,7 +1091,7 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
             colnames(FI) <- BList$BNames;
         }
 
-        return(list(ICs=ICs,objective=res$objective,B=B,nParam=nParam,logLik=logLik,FI=FI));
+        return(list(ICs=ICs,objective=res$objective,B=B,nParam=nParam,logLik=logLikVESValue,FI=FI));
     }
 
     ##### Function selects ETS components #####
@@ -1086,7 +1163,7 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
                                                    "MNN","MMN","MMdN","MNM","MMM","MMdM")];
 
         modelsNumber <- length(modelsPool);
-        vetsModels <- vector("list", length(modelsPool));
+        vesModels <- vector("list", length(modelsPool));
         for(i in 1:modelsNumber){
             if(!silent){
                 if(i>1){
@@ -1106,39 +1183,38 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
                 damped <- FALSE;
                 Stype <- substring(modelCurrent,3,3);
             }
-            vetsModels[[i]] <- estimatorVES(ParentEnvironment=environment());
+            vesModels[[i]] <- estimatorVES(ParentEnvironment=environment());
         }
         # Prepare the return of the best model
-        vetsModelsICs <- sapply(vetsModels,"[[","ICs");
-        colnames(vetsModelsICs) <- modelsPool;
-        iBest <- which.min(vetsModelsICs[ic,]);
-        vetsModels[[iBest]]$model <- modelsPool[iBest];
-        vetsModels[[iBest]]$Etype <- substring(modelsPool[iBest],1,1);
-        vetsModels[[iBest]]$Ttype <- substring(modelsPool[iBest],2,2);
+        vesModelsICs <- sapply(vesModels,"[[","ICs");
+        colnames(vesModelsICs) <- modelsPool;
+        iBest <- which.min(vesModelsICs[ic,]);
+        vesModels[[iBest]]$model <- modelsPool[iBest];
+        vesModels[[iBest]]$Etype <- substring(modelsPool[iBest],1,1);
+        vesModels[[iBest]]$Ttype <- substring(modelsPool[iBest],2,2);
         if(nchar(modelsPool[iBest])==4){
-            vetsModels[[iBest]]$damped <- TRUE;
-            vetsModels[[iBest]]$Stype <- substring(modelsPool[iBest],4,4);
+            vesModels[[iBest]]$damped <- TRUE;
+            vesModels[[iBest]]$Stype <- substring(modelsPool[iBest],4,4);
         }
         else{
-            vetsModels[[iBest]]$damped <- FALSE;
-            vetsModels[[iBest]]$Stype <- substring(modelsPool[iBest],3,3);
+            vesModels[[iBest]]$damped <- FALSE;
+            vesModels[[iBest]]$Stype <- substring(modelsPool[iBest],3,3);
         }
-        vetsModels[[iBest]]$ICsAll <- vetsModelsICs;
-        vetsModels[[iBest]]$ICs <- vetsModelsICs[,iBest];
-        vetsModels[[iBest]]$icBest <- vetsModelsICs[ic,iBest];
+        vesModels[[iBest]]$ICsAll <- vesModelsICs;
+        vesModels[[iBest]]$ICs <- vesModelsICs[,iBest];
         # Rename "objective" into "cfObjective"
-        names(vetsModels[[iBest]])[names(vetsModels[[iBest]])=="objective"] <- "cfObjective";
-        return(vetsModels[[iBest]]);
+        names(vesModels[[iBest]])[names(vesModels[[iBest]])=="objective"] <- "cfObjective";
+        return(vesModels[[iBest]]);
     }
 
 
     ##### Function constructs the VES function #####
-    callerVETS <- function(silent=FALSE,...){
+    callerVES <- function(silent=FALSE,...){
         if(modelDo=="estimate"){
             environment(estimatorVES) <- environment();
             res <- estimatorVES(ParentEnvironment=environment());
             listToReturn <- list(Etype=Etype,Ttype=Ttype,Stype=Stype,damped=damped,
-                                 cfObjective=res$objective,B=res$B,ICs=res$ICs,icBest=res$ICs[ic],
+                                 cfObjective=res$objective,B=res$B,ICs=res$ICs,
                                  ICsAll=res$ICs,nParam=res$nParam,logLik=res$logLik,FI=res$FI);
 
             return(listToReturn);
@@ -1148,11 +1224,10 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
         }
         else{
             environment(CF) <- environment();
-            environment(vICFunction) <- environment();
-            environment(vLikelihoodFunction) <- environment();
             environment(creatorVES) <- environment();
-            elements <- creatorVES();
-            list2env(elements,environment());
+            environment(logLikVES) <- environment();
+            list2env(architectorVES(Etype, Ttype, Stype, damped, nSeries),environment());
+            list2env(creatorVES(),environment());
 
             B <- c(persistenceValue);
             BNames <- paste0("Persistence",c(1:length(persistenceValue)));
@@ -1179,7 +1254,9 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
             }
             names(B) <- BNames;
 
-            cfObjective <- CF(B);
+            cfObjective <- CF(B, loss=loss, Etype=Etype, Ttype=Ttype, damped=damped,
+                              nComponentsNonSeasonal=nComponentsNonSeasonal, nComponentsAll=nComponentsAll,
+                              lagsModelMax=lagsModelMax);
 
             # Number of parameters
             # First part is for the covariance matrix
@@ -1193,10 +1270,11 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
                 nParam <- nSeries;
             }
 
-            ICValues <- vICFunction(nParam=nParam,B=B,Etype=Etype);
-            logLik <- ICValues$llikelihood;
-            ICs <- ICValues$ICs;
-            icBest <- ICs[ic];
+            # likelihood and ICs
+            logLikVESValue <- structure(logLikVES(B=B,loss=loss,Etype=Etype),
+                                        nobs=obsInSample,df=nParam,class="logLik");
+            ICs <- setNames(c(AIC(logLikVESValue), AICc(logLikVESValue), BIC(logLikVESValue), BICc(logLikVESValue)),
+                            c("AIC","AICc","BIC","BICc"));
 
             # Write down Fisher Information if needed
             if(FI){
@@ -1207,8 +1285,8 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
             }
 
             listToReturn <- list(Etype=Etype,Ttype=Ttype,Stype=Stype,damped=damped,
-                                 cfObjective=cfObjective,B=B,ICs=ICs,icBest=icBest,
-                                 ICsAll=ICs,nParam=nParam,logLik=logLik,FI=FI);
+                                 cfObjective=cfObjective,B=B,ICs=ICs,
+                                 ICsAll=ICs,nParam=nParam,logLik=logLikVESValue,FI=FI);
             return(listToReturn);
         }
     }
@@ -1233,13 +1311,11 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
     environment(vssForecaster) <- environment();
 
     ##### Fit the model and produce forecast #####
-    list2env(callerVETS(silent=silentText),environment());
+    list2env(callerVES(silent=silentText),environment());
+    list2env(architectorVES(Etype, Ttype, Stype, damped, nSeries),environment());
     list2env(creatorVES(),environment());
-    list2env(fillerVES(matVt,matF,matG,matW,B),environment());
-
-    if(Etype=="M"){
-        cfObjective <- exp(cfObjective);
-    }
+    list2env(fillerVES(matVt,matF,matG,matW,B,Ttype,damped,
+                       nComponentsNonSeasonal,nComponentsAll,lagsModelMax),environment());
 
     if(damped){
         model <- paste0(Etype,Ttype,"d",Stype);

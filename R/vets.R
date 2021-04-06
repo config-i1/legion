@@ -668,7 +668,7 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
             matVt[k+1:nComponentsSeasonal,2:lagsModelMax] <- matrix(B[j+1:(nInitialsSeasonal*(lagsModelMax-1))],
                                                                     nComponentsSeasonal,(lagsModelMax-1),byrow=TRUE);
             # Normalise initials
-            matVt[k+1:nComponentsSeasonal,1] <- -rowSums(matVt[k+1:nComponentsSeasonal,2:lagsModelMax]);
+            matVt[k+1:nComponentsSeasonal,1] <- -rowSums(matVt[k+1:nComponentsSeasonal,2:lagsModelMax,drop=FALSE]);
 
         }
 
@@ -758,7 +758,7 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
     #         return(1e+100);
     #     }
     #     else{
-    #         return(-sum(dmvnorm(errors, -0.5*diag(scaleValue), scaleValue, log=TRUE)));
+    #         return(-sum(dmvnormInternal(errors, -0.5*diag(scaleValue), scaleValue, log=TRUE)));
     #     }
     # }
 
@@ -815,11 +815,9 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
                                      fitting$errors, NULL, normalizer=normalizer);
 
             cfRes <- -sum(switch(Etype,
-                                 "A"=dmvnorm(fitting$errors, 0, scaleValue, log=TRUE),
-                                 "M"=dmvnorm(fitting$errors, -0.5*diag(scaleValue), scaleValue, log=TRUE)-
+                                 "A"=dmvnormInternal(fitting$errors, 0, scaleValue, log=TRUE),
+                                 "M"=dmvnormInternal(fitting$errors, -0.5*diag(scaleValue), scaleValue, log=TRUE)-
                                      colSums(log(yInSample))));
-            # print(cfRes)
-            # stop()
         }
         else if(loss=="GV"){
             scaleValue <- scalerVETS("dnorm", Etype, otObs, NULL,
@@ -951,9 +949,9 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
         }
 
         # likelihood and ICs
-        logLikVETS <- structure(logLikVETS(B=B,loss=loss,Etype=Etype),
-                                nobs=obsInSample,df=nParam,class="logLik");
-        ICs <- setNames(c(AIC(logLikVETS), AICc(logLikVETS), BIC(logLikVETS), BICc(logLikVETS)),
+        logLikVETSValue <- structure(logLikVETS(B=B,loss=loss,Etype=Etype),
+                                     nobs=obsInSample,df=nParam,class="logLik");
+        ICs <- setNames(c(AIC(logLikVETSValue), AICc(logLikVETSValue), BIC(logLikVETSValue), BICc(logLikVETSValue)),
                         c("AIC","AICc","BIC","BICc"));
 
         # If this is a special case, recalculate CF to get the proper loss value
@@ -969,7 +967,7 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
             colnames(FI) <- BList$BNames;
         }
 
-        return(list(ICs=ICs,objective=res$objective,B=B,nParam=nParam,logLikVETS=logLikVETS,FI=FI));
+        return(list(ICs=ICs,objective=res$objective,B=B,nParam=nParam,logLikVETS=logLikVETSValue,FI=FI));
     }
 
     ##### Function selects ETS components #####
@@ -1080,7 +1078,6 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
         }
         vetsModels[[iBest]]$ICsAll <- vetsModelsICs;
         vetsModels[[iBest]]$ICs <- vetsModelsICs[,iBest];
-        vetsModels[[iBest]]$icBest <- vetsModelsICs[ic,iBest];
         # Rename "objective" into "cfObjective"
         names(vetsModels[[iBest]])[names(vetsModels[[iBest]])=="objective"] <- "cfObjective";
         return(vetsModels[[iBest]]);
@@ -1092,7 +1089,7 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
             environment(estimatorVETS) <- environment();
             res <- estimatorVETS(ParentEnvironment=environment());
             listToReturn <- list(Etype=Etype,Ttype=Ttype,Stype=Stype,damped=damped,
-                                 cfObjective=res$objective,B=res$B,ICs=res$ICs,icBest=res$ICs[ic],
+                                 cfObjective=res$objective,B=res$B,ICs=res$ICs,
                                  ICsAll=res$ICs,nParam=res$nParam,logLikVETS=res$logLikVETS,FI=res$FI);
 
             return(listToReturn);
@@ -1150,7 +1147,6 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
         #     ICValues <- vICFunction(nParam=nParam,B=B,Etype=Etype);
         #     logLikVETS <- ICValues$llikelihood;
         #     ICs <- ICValues$ICs;
-        #     icBest <- ICs[ic];
         #
         #     # Write down Fisher Information if needed
         #     if(FI){
@@ -1161,7 +1157,7 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
         #     }
         #
         #     listToReturn <- list(Etype=Etype,Ttype=Ttype,Stype=Stype,damped=damped,
-        #                          cfObjective=cfObjective,B=B,ICs=ICs,icBest=icBest,
+        #                          cfObjective=cfObjective,B=B,ICs=ICs,
         #                          nParam=nParam,logLikVETS=logLikVETS,FI=FI);
         #     return(listToReturn);
         # }

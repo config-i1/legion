@@ -42,6 +42,13 @@ test_that("Test VES with a dependent transition and independent interval", {
     expect_equal(dim(testModel$PI),c(10,4))
 })
 
+# Model selection in VES
+test_that("Model selection in VES", {
+    skip_on_cran()
+    testModel <- ves(Y,"PPP", silent=TRUE)
+    expect_match(testModel$loss, "likelihood")
+})
+
 # Simulate the data from VES
 testModel <- ves(Y,"AAN", silent=TRUE)
 test_that("VES based on pre-estimated model", {
