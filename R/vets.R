@@ -4,7 +4,7 @@ utils::globalVariables(c("obsInSample","componentsCommonLevel","componentsCommon
                          "nInitialsLevel","nInitialsSeasonal","nInitialsTrend",
                          "nParametersDamped","nParametersLevel","nParametersSeasonal","nParametersTrend",
                          "parametersCommonDamped","parametersCommonLevel","parametersCommonSeasonal","parametersCommonTrend",
-                         "allowMultiplicative","modelDo","ICsAll"));
+                         "allowMultiplicative","modelDo","ICsAll","cfObjective"));
 
 #' Vector ETS-PIC model
 #'
@@ -171,6 +171,7 @@ utils::globalVariables(c("obsInSample","componentsCommonLevel","componentsCommon
 #' vets(Y, model="PPP", h=10, holdout=TRUE, initials="seasonal")
 #'
 #' @export
+#' @importFrom stats setNames
 vets <- function(y, model="ANN", lags=c(frequency(y)),
                  parameters=c("level","trend","seasonal","damped"),
                  initials=c("seasonal"), components=c("none"),
@@ -747,13 +748,47 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
         return(list(B=B,BLower=BLower,BUpper=BUpper));
     }
 
+    ##### CF for scale calculation #####
+    # scalerVETSCF <- function(A, errors, scaleValue){
+    #     # Fill in the matrix
+    #     scaleValue[upper.tri(scaleValue,diag=TRUE)] <- A;
+    #     scaleValue[lower.tri(scaleValue)] <- t(scaleValue)[lower.tri(scaleValue)];
+    #     # If detereminant is positive, return logLik
+    #     if(det(scaleValue)<=0){
+    #         return(1e+100);
+    #     }
+    #     else{
+    #         return(-sum(dmvnorm(errors, -0.5*diag(scaleValue), scaleValue, log=TRUE)));
+    #     }
+    # }
+
     ##### Calculation of scale #####
     scalerVETS <- function(distribution="dnorm", Etype, obsInSample, other=NULL,
                            errors, yFitted=NULL, normalizer=1){
+        if(Etype=="A"){
+            scaleValue <- (errors / normalizer) %*% t(errors / normalizer) / obsInSample;
+            return(scaleValue*normalizer^2);
+        }
+        # Do optimisation in this case
+        else{
+            scaleValue <- errors %*% t(errors) / obsInSample;
+            #### This does not help in maximisation of MLE
+            # A <- scaleValue[upper.tri(scaleValue,diag=TRUE)];
+            # ALower <- rep(-max(abs(A)),length(A));
+            # AUpper <- rep(max(abs(A)),length(A));
+            # res <- nloptr(A, scalerVETSCF, lb=ALower, ub=AUpper,
+            #               opts=list(algorithm="NLOPT_LN_NELDERMEAD",
+            #                                          xtol_rel=1e-8, maxeval=500, print_level=0),
+            #               errors=errors, scaleValue=scaleValue);
+            # A[] <- res$solution;
+            # scaleValue[upper.tri(scaleValue,diag=TRUE)] <- A;
+            # scaleValue[lower.tri(scaleValue)] <- t(scaleValue)[lower.tri(scaleValue)];
+            return(scaleValue);
+        }
     }
 
     ##### Cost Function for VETS #####
-    CF <- function(B){
+    CF <- function(B, loss="likelihood", Etype="A"){
         elements <- fillerVETS(matVt, matF, matG, matW, B,
                                lagsModelMax, nSeries, modelIsTrendy, modelIsSeasonal, damped,
                                componentsCommonLevel, componentsCommonTrend, componentsCommonSeasonal,
@@ -776,19 +811,27 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
 
         # Calculate the loss
         if(loss=="likelihood"){
-            cfRes <- suppressWarnings(log(det((fitting$errors / normalizer) %*% t(fitting$errors / normalizer) / otObs)) +
-                                          nSeries * log(normalizer^2));
+            scaleValue <- scalerVETS("dnorm", Etype, otObs, NULL,
+                                     fitting$errors, NULL, normalizer=normalizer);
+
+            cfRes <- -sum(switch(Etype,
+                                 "A"=dmvnorm(fitting$errors, 0, scaleValue, log=TRUE),
+                                 "M"=dmvnorm(fitting$errors, -0.5*diag(scaleValue), scaleValue, log=TRUE)-
+                                     colSums(log(yInSample))));
+            # print(cfRes)
+            # stop()
+        }
+        else if(loss=="GV"){
+            scaleValue <- scalerVETS("dnorm", Etype, otObs, NULL,
+                                     fitting$errors, NULL, normalizer=normalizer);
+            cfRes <- suppressWarnings(log(det(scaleValue)) + nSeries * log(normalizer^2));
         }
         else if(loss=="diagonal"){
-            cfRes <- sum(log(apply(fitting$errors^2, 2, sum) / obsInSample));
+            cfRes <- sum(log(colSums(fitting$errors^2) / obsInSample));
         }
         else{
-            cfRes <- sum(apply(fitting$errors^2, 2, sum) / obsInSample);
+            cfRes <- sum(colSums(fitting$errors^2) / obsInSample);
         }
-
-        # cfRes <- vOptimiserWrap(yInSample, elements$matVt, elements$matF, elements$matW, elements$matG,
-        #                         lagsModel, Etype, Ttype, Stype, loss, normalizer, bounds, ot, otObs);
-        # multisteps, initialType, bounds,
 
         if(is.nan(cfRes) | is.na(cfRes) | is.infinite(cfRes)){
             cfRes <- 1e+100;
@@ -797,11 +840,21 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
         return(cfRes);
     }
 
+    ##### LogLik for VETS #####
+    logLikVETS <- function(B, loss="likelihood", Etype="A"){
+        if(loss=="likelihood"){
+            return(-CF(B, loss=loss, Etype=Etype));
+        }
+        else{
+            return(-CF(B, loss="likelihood", Etype=Etype));
+        }
+    }
+
     ##### Basic estimation function for vets() #####
     estimatorVETS <- function(...){
         environment(creatorVETS) <- environment();
         environment(initialiserVETS) <- environment();
-        environment(vLikelihoodFunction) <- environment();
+        environment(logLikVETS) <- environment();
         environment(vICFunction) <- environment();
         environment(CF) <- environment();
 
@@ -849,7 +902,8 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
 
         # Parameters are chosen to speed up the optimisation process and have decent accuracy
         res <- nloptr(B, CF, lb=BList$BLower, ub=BList$BUpper,
-                      opts=list(algorithm=algorithm1, xtol_rel=xtol_rel1, maxeval=maxeval, print_level=print_level));
+                      opts=list(algorithm=algorithm1, xtol_rel=xtol_rel1, maxeval=maxeval, print_level=print_level),
+                      loss=loss, Etype=Etype);
         B[] <- res$solution;
 
         # This is just in case something went out of the bounds
@@ -863,7 +917,8 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
         }
 
         res2 <- nloptr(B, CF, lb=BList$BLower, ub=BList$BUpper,
-                       opts=list(algorithm=algorithm2, xtol_rel=xtol_rel2, maxeval=maxeval, print_level=print_level));
+                       opts=list(algorithm=algorithm2, xtol_rel=xtol_rel2, maxeval=maxeval, print_level=print_level),
+                       loss=loss, Etype=Etype);
         # This condition is needed in order to make sure that we did not make the solution worse
         if(res2$objective <= res$objective){
             res <- res2;
@@ -889,19 +944,21 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
             nParam <- nSeries + length(B);
         }
 
-        ICValues <- vICFunction(nParam=nParam,B=B,Etype=Etype);
-        ICs <- ICValues$ICs;
-        logLik <- ICValues$llikelihood;
+        # likelihood and ICs
+        logLikVETS <- structure(logLikVETS(B=B,loss=loss,Etype=Etype),
+                                nobs=obsInSample,df=nParam,class="logLik");
+        ICs <- setNames(c(AIC(logLikVETS), AICc(logLikVETS), BIC(logLikVETS), BICc(logLikVETS)),
+                        c("AIC","AICc","BIC","BICc"));
 
         # Write down Fisher Information if needed
         if(FI){
-            environment(vLikelihoodFunction) <- environment();
-            FI <- -numDeriv::hessian(vLikelihoodFunction,B);
+            environment(logLikVETS) <- environment();
+            FI <- -numDeriv::hessian(logLikVETS,B=B,loss=loss,Etype=Etype);
             rownames(FI) <- BList$BNames;
             colnames(FI) <- BList$BNames;
         }
 
-        return(list(ICs=ICs,objective=res$objective,B=B,nParam=nParam,logLik=logLik,FI=FI));
+        return(list(ICs=ICs,objective=res$objective,B=B,nParam=nParam,logLikVETS=logLikVETS,FI=FI));
     }
 
     ##### Function selects ETS components #####
@@ -1025,7 +1082,7 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
             res <- estimatorVETS(ParentEnvironment=environment());
             listToReturn <- list(Etype=Etype,Ttype=Ttype,Stype=Stype,damped=damped,
                                  cfObjective=res$objective,B=res$B,ICs=res$ICs,icBest=res$ICs[ic],
-                                 ICsAll=res$ICs,nParam=res$nParam,logLik=res$logLik,FI=res$FI);
+                                 ICsAll=res$ICs,nParam=res$nParam,logLikVETS=res$logLikVETS,FI=res$FI);
 
             return(listToReturn);
         }
@@ -1035,7 +1092,7 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
         # else{
         #     environment(CF) <- environment();
         #     environment(vICFunction) <- environment();
-        #     environment(vLikelihoodFunction) <- environment();
+        #     environment(logLikVETS) <- environment();
         #     environment(creatorVETS) <- environment();
         #     elements <- creatorVETS();
         #     list2env(elements,environment());
@@ -1080,21 +1137,21 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
         #     }
         #
         #     ICValues <- vICFunction(nParam=nParam,B=B,Etype=Etype);
-        #     logLik <- ICValues$llikelihood;
+        #     logLikVETS <- ICValues$llikelihood;
         #     ICs <- ICValues$ICs;
         #     icBest <- ICs[ic];
         #
         #     # Write down Fisher Information if needed
         #     if(FI){
-        #         environment(vLikelihoodFunction) <- environment();
-        #         FI <- -numDeriv::hessian(vLikelihoodFunction,B);
+        #         environment(logLikVETS) <- environment();
+        #         FI <- -numDeriv::hessian(logLikVETS,B,loss,Etype);
         #         rownames(FI) <- BNames;
         #         colnames(FI) <- BNames;
         #     }
         #
         #     listToReturn <- list(Etype=Etype,Ttype=Ttype,Stype=Stype,damped=damped,
         #                          cfObjective=cfObjective,B=B,ICs=ICs,icBest=icBest,
-        #                          nParam=nParam,logLik=logLik,FI=FI);
+        #                          nParam=nParam,logLikVETS=logLikVETS,FI=FI);
         #     return(listToReturn);
         # }
     }
@@ -1121,10 +1178,6 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
                         nParametersLevel, nParametersTrend, nParametersSeasonal, nParametersDamped,
                         nInitialsLevel, nInitialsTrend, nInitialsSeasonal,
                         nComponentsLevel, nComponentsTrend, nComponentsSeasonal),environment());
-
-    if(Etype=="M"){
-        cfObjective <- exp(cfObjective);
-    }
 
     if(damped){
         model <- paste0(Etype,Ttype,"d",Stype);
@@ -1364,7 +1417,7 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
                   nParam=parametersNumber, occurrence=ovesModel,
                   y=y,fitted=yFitted,holdout=yHoldout,residuals=errors,Sigma=Sigma,
                   forecast=yForecast,PI=PI,interval=intervalType,level=level,
-                  ICs=ICs,ICsAll=ICsAll,logLik=logLik,lossValue=cfObjective,loss=loss,accuracy=errorMeasures,
+                  ICs=ICs,ICsAll=ICsAll,logLik=logLikVETS,lossValue=cfObjective,loss=loss,accuracy=errorMeasures,
                   FI=FI);
     return(structure(model,class=c("legion","smooth")));
 }

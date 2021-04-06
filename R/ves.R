@@ -288,15 +288,11 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
                                           nSeries * log(normalizer^2));
         }
         else if(loss=="diagonal"){
-            cfRes <- sum(log(apply(fitting$errors^2, 2, sum) / obsInSample));
+            cfRes <- sum(log(colSums(fitting$errors^2) / obsInSample));
         }
         else{
-            cfRes <- sum(apply(fitting$errors^2, 2, sum) / obsInSample);
+            cfRes <- sum(colSums(fitting$errors^2) / obsInSample);
         }
-
-        # cfRes <- vOptimiserWrap(yInSample, elements$matVt, elements$matF, elements$matW, elements$matG,
-        #                         lagsModel, Etype, Ttype, Stype, loss, normalizer, bounds, ot, otObs);
-        # multisteps, initialType, bounds,
 
         if(is.nan(cfRes) | is.na(cfRes) | is.infinite(cfRes)){
             cfRes <- 1e+100;

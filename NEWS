@@ -1,4 +1,4 @@
-legion v0.0.1 (Release data: 2021-04-05)
+legion v0.0.1 (Release data: 2021-04-06)
 =======
 
 Changes:
@@ -7,6 +7,7 @@ Changes:
 * First working version of vets().
 * architectorVETS in vets() - internal function needed for selector.
 * vets() and ves() now support model selection.
+* vets() now has proper likelihood estimation and implementation of multiplicative error model.
 
 Bugfixes:
 *
