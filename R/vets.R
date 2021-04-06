@@ -855,7 +855,6 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
         environment(creatorVETS) <- environment();
         environment(initialiserVETS) <- environment();
         environment(logLikVETS) <- environment();
-        environment(vICFunction) <- environment();
         environment(CF) <- environment();
 
         list2env(architectorVETS(Etype, Ttype, Stype, damped, nSeries),environment());
@@ -900,10 +899,17 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
             print_level[] <- 0;
         }
 
+        lossNew <- loss;
+        # Change loss to "GV" if it is an additive case (to speed things up)
+        # In this case minimum of GV coincides with the MLE of MVNorm
+        if(loss=="likelihood" && Etype=="A"){
+            lossNew[] <- "GV";
+        }
+
         # Parameters are chosen to speed up the optimisation process and have decent accuracy
         res <- nloptr(B, CF, lb=BList$BLower, ub=BList$BUpper,
                       opts=list(algorithm=algorithm1, xtol_rel=xtol_rel1, maxeval=maxeval, print_level=print_level),
-                      loss=loss, Etype=Etype);
+                      loss=lossNew, Etype=Etype);
         B[] <- res$solution;
 
         # This is just in case something went out of the bounds
@@ -918,7 +924,7 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
 
         res2 <- nloptr(B, CF, lb=BList$BLower, ub=BList$BUpper,
                        opts=list(algorithm=algorithm2, xtol_rel=xtol_rel2, maxeval=maxeval, print_level=print_level),
-                       loss=loss, Etype=Etype);
+                       loss=lossNew, Etype=Etype);
         # This condition is needed in order to make sure that we did not make the solution worse
         if(res2$objective <= res$objective){
             res <- res2;
@@ -949,6 +955,11 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
                                 nobs=obsInSample,df=nParam,class="logLik");
         ICs <- setNames(c(AIC(logLikVETS), AICc(logLikVETS), BIC(logLikVETS), BICc(logLikVETS)),
                         c("AIC","AICc","BIC","BICc"));
+
+        # If this is a special case, recalculate CF to get the proper loss value
+        if(loss=="likelihood" && Etype=="A"){
+            res$objective <- CF(B, loss=loss, Etype=Etype);
+        }
 
         # Write down Fisher Information if needed
         if(FI){
