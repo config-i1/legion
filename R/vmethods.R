@@ -101,8 +101,8 @@ modelType.legion <- function(object, ...){
     model <- object$model;
     modelType <- NA;
     if(!is.null(model)){
-        if(gregexpr("VES",model)!=-1){
-            modelType <- substring(model,unlist(gregexpr("\\(",model))+1,unlist(gregexpr("\\)",model))-1);
+        if(gregexpr("VES",model)!=-1 || gregexpr("VETS",model)!=-1){
+            modelType <- substring(model,unlist(gregexpr("\\(",model))+1,unlist(gregexpr("\\)",model))-1)[1];
         }
     }
 
