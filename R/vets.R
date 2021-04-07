@@ -1096,7 +1096,7 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
             return(listToReturn);
         }
         else if(modelDo=="select"){
-            return(selectorVETS(ParentEnvironment=environment()));
+            return(selectorVETS(silent=silent,ParentEnvironment=environment()));
         }
         # else{
         #     environment(CF) <- environment();
