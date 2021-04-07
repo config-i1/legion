@@ -1393,12 +1393,10 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
     #     }
 
     ##### Print output #####
-    if(!silent){
-        if(any(abs(eigen(matF - matG %*% matW)$values)>(1 + 1E-10))){
-            warning(paste0("Model VETS(",model,") is unstable! ",
-                           "Use a different value of 'bounds' parameter to address this issue!"),
-                    call.=FALSE);
-        }
+    if(any(abs(eigen(matF - matG %*% matW)$values)>(1 + 1E-10))){
+        warning(paste0("Model VETS(",model,") is unstable! ",
+                       "Use a different value of 'bounds' parameter to address this issue!"),
+                call.=FALSE);
     }
 
     ##### Make a plot #####

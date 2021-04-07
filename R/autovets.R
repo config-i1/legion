@@ -212,53 +212,14 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
     vetsModels[[1]] <- initialModel;
     rm(initialModel);
     if(!silent){
-        cat(paste0("Initial model is VETS(",modelType(vetsModels[[1]]),"), IC is: ", round(vetsModels[[1]]$ICs[ic],3),"\n"));
-    }
-
-    if(!silent){
-        cat("Testing parameters restrictions... ");
-    }
-
-    if(!parallel){
-        # Test the models with parameters restrictions
-        j <- 2;
-        for(i in 1:parametersCombinationNumber){
-            if(i>1){
-                cat(paste0(rep("\b",nchar(round((i-1)/parametersCombinationNumber,2)*100)+1),collapse=""));
-            }
-            cat(round(i/parametersCombinationNumber,2)*100,"\b%");
-
-            vetsCall$parameters <- parametersToCheck[[i]];
-            vetsModels[[j]] <- do.call("vets",vetsCall);
-            j[] <- j+1;
-        }
-    }
-    else{
-        vetsModels[1+1:parametersCombinationNumber] <- foreach::`%dopar%`(foreach::foreach(i=1:parametersCombinationNumber),{
-            vetsCall$parameters <- parametersToCheck[[i]];
-            return(do.call("vets",vetsCall));
-        })
-    }
-
-    # Which of the models has the lowest IC? It is the best one so far
-    vetsICsParameters <- sapply(vetsModels[0:parametersCombinationNumber+1],"[[","ICs")[ic,];
-    jBest <- which.min(vetsICsParameters);
-    ICBest <- vetsICsParameters[jBest];
-    if(jBest==1){
-        vetsCall$parameters <- "none";
-    }
-    else{
-        vetsCall$parameters <- parametersToCheck[[jBest-1]];
-    }
-    if(!silent){
-        cat(paste0("\nParameters restrictions model is (",paste0(vetsCall$parameters,collapse=","),
-                   "), IC is: ", round(ICBest,3),"\n"));
+        cat(paste0("Initial model is VETS(",modelType(vetsModels[[1]]),"), ",ic," is: ", round(vetsModels[[1]]$ICs[ic],3),"\n"));
     }
 
     if(!silent){
         cat("Testing initials restrictions... ");
     }
     if(!parallel){
+        j <- 2;
         # Test the models with initials restrictions
         for(i in 1:initialsCombinationNumber){
             if(i>1){
@@ -272,26 +233,65 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
         }
     }
     else{
-        vetsModels[1+parametersCombinationNumber+1:initialsCombinationNumber] <-
+        vetsModels[1+1:initialsCombinationNumber] <-
             foreach::`%dopar%`(foreach::foreach(i=1:initialsCombinationNumber),{
             vetsCall$initials <- initialsToCheck[[i]];
             return(do.call("vets",vetsCall));
         })
     }
-    # Find the model with the lowest IC from the new ones
-    vetsICsInitials <- sapply(vetsModels[parametersCombinationNumber+1+1:initialsCombinationNumber],"[[","ICs")[ic,];
-    jBestInitials <- which.min(vetsICsInitials);
-    if(vetsICsInitials[jBestInitials]<ICBest){
-        jBest <- jBestInitials+parametersCombinationNumber+1;
-        ICBest <- vetsICsInitials[jBestInitials];
-        vetsCall$initials <- initialsToCheck[[jBestInitials]];
+
+    # Which of the models has the lowest IC? It is the best one so far
+    vetsICsInitials <- sapply(vetsModels[1+0:initialsCombinationNumber],"[[","ICs")[ic,];
+    jBest <- which.min(vetsICsInitials);
+    ICBest <- vetsICsInitials[jBest];
+    if(jBest==1){
+        vetsCall$initials <- "none";
     }
     else{
-        vetsCall$initials <- "none";
+        vetsCall$initials <- initialsToCheck[[jBest-1]];
     }
     if(!silent){
         cat(paste0("\nInitials restrictions model is (",paste0(vetsCall$initials,collapse=","),
-                   "), IC is: ", round(ICBest,3),"\n"));
+                   "), ",ic," is: ", round(ICBest,3),"\n"));
+    }
+
+    if(!silent){
+        cat("Testing parameters restrictions... ");
+    }
+    if(!parallel){
+        # Test the models with parameters restrictions
+        for(i in 1:parametersCombinationNumber){
+            if(i>1){
+                cat(paste0(rep("\b",nchar(round((i-1)/parametersCombinationNumber,2)*100)+1),collapse=""));
+            }
+            cat(round(i/parametersCombinationNumber,2)*100,"\b%");
+
+            vetsCall$parameters <- parametersToCheck[[i]];
+            vetsModels[[j]] <- do.call("vets",vetsCall);
+            j[] <- j+1;
+        }
+    }
+    else{
+        vetsModels[1+initialsCombinationNumber+1:parametersCombinationNumber] <-
+            foreach::`%dopar%`(foreach::foreach(i=1:parametersCombinationNumber),{
+            vetsCall$parameters <- parametersToCheck[[i]];
+            return(do.call("vets",vetsCall));
+        })
+    }
+    # Find the model with the lowest IC from the new ones
+    vetsICsParameters <- sapply(vetsModels[1+initialsCombinationNumber+1:parametersCombinationNumber],"[[","ICs")[ic,];
+    jBestParameters <- which.min(vetsICsParameters);
+    if(vetsICsParameters[jBestParameters]<ICBest){
+        jBest <- jBestParameters+parametersCombinationNumber+1;
+        ICBest <- vetsICsParameters[jBestParameters];
+        vetsCall$parameters <- parametersToCheck[[jBestParameters]];
+    }
+    else{
+        vetsCall$parameters <- "none";
+    }
+    if(!silent){
+        cat(paste0("\nParameters restrictions model is (",paste0(vetsCall$parameters,collapse=","),
+                   "), ",ic," is: ", round(ICBest,3),"\n"));
     }
 
     if(!silent){
@@ -311,18 +311,18 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
         }
     }
     else{
-        vetsModels[1+parametersCombinationNumber+initialsCombinationNumber+1:componentsCombinationNumber] <-
+        vetsModels[1+initialsCombinationNumber+parametersCombinationNumber+1:componentsCombinationNumber] <-
             foreach::`%dopar%`(foreach::foreach(i=1:componentsCombinationNumber),{
             vetsCall$components <- componentsToCheck[[i]];
             return(do.call("vets",vetsCall));
         })
     }
     # Find the model with the lowest IC from the new ones
-    vetsICsComponents <- sapply(vetsModels[initialsCombinationNumber+parametersCombinationNumber+1+
+    vetsICsComponents <- sapply(vetsModels[1+initialsCombinationNumber+parametersCombinationNumber+
                                                1:componentsCombinationNumber],"[[","ICs")[ic,];
     jBestComponents <- which.min(vetsICsComponents);
     if(vetsICsComponents[jBestComponents]<ICBest){
-        jBest <- jBestComponents+initialsCombinationNumber+parametersCombinationNumber+1;
+        jBest <- jBestComponents+1+initialsCombinationNumber+parametersCombinationNumber;
         ICBest <- vetsICsComponents[jBestComponents];
         vetsCall$components <- componentsToCheck[[jBestComponents]];
     }
@@ -331,7 +331,7 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
     }
     if(!silent){
         cat(paste0("\nComponents restrictions model is (",paste0(vetsCall$components,collapse=","),
-                   "), IC is: ", round(ICBest,3),"\n"));
+                   "), ",ic," is: ", round(ICBest,3),"\n"));
     }
 
     # Check if the clusters have been made
@@ -340,5 +340,6 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
     }
 
     vetsModels[[jBest]]$timeElapsed <- Sys.time()-startTime;
+
     return(vetsModels[[jBest]]);
 }
