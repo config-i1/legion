@@ -109,6 +109,288 @@ modelType.legion <- function(object, ...){
 }
 
 #### Plotting things ####
+#' Plots for the fit and states
+#'
+#' The function produces diagnostics plots for a \code{legion} model
+#'
+#' The list of produced plots includes:
+#' \enumerate{
+#' \item Actuals vs Fitted values. Allows analysing, whether there are any issues in the fit.
+#' Does the variability of actuals increase with the increase of fitted values? Is the relation
+#' well captured? They grey line on the plot corresponds to the perfect fit of the model.
+#' \item Standardised residuals vs Fitted. Plots the points and the confidence bounds
+#' (red lines) for the specified confidence \code{level}. Useful for the analysis of outliers;
+#' \item Studentised residuals vs Fitted. This is similar to the previous plot, but with the
+#' residuals divided by the scales with the leave-one-out approach. Should be more sensitive
+#' to outliers;
+#' \item Absolute residuals vs Fitted. Useful for the analysis of heteroscedasticity;
+#' \item Squared residuals vs Fitted - similar to (3), but with squared values;
+#' \item Q-Q plot with the specified distribution. Can be used in order to see if the
+#' residuals follow the assumed distribution. The type of distribution depends on the one used
+#' in the estimation (see \code{distribution} parameter in \link[greybox]{alm});
+#' \item ACF of the residuals. Are the residuals autocorrelated? See \link[stats]{acf} for
+#' details;
+#' \item Fitted over time. Plots actuals (black line), fitted values (purple line), point forecast
+#' (blue line) and prediction interval (grey lines). Can be used in order to make sure that the model
+#' did not miss any important events over time;
+#' \item Standardised residuals vs Time. Useful if you want to see, if there is autocorrelation or
+#' if there is heteroscedasticity in time. This also shows, when the outliers happen;
+#' \item Studentised residuals vs Time. Similar to previous, but with studentised residuals;
+#' \item PACF of the residuals. No, really, are they autocorrelated? See pacf function from stats
+#' package for details;
+#' \item Plot of the states of the model. It is not recommended to produce this plot together with
+#' the others, because there might be several states, which would cause the creation of a different
+#' canvas. In case of "msdecompose", this will produce the decomposition of the series into states
+#' on a different canvas.
+#' }
+#' Which of the plots to produce, is specified via the \code{which} parameter.
+#' Currently only \code{which=c(1,4:7)} are supported.
+#'
+#' @param x Estimated legion model.
+#' @param which Which of the plots to produce. The possible options (see details for explanations):
+#' \enumerate{
+#' \item Actuals vs Fitted values;
+#' \item Standardised residuals vs Fitted;
+#' \item Studentised residuals vs Fitted;
+#' \item Absolute residuals vs Fitted;
+#' \item Squared residuals vs Fitted;
+#' \item Q-Q plot with the specified distribution;
+#' \item Fitted over time;
+#' \item Standardised residuals vs Time;
+#' \item Studentised residuals vs Time;
+#' \item ACF of the residuals;
+#' \item PACF of the residuals.
+#' \item Plot of states of the model.
+#' }
+#' @param level Confidence level. Defines width of confidence interval. Used in plots (2), (3), (7), (8),
+#' (9), (10) and (11).
+#' @param legend If \code{TRUE}, then the legend is produced on plots (2), (3) and (7).
+#' @param ask Logical; if \code{TRUE}, the user is asked to press Enter before each plot.
+#' @param lowess Logical; if \code{TRUE}, LOWESS lines are drawn on scatterplots, see \link[stats]{lowess}.
+#' @param ... The parameters passed to the plot functions. Recommended to use with separate plots.
+#' @return The function produces the number of plots, specified in the parameter \code{which}.
+#'
+#' @template ssAuthor
+#' @seealso \link[greybox]{plot.greybox}
+#' @keywords ts univar
+#' @examples
+#'
+#' ourModel <- es(c(rnorm(50,100,10),rnorm(50,120,10)), "ANN", h=10)
+#' par(mfcol=c(3,4))
+#' plot(ourModel, c(1:11))
+#' plot(ourModel, 12)
+#'
+#' @importFrom greybox nvariate is.occurrence graphmaker
+#' @importFrom grDevices dev.interactive devAskNewPage
+#' @importFrom stats fitted qqline qqnorm
+#' @export
+plot.legion <- function(x, which=c(1,2,4,6), level=0.95, legend=FALSE,
+                        ask=prod(par("mfcol")) < length(which) * nvariate(x) && dev.interactive(),
+                        lowess=TRUE, ...){
+    nSeries <- nvariate(x);
+
+    # Define, whether to wait for the hit of "Enter"
+    if(ask){
+        oask <- devAskNewPage(TRUE);
+        on.exit(devAskNewPage(oask));
+    }
+
+    # 1. Fitted vs Actuals values
+    plot1 <- function(x, y, yFitted, i, ...){
+        ellipsis <- list(...);
+
+        ellipsis$y <- y;
+        ellipsis$x <- yFitted;
+
+        # If this is a mixture model, remove zeroes
+        if(is.occurrence(x$occurrence)){
+            ellipsis$x <- ellipsis$x[ellipsis$y!=0];
+            ellipsis$y <- ellipsis$y[ellipsis$y!=0];
+        }
+
+        # Remove NAs
+        if(any(is.na(ellipsis$x))){
+            ellipsis$y <- ellipsis$y[!is.na(ellipsis$x)];
+            ellipsis$x <- ellipsis$x[!is.na(ellipsis$x)];
+        }
+        if(any(is.na(ellipsis$y))){
+            ellipsis$x <- ellipsis$x[!is.na(ellipsis$y)];
+            ellipsis$y <- ellipsis$y[!is.na(ellipsis$y)];
+        }
+
+        # Title
+        if(!any(names(ellipsis)=="main")){
+            ellipsis$main <- paste0("Series ",i,", Actuals vs Fitted");
+        }
+        # If type and ylab are not provided, set them...
+        if(!any(names(ellipsis)=="type")){
+            ellipsis$type <- "p";
+        }
+        if(!any(names(ellipsis)=="ylab")){
+            ellipsis$ylab <- "Actuals";
+        }
+        if(!any(names(ellipsis)=="xlab")){
+            ellipsis$xlab <- "Fitted";
+        }
+        # xlim and ylim
+        if(!any(names(ellipsis)=="xlim")){
+            ellipsis$xlim <- range(c(ellipsis$x,ellipsis$y));
+        }
+        if(!any(names(ellipsis)=="ylim")){
+            ellipsis$ylim <- range(c(ellipsis$x,ellipsis$y));
+        }
+
+        # Start plotting
+        do.call(plot,ellipsis);
+        abline(a=0,b=1,col="grey",lwd=2,lty=2)
+        if(lowess){
+            lines(lowess(ellipsis$x, ellipsis$y), col="red");
+        }
+    }
+
+    # 4 and 5. Fitted vs |Residuals| or Fitted vs Residuals^2
+    plot3 <- function(x, yResid, yFitted, i,  type="abs", ...){
+        ellipsis <- list(...);
+
+        ellipsis$x <- yFitted;
+        if(type=="abs"){
+            ellipsis$y <- abs(yResid);
+        }
+        else{
+            ellipsis$y <- yResid^2;
+        }
+
+        if(is.occurrence(x$occurrence)){
+            ellipsis$x <- ellipsis$x[ellipsis$y!=0];
+            ellipsis$y <- ellipsis$y[ellipsis$y!=0];
+        }
+        # Remove NAs
+        if(any(is.na(ellipsis$x))){
+            ellipsis$x <- ellipsis$x[!is.na(ellipsis$x)];
+            ellipsis$y <- ellipsis$y[!is.na(ellipsis$y)];
+        }
+
+        if(!any(names(ellipsis)=="main")){
+            if(type=="abs"){
+                ellipsis$main <- paste0("Series ",i,", |Residuals| vs Fitted");
+            }
+            else{
+                ellipsis$main <- paste0("Series ",i,", Residuals^2 vs Fitted");
+            }
+        }
+
+        if(!any(names(ellipsis)=="xlab")){
+            ellipsis$xlab <- "Fitted";
+        }
+        if(!any(names(ellipsis)=="ylab")){
+            if(type=="abs"){
+                ellipsis$ylab <- "|Residuals|";
+            }
+            else{
+                ellipsis$ylab <- "Residuals^2";
+            }
+        }
+
+        do.call(plot,ellipsis);
+        abline(h=0, col="grey", lty=2);
+        if(lowess){
+            lines(lowess(ellipsis$x, ellipsis$y), col="red");
+        }
+    }
+
+    # 6. Q-Q with the specified distribution
+    plot4 <- function(x, yResid, i, ...){
+        ellipsis <- list(...);
+
+        ellipsis$y <- yResid;
+        if(is.occurrence(x$occurrence)){
+            ellipsis$y <- ellipsis$y[actuals(x$occurrence)!=0];
+        }
+
+        if(!any(names(ellipsis)=="xlab")){
+            ellipsis$xlab <- "Theoretical Quantile";
+        }
+        if(!any(names(ellipsis)=="ylab")){
+            ellipsis$ylab <- "Actual Quantile";
+        }
+
+        if(!any(names(ellipsis)=="main")){
+            ellipsis$main <- paste0("Series ",i,", QQ plot of normal distribution");
+        }
+
+        do.call(qqnorm, ellipsis);
+        qqline(ellipsis$y);
+    }
+
+    # 7. Basic plot over time
+    plot5 <- function(x, y, yFitted, yHoldout, yForecast, yLower=NULL, yUpper=NULL, ...){
+        ellipsis <- list(...);
+
+        ellipsis$actuals <- y;
+        if(!is.null(yHoldout)){
+            if(is.zoo(ellipsis$actuals)){
+                ellipsis$actuals <- zoo(c(as.vector(y),as.vector(yHoldout)),
+                                        order.by=c(time(y),time(yHoldout)));
+            }
+            else{
+                ellipsis$actuals <- ts(c(y,yHoldout),
+                                       start=start(y),
+                                       frequency=frequency(y));
+            }
+        }
+        if(is.null(ellipsis$main)){
+            ellipsis$main <- paste0("Series ",i,", ",x$model);
+        }
+        ellipsis$forecast <- yForecast;
+        ellipsis$fitted <- yFitted;
+        ellipsis$legend <- FALSE;
+        ellipsis$parReset <- FALSE;
+        if(!any(x$interval==c("none","n"))){
+            ellipsis$lower <- yLower;
+            ellipsis$upper <- yUpper;
+            ellipsis$level <- x$level;
+        }
+
+        do.call(graphmaker, ellipsis);
+    }
+
+    # Do plots
+    if(any(which==1)){
+        for(i in 1:nSeries){
+            plot1(x, as.vector(actuals(x)[,i]), as.vector(fitted(x)[,i]), i=i, ...);
+        }
+    }
+
+    if(any(which %in% c(2,3,8:12))){
+        warning("The plots 2, 3, 8-12 are not available yet for the legion class.",
+                call.=FALSE);
+    }
+
+    if(any(which==4)){
+        for(i in 1:nSeries){
+            plot3(x, as.vector(residuals(x)[,i]), as.vector(fitted(x)[,i]), i=i, ...);
+        }
+    }
+
+    if(any(which==5)){
+        for(i in 1:nSeries){
+            plot3(x, as.vector(residuals(x)[,i]), as.vector(fitted(x)[,i]), i=i, type="squared", ...);
+        }
+    }
+
+    if(any(which==6)){
+        for(i in 1:nSeries){
+            plot4(x, as.vector(residuals(x)[,i]), i=i, ...);
+        }
+    }
+
+    if(any(which==7)){
+        for(i in 1:nSeries){
+            plot5(x, actuals(x)[,i], fitted(x)[,i], x$holdout, x$forecast[,i], x$lower[,i], x$upper[,i], ...);
+        }
+    }
+}
+
 #' @export
 plot.oves <- function(x, ...){
     ellipsis <- list(...);
@@ -125,7 +407,7 @@ plot.oves <- function(x, ...){
 
     y <- actuals(x);
     yForecast <- x$forecast;
-    yFitted <- x$fitted;
+    yFittedted <- x$fitted;
     dataDeltat <- deltat(y);
     forecastStart <- start(yForecast);
     h <- nrow(yForecast);
@@ -137,12 +419,12 @@ plot.oves <- function(x, ...){
     for(j in 1:pages){
         par(mfcol=c(min(5,floor(nSeries/j)),1));
         for(i in 1:nSeries){
-            plotRange <- range(min(y[,i],yForecast[,i],yFitted[,i]),
-                               max(y[,i],yForecast[,i],yFitted[,i]));
+            plotRange <- range(min(y[,i],yForecast[,i],yFittedted[,i]),
+                               max(y[,i],yForecast[,i],yFittedted[,i]));
             plot(y[,i],main=paste0(modelname,", series ", i),ylab="Y",
                  ylim=plotRange, xlim=range(time(y[,i])[1],time(yForecast)[max(h,1)]),
                  type="l");
-            lines(yFitted[,i],col="purple",lwd=2,lty=2);
+            lines(yFittedted[,i],col="purple",lwd=2,lty=2);
             if(h>1){
                 lines(yForecast[,i],col="blue",lwd=2);
             }
@@ -293,10 +575,10 @@ print.legion <- function(x, ...){
             cat("\n");
         }
 
-        cat("Number of series: "); cat(ncol(actuals(x)));
+        cat("Number of series: "); cat(nvariate(x));
         cat("\n");
 
-        cat("Number of degrees of freedom per series: "); cat(round(nobs(x)-nparam(x) / ncol(actuals(x)),digits));
+        cat("Number of degrees of freedom per series: "); cat(round(nobs(x)-nparam(x) / nvariate(x),digits));
         cat("\n");
     }
 

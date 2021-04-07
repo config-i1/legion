@@ -8,47 +8,11 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     ellipsis <- list(...);
 
     ##### silent #####
-    silent <- silent[1];
     # Fix for cases with TRUE/FALSE.
     if(!is.logical(silent)){
-        if(all(silent!=c("none","all","graph","legend","output","debugging","n","a","g","l","o","d"))){
-            warning(paste0("Sorry, I have no idea what 'silent=",silent,
-                           "' means. Switching to 'none'."),call.=FALSE);
-            silent <- "none";
-        }
-        silent <- substring(silent,1,1);
-    }
-    silentValue <- silent;
-
-    if(silentValue==FALSE | silentValue=="n"){
-        silentText <- FALSE;
-        silentGraph <- FALSE;
-        silentLegend <- FALSE;
-    }
-    else if(silentValue==TRUE | silentValue=="a"){
-        silentText <- TRUE;
-        silentGraph <- TRUE;
-        silentLegend <- TRUE;
-    }
-    else if(silentValue=="g"){
-        silentText <- FALSE;
-        silentGraph <- TRUE;
-        silentLegend <- TRUE;
-    }
-    else if(silentValue=="l"){
-        silentText <- FALSE;
-        silentGraph <- FALSE;
-        silentLegend <- TRUE;
-    }
-    else if(silentValue=="o"){
-        silentText <- TRUE;
-        silentGraph <- FALSE;
-        silentLegend <- FALSE;
-    }
-    else if(silentValue=="d"){
-        silentText <- TRUE;
-        silentGraph <- FALSE;
-        silentLegend <- FALSE;
+        warning("The parameter silent can only be TRUE or FALSE. Switching to TRUE.",
+                call.=FALSE);
+        silent <- TRUE;
     }
 
     #### Check horizon ####
@@ -108,7 +72,7 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     }
     # Check the data for NAs
     if(any(is.na(y))){
-        if(!silentText){
+        if(!silent){
             warning("Data contains NAs. These observations will be substituted by zeroes.",
                     call.=FALSE);
         }
@@ -221,7 +185,7 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
         }
 
         #### Check trend type ####
-        if(all(Ttype!=c("N","A","M","Z","P","X","Y"))){
+        if(all(Ttype!=c("N","A","M","P","X","Y"))){
             warning(paste0("Wrong trend type: ",Ttype,". Should be 'N', 'A', 'M', 'P', 'X' or 'Y'.\n",
                            "Changing to 'P'"),
                     call.=FALSE);
@@ -230,7 +194,7 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
 
         #### Check seasonality type ####
         # Check if seasonality makes sense
-        if(all(Stype!=c("N","A","M","Z","P","X","Y"))){
+        if(all(Stype!=c("N","A","M","P","X","Y"))){
             warning(paste0("Wrong seasonality type: ",Stype,". Should be 'N', 'A', 'M', 'P', 'X' or 'Y'.",
                            "Setting to 'P'."),
                     call.=FALSE);
@@ -1034,9 +998,7 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
 
     ##### Return values to previous environment #####
     assign("h",h,ParentEnvironment);
-    assign("silentText",silentText,ParentEnvironment);
-    assign("silentGraph",silentGraph,ParentEnvironment);
-    assign("silentLegend",silentLegend,ParentEnvironment);
+    assign("silent",silent,ParentEnvironment);
     assign("obsInSample",obsInSample,ParentEnvironment);
     assign("obsAll",obsAll,ParentEnvironment);
     assign("obsStates",obsStates,ParentEnvironment);

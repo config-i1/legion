@@ -170,9 +170,7 @@ oves <- function(y, occurrence=c("logistic","none","fixed"),
     }
     # Check the data for NAs
     if(any(is.na(y))){
-        if(!silentText){
-            warning("Data contains NAs. These observations will be substituted by zeroes.", call.=FALSE);
-        }
+        warning("Data contains NAs. These observations will be substituted by zeroes.", call.=FALSE);
         y[is.na(y)] <- 0;
     }
 

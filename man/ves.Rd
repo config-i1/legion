@@ -12,8 +12,7 @@ ves(y, model = "ANN", lags = c(frequency(y)), persistence = c("common",
   "BICc"), h = 10, holdout = FALSE, interval = c("none", "conditional",
   "unconditional", "individual", "likelihood"), level = 0.95,
   occurrence = c("none", "fixed", "logistic"), cumulative = FALSE,
-  bounds = c("admissible", "usual", "none"), silent = c("all", "graph",
-  "output", "none"), ...)
+  bounds = c("admissible", "usual", "none"), silent = TRUE, ...)
 }
 \arguments{
 \item{y}{The matrix with the data, where series are in columns and

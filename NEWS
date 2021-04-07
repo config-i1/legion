@@ -1,4 +1,4 @@
-legion v0.0.1 (Release data: 2021-04-06)
+legion v0.0.1 (Release data: 2021-04-07)
 =======
 
 Changes:
@@ -9,6 +9,9 @@ Changes:
 * vets() and ves() now support model selection.
 * vets() now has a proper likelihood estimation and implementation of multiplicative error model.
 * ves() now also has a proper MLE.
+* Parameter "silent" can now only be TRUE or FALSE.
+* auto.vets() function, selecting PIC elements.
+* plot() method for ves() and vets(). Currently only produces plots 1 and 4-7.
 
 Bugfixes:
 *

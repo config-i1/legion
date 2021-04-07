@@ -8,7 +8,7 @@ utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","
                          "CF","Etype","FI","ICs","Stype","Ttype","cumulative","errors","h","holdout",
                          "initial","initialType","interval","intervalType","is.vsmooth.sim","lagsModelMax",
                          "level","matF","matVt","measures","nParam","normalizer","obsStates","ot",
-                         "silentGraph","silentText","transition","transitionEstimate","yInSample",
+                         "transition","transitionEstimate","yInSample",
                          "allowMultiplicative","modelDo","ICsAll"));
 
 #' Vector Exponential Smoothing in SSOE state space model
@@ -224,7 +224,7 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
                 occurrence=c("none","fixed","logistic"),
                 cumulative=FALSE,
                 bounds=c("admissible","usual","none"),
-                silent=c("all","graph","output","none"), ...){
+                silent=TRUE, ...){
     # Copyright (C) 2017 - Inf  Ivan Svetunkov
 
     # Start measuring the time of calculations
@@ -1311,7 +1311,7 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
     environment(vssForecaster) <- environment();
 
     ##### Fit the model and produce forecast #####
-    list2env(callerVES(silent=silentText),environment());
+    list2env(callerVES(silent=silent),environment());
     list2env(architectorVES(Etype, Ttype, Stype, damped, nSeries),environment());
     list2env(creatorVES(),environment());
     list2env(fillerVES(matVt,matF,matG,matW,B,Ttype,damped,
@@ -1485,7 +1485,7 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
         }
     }
     else{
-        yHoldout <- NA;
+        yHoldout <- NULL;
         errorMeasures <- NA;
     }
 
@@ -1529,7 +1529,7 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
     }
 
     ##### Print output #####
-    if(!silentText){
+    if(!silent){
         if(any(abs(eigen(matF - matG %*% matW)$values)>(1 + 1E-10))){
             warning(paste0("Model VES(",model,") is unstable! ",
                            "Use a different value of 'bounds' parameter to address this issue!"),
@@ -1539,7 +1539,7 @@ ves <- function(y, model="ANN", lags=c(frequency(y)),
 
     ##### Make a plot #####
     # This is a temporary solution
-    if(!silentGraph){
+    if(!silent){
         pages <- ceiling(nSeries / 5);
         perPage <- ceiling(nSeries / pages);
         packs <- c(seq(1, nSeries+1, perPage));

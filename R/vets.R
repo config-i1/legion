@@ -170,8 +170,9 @@ utils::globalVariables(c("obsInSample","componentsCommonLevel","componentsCommon
 #' # Automatic selection of ETS components
 #' vets(Y, model="PPP", h=10, holdout=TRUE, initials="seasonal")
 #'
-#' @export
 #' @importFrom stats setNames
+#' @rdname vets
+#' @export
 vets <- function(y, model="ANN", lags=c(frequency(y)),
                  parameters=c("level","trend","seasonal","damped"),
                  initials=c("seasonal"), components=c("none"),
@@ -180,8 +181,8 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
                  interval=c("none","conditional","unconditional","individual","likelihood"), level=0.95,
                  occurrence=c("none","fixed","logistic"),
                  bounds=c("admissible","usual","none"),
-                 silent=c("all","graph","output","none"), ...){
-    # Copyright (C) 2017 - Inf  Ivan Svetunkov
+                 silent=TRUE, ...){
+    # Copyright (C) 2021 - Inf  Ivan Svetunkov
 
     # Start measuring the time of calculations
     startTime <- Sys.time();
@@ -1176,7 +1177,7 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
     environment(vssForecaster) <- environment();
 
     ##### Fit the model and produce forecast #####
-    list2env(callerVETS(silent=silentText),environment());
+    list2env(callerVETS(silent=silent),environment());
     list2env(architectorVETS(Etype, Ttype, Stype, damped, nSeries),environment());
     list2env(creatorVETS(),environment());
     list2env(fillerVETS(matVt, matF, matG, matW, B,
@@ -1286,7 +1287,7 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
         }
     }
     else{
-        yHoldout <- NA;
+        yHoldout <- NULL;
         errorMeasures <- NA;
     }
 
@@ -1356,7 +1357,7 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
     #     }
 
     ##### Print output #####
-    if(!silentText){
+    if(!silent){
         if(any(abs(eigen(matF - matG %*% matW)$values)>(1 + 1E-10))){
             warning(paste0("Model VETS(",model,") is unstable! ",
                            "Use a different value of 'bounds' parameter to address this issue!"),
@@ -1366,7 +1367,7 @@ vets <- function(y, model="ANN", lags=c(frequency(y)),
 
     ##### Make a plot #####
     # This is a temporary solution
-    if(!silentGraph){
+    if(!silent){
         pages <- ceiling(nSeries / 5);
         perPage <- ceiling(nSeries / pages);
         packs <- c(seq(1, nSeries+1, perPage));
