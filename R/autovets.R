@@ -1,5 +1,9 @@
 utils::globalVariables(c("parameters","initials","components"))
 
+#' @param parallel If TRUE, the estimation of ADAM models is done in parallel (used in \code{auto.adam} only).
+#' If the number is provided (e.g. \code{parallel=41}), then the specified number of cores is set up.
+#' WARNING! Packages \code{foreach} and either \code{doMC} (Linux and Mac only)
+#' or \code{doParallel} are needed in order to run the function in parallel.
 #' @importFrom utils combn
 #' @rdname vets
 #' @export
@@ -9,7 +13,7 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
                       interval=c("none","conditional","unconditional","individual","likelihood"), level=0.95,
                       occurrence=c("none","fixed","logistic"),
                       bounds=c("admissible","usual","none"),
-                      silent=TRUE, ...){
+                      silent=TRUE, parallel=FALSE, ...){
     # Copyright (C) 2021 - Inf  Ivan Svetunkov
 
     # Start measuring the time of calculations
@@ -18,6 +22,7 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
     # The function selects the restrictions on PIC elements
     ic <- match.arg(ic);
 
+    #### Architector for ETS part ####
     architectorAutoVETS <- function(model){
         # Get ETS components. This is needed for modelIsTrendy and modelsIsSeasonal
         if(nchar(model)==4){
@@ -61,6 +66,7 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
                     parameters=parametersToCheck,initials=initialsToCheck,components=componentsToCheck))
     }
 
+    #### Call the basic vets() ####
     # Prepare the call of vets()
     vetsCall <- list(...);
     vetsCall$y <- y;
@@ -90,6 +96,7 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
     # Get parameters, initials and components based on the selected model
     list2env(architectorAutoVETS(vetsCall$model),environment());
 
+    #### Prepare all pools ####
     # List of all the combinations of parameters restrictions
     parametersCombinations <- choose(length(parameters),c(1:length(parameters)));
     parametersCombinationNumber <- sum(parametersCombinations);
@@ -139,9 +146,65 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
             componentsToCheck[componentsToCheck %in% c("l","s")][[1]] <- c("l","t","s");
         }
         componentsToCheck <- unique(componentsToCheck);
+        componentsCombinationNumber <- length(componentsToCheck);
     }
 
-    #### Start the fitting of all the models ####
+    #### Parallel calculations ####
+    # Check the parallel parameter and set the number of cores
+    if(is.numeric(parallel)){
+        nCores <- parallel;
+        parallel <- TRUE
+    }
+    else{
+        if(parallel){
+            nCores <- min(parallel::detectCores() - 1, parametersCombinationNumber,
+                          initialsCombinationNumber, componentsCombinationNumber);
+        }
+    }
+
+    # If this is parallel, then load the required packages
+    if(parallel){
+        if(!requireNamespace("foreach", quietly = TRUE)){
+            stop("In order to run the function in parallel, 'foreach' package must be installed.", call. = FALSE);
+        }
+        if(!requireNamespace("parallel", quietly = TRUE)){
+            stop("In order to run the function in parallel, 'parallel' package must be installed.", call. = FALSE);
+        }
+
+        # Check the system and choose the package to use
+        if(Sys.info()['sysname']=="Windows"){
+            if(requireNamespace("doParallel", quietly = TRUE)){
+                cat("Setting up", nCores, "clusters using 'doParallel'...\n");
+                cluster <- parallel::makeCluster(nCores);
+                doParallel::registerDoParallel(cluster);
+            }
+            else{
+                stop("Sorry, but in order to run the function in parallel, you need 'doParallel' package.",
+                     call. = FALSE);
+            }
+        }
+        else{
+            if(requireNamespace("doMC", quietly = TRUE)){
+                doMC::registerDoMC(nCores);
+                cluster <- NULL;
+            }
+            else if(requireNamespace("doParallel", quietly = TRUE)){
+                cat("Setting up", nCores, "clusters using 'doParallel'...\n");
+                cluster <- parallel::makeCluster(nCores);
+                doParallel::registerDoParallel(cluster);
+            }
+            else{
+                stop(paste0("Sorry, but in order to run the function in parallel, you need either ",
+                            "'doMC' (prefered) or 'doParallel' package."),
+                     call. = FALSE);
+            }
+        }
+    }
+    else{
+        cluster <- NULL;
+    }
+
+    #### Start fitting of all the models ####
     # All the options from models to check
     nToCheck <- length(parametersToCheck)+length(initialsToCheck)+length(componentsToCheck);
     # +1 is for the initial model
@@ -155,18 +218,28 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
     if(!silent){
         cat("Testing parameters restrictions... ");
     }
-    # Test the models with parameters restrictions
-    j <- 2;
-    for(i in 1:parametersCombinationNumber){
-        if(i>1){
-            cat(paste0(rep("\b",nchar(round((i-1)/parametersCombinationNumber,2)*100)+1),collapse=""));
-        }
-        cat(round(i/parametersCombinationNumber,2)*100,"\b%");
 
-        vetsCall$parameters <- parametersToCheck[[i]];
-        vetsModels[[j]] <- do.call("vets",vetsCall);
-        j[] <- j+1;
+    if(!parallel){
+        # Test the models with parameters restrictions
+        j <- 2;
+        for(i in 1:parametersCombinationNumber){
+            if(i>1){
+                cat(paste0(rep("\b",nchar(round((i-1)/parametersCombinationNumber,2)*100)+1),collapse=""));
+            }
+            cat(round(i/parametersCombinationNumber,2)*100,"\b%");
+
+            vetsCall$parameters <- parametersToCheck[[i]];
+            vetsModels[[j]] <- do.call("vets",vetsCall);
+            j[] <- j+1;
+        }
     }
+    else{
+        vetsModels[1+1:parametersCombinationNumber] <- foreach::`%dopar%`(foreach::foreach(i=1:parametersCombinationNumber),{
+            vetsCall$parameters <- parametersToCheck[[i]];
+            return(do.call("vets",vetsCall));
+        })
+    }
+
     # Which of the models has the lowest IC? It is the best one so far
     vetsICsParameters <- sapply(vetsModels[0:parametersCombinationNumber+1],"[[","ICs")[ic,];
     jBest <- which.min(vetsICsParameters);
@@ -185,16 +258,25 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
     if(!silent){
         cat("Testing initials restrictions... ");
     }
-    # Test the models with initials restrictions
-    for(i in 1:initialsCombinationNumber){
-        if(i>1){
-            cat(paste0(rep("\b",nchar(round((i-1)/initialsCombinationNumber,2)*100)+1),collapse=""));
-        }
-        cat(round(i/initialsCombinationNumber,2)*100,"\b%");
+    if(!parallel){
+        # Test the models with initials restrictions
+        for(i in 1:initialsCombinationNumber){
+            if(i>1){
+                cat(paste0(rep("\b",nchar(round((i-1)/initialsCombinationNumber,2)*100)+1),collapse=""));
+            }
+            cat(round(i/initialsCombinationNumber,2)*100,"\b%");
 
-        vetsCall$initials <- initialsToCheck[[i]];
-        vetsModels[[j]] <- do.call("vets",vetsCall);
-        j[] <- j+1;
+            vetsCall$initials <- initialsToCheck[[i]];
+            vetsModels[[j]] <- do.call("vets",vetsCall);
+            j[] <- j+1;
+        }
+    }
+    else{
+        vetsModels[1+parametersCombinationNumber+1:initialsCombinationNumber] <-
+            foreach::`%dopar%`(foreach::foreach(i=1:initialsCombinationNumber),{
+            vetsCall$initials <- initialsToCheck[[i]];
+            return(do.call("vets",vetsCall));
+        })
     }
     # Find the model with the lowest IC from the new ones
     vetsICsInitials <- sapply(vetsModels[parametersCombinationNumber+1+1:initialsCombinationNumber],"[[","ICs")[ic,];
@@ -215,16 +297,25 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
     if(!silent){
         cat("Testing components restrictions... ");
     }
-    # Test the models with initials restrictions
-    for(i in 1:componentsCombinationNumber){
-        if(i>1){
-            cat(paste0(rep("\b",nchar(round((i-1)/componentsCombinationNumber,2)*100)+1),collapse=""));
-        }
-        cat(round(i/componentsCombinationNumber,2)*100,"\b%");
+    if(!parallel){
+        # Test the models with initials restrictions
+        for(i in 1:componentsCombinationNumber){
+            if(i>1){
+                cat(paste0(rep("\b",nchar(round((i-1)/componentsCombinationNumber,2)*100)+1),collapse=""));
+            }
+            cat(round(i/componentsCombinationNumber,2)*100,"\b%");
 
-        vetsCall$components <- initialsToCheck[[i]];
-        vetsModels[[j]] <- do.call("vets",vetsCall);
-        j[] <- j+1;
+            vetsCall$components <- componentsToCheck[[i]];
+            vetsModels[[j]] <- do.call("vets",vetsCall);
+            j[] <- j+1;
+        }
+    }
+    else{
+        vetsModels[1+parametersCombinationNumber+initialsCombinationNumber+1:componentsCombinationNumber] <-
+            foreach::`%dopar%`(foreach::foreach(i=1:componentsCombinationNumber),{
+            vetsCall$components <- componentsToCheck[[i]];
+            return(do.call("vets",vetsCall));
+        })
     }
     # Find the model with the lowest IC from the new ones
     vetsICsComponents <- sapply(vetsModels[initialsCombinationNumber+parametersCombinationNumber+1+
@@ -233,7 +324,7 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
     if(vetsICsComponents[jBestComponents]<ICBest){
         jBest <- jBestComponents+initialsCombinationNumber+parametersCombinationNumber+1;
         ICBest <- vetsICsComponents[jBestComponents];
-        vetsCall$components <- initialsToCheck[[jBestComponents]];
+        vetsCall$components <- componentsToCheck[[jBestComponents]];
     }
     else{
         vetsCall$components <- "none";
@@ -241,6 +332,11 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
     if(!silent){
         cat(paste0("\nComponents restrictions model is (",paste0(vetsCall$components,collapse=","),
                    "), IC is: ", round(ICBest,3),"\n"));
+    }
+
+    # Check if the clusters have been made
+    if(!is.null(cluster)){
+        parallel::stopCluster(cluster);
     }
 
     vetsModels[[jBest]]$timeElapsed <- Sys.time()-startTime;

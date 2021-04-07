@@ -10,7 +10,7 @@ auto.vets(y, model = "PPP", lags = c(frequency(y)),
   "BICc"), h = 10, holdout = FALSE, interval = c("none", "conditional",
   "unconditional", "individual", "likelihood"), level = 0.95,
   occurrence = c("none", "fixed", "logistic"), bounds = c("admissible",
-  "usual", "none"), silent = TRUE, ...)
+  "usual", "none"), silent = TRUE, parallel = FALSE, ...)
 
 vets(y, model = "PPP", lags = c(frequency(y)), parameters = c("level",
   "trend", "seasonal", "damped"), initials = c("seasonal"),
@@ -113,6 +113,11 @@ and \code{FALSE}. In this case \code{silent=TRUE} is equivalent to
 \code{silent="all"}, while \code{silent=FALSE} is equivalent to
 \code{silent="none"}. The parameter also accepts first letter of words ("n",
 "a", "g", "l", "o").}
+
+\item{parallel}{If TRUE, the estimation of ADAM models is done in parallel (used in \code{auto.adam} only).
+If the number is provided (e.g. \code{parallel=41}), then the specified number of cores is set up.
+WARNING! Packages \code{foreach} and either \code{doMC} (Linux and Mac only)
+or \code{doParallel} are needed in order to run the function in parallel.}
 
 \item{...}{Other non-documented parameters. For example \code{FI=TRUE} will
 make the function also produce Fisher Information matrix, which then can be
