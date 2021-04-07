@@ -4,7 +4,7 @@
 \alias{ves}
 \title{Vector Exponential Smoothing in SSOE state space model}
 \usage{
-ves(y, model = "ANN", lags = c(frequency(y)), persistence = c("common",
+ves(y, model = "PPP", lags = c(frequency(y)), persistence = c("common",
   "individual", "dependent"), transition = c("common", "individual",
   "dependent"), phi = c("common", "individual"), initial = c("individual",
   "common"), initialSeason = c("common", "individual"),

@@ -213,7 +213,7 @@ utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","
 #'
 #' @importFrom smooth sowhat
 #' @export
-ves <- function(y, model="ANN", lags=c(frequency(y)),
+ves <- function(y, model="PPP", lags=c(frequency(y)),
                 persistence=c("common","individual","dependent"),
                 transition=c("common","individual","dependent"), phi=c("common","individual"),
                 initial=c("individual","common"), initialSeason=c("common","individual"),

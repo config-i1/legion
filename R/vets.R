@@ -173,7 +173,7 @@ utils::globalVariables(c("obsInSample","componentsCommonLevel","componentsCommon
 #' @importFrom stats setNames
 #' @rdname vets
 #' @export
-vets <- function(y, model="ANN", lags=c(frequency(y)),
+vets <- function(y, model="PPP", lags=c(frequency(y)),
                  parameters=c("level","trend","seasonal","damped"),
                  initials=c("seasonal"), components=c("none"),
                  loss=c("likelihood","diagonal","trace"),

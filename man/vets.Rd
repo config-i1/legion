@@ -12,7 +12,7 @@ auto.vets(y, model = "PPP", lags = c(frequency(y)),
   occurrence = c("none", "fixed", "logistic"), bounds = c("admissible",
   "usual", "none"), silent = TRUE, ...)
 
-vets(y, model = "ANN", lags = c(frequency(y)), parameters = c("level",
+vets(y, model = "PPP", lags = c(frequency(y)), parameters = c("level",
   "trend", "seasonal", "damped"), initials = c("seasonal"),
   components = c("none"), loss = c("likelihood", "diagonal", "trace"),
   ic = c("AICc", "AIC", "BIC", "BICc"), h = 10, holdout = FALSE,
