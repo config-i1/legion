@@ -65,8 +65,7 @@ nobs.oves <- function(object, ...){
 #' @importFrom greybox nparam
 #' @export
 nparam.oves <- function(object, ...){
-    nParamReturn <- object$nParam[1,4];
-    return(nParamReturn);
+    return(object$nParam[1,4]);
 }
 
 #' @importFrom stats sigma
@@ -85,14 +84,14 @@ errorType.legion <- function(object, ...){
     else if(any(substr(modelType(object),1,1)==c("M"))){
         return("M");
     }
+    else{
+        return(NA);
+    }
 }
 
 #' @export
 coef.legion <- function(object, ...){
-
-    parameters <- object$B;
-
-    return(parameters);
+    return(object$B);
 }
 
 #' @importFrom smooth modelType
