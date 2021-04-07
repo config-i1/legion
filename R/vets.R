@@ -516,19 +516,27 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
         initialValue <- c(initialValueNew01, initialValueNew02);
 
         if(modelIsSeasonal){
-            # Matrix of dummies for seasons
-            XValues <- matrix(rep(diag(lagsModelMax),ceiling(obsInSample/lagsModelMax)),lagsModelMax)[,1:obsInSample];
-            initialSeasonValue <- (switch(Etype, "M"=log(yInSample), yInSample)-
-                                       rowMeans(switch(Etype, "M"=log(yInSample), yInSample))) %*%
-                t(XValues) %*% solve(XValues %*% t(XValues));
+            # Matrix of linear trend and dummies for seasons
+            XValues <- rbind(rep(1,obsInSample),c(1:obsInSample),
+                             matrix(rep(diag(lagsModelMax)[-1,],ceiling(obsInSample/lagsModelMax)), lagsModelMax-1)[,1:obsInSample]);
+            # XValues <- rbind(c(1:obsInSample),
+                             # matrix(rep(diag(lagsModelMax),ceiling(obsInSample/lagsModelMax)), lagsModelMax)[,1:obsInSample]);
+            # initialSeasonValue <- ((switch(Etype, "M"=log(yInSample), yInSample)-
+            #                             rowMeans(switch(Etype, "M"=log(yInSample), yInSample))) %*%
+            #                             t(XValues) %*% solve(XValues %*% t(XValues)))[,-1];
+            initialSeasonValue <- (switch(Etype, "M"=log(yInSample), yInSample) %*%
+                                       t(XValues) %*% solve(XValues %*% t(XValues)))[,-2];
+            initialSeasonValue[,-1] <- initialSeasonValue[,-1] + initialSeasonValue[,1];
             # Renormalise initials
             initialSeasonValue[] <- initialSeasonValue - rowMeans(initialSeasonValue);
+            # print(initialSeasonValue)
+            # stop()
 
             if(initialsCommonSeasonal){
                 matVt[j+1:nComponentsSeasonal,1:lagsModelMax] <- initialSeasonValue <- matrix(colMeans(initialSeasonValue),1);
             }
             else{
-                matVt[j+1:nComponentsSeasonal,1:lagsModelMax] <- t(initialSeasonValue);
+                matVt[j+1:nComponentsSeasonal,1:lagsModelMax] <- initialSeasonValue;
             }
             # Remove one of columns, to preserve degrees of freedom (normalisation)
             initialSeasonValue <- initialSeasonValue[,-1,drop=FALSE];
@@ -666,11 +674,9 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
         }
 
         if(modelIsSeasonal){
-            matVt[k+1:nComponentsSeasonal,2:lagsModelMax] <- matrix(B[j+1:(nInitialsSeasonal*(lagsModelMax-1))],
-                                                                    nComponentsSeasonal,(lagsModelMax-1),byrow=TRUE);
+            matVt[k+1:nComponentsSeasonal,2:lagsModelMax] <- B[j+1:(nInitialsSeasonal*(lagsModelMax-1))];
             # Normalise initials
             matVt[k+1:nComponentsSeasonal,1] <- -rowSums(matVt[k+1:nComponentsSeasonal,2:lagsModelMax,drop=FALSE]);
-
         }
 
         return(list(matVt=matVt,matF=matF,matG=matG,matW=matW));
@@ -689,6 +695,7 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
         BLower <- BUpper <- B <- rep(NA, nParametersLevel + nParametersTrend + nParametersSeasonal + nParametersDamped +
                                          nInitialsLevel + nInitialsTrend + nInitialsSeasonal*(lagsModelMax-1));
 
+        #### Smoothing and damped parameters ####
         j <- 0;
         # alpha
         B[1:nParametersLevel] <- 0.1;
@@ -721,6 +728,7 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
             j[] <- j+nParametersDamped;
         }
 
+        #### Initials ####
         # Initial level and trend
         B[j+1:nInitialsLevel] <- initialValue[1:nInitialsLevel];
         BLower[j+1:nInitialsLevel] <- -Inf;
@@ -731,8 +739,9 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
             BLower[j+nInitialsLevel+1:nInitialsTrend] <- -Inf;
             BUpper[j+nInitialsLevel+1:nInitialsTrend] <- Inf;
             names(B)[j+nInitialsLevel+1:nInitialsTrend] <- paste0("trend",c(1:nInitialsTrend));
+            j[] <- j+nInitialsTrend;
         }
-        j[] <- j+nComponentsNonSeasonal;
+        j[] <- j+nInitialsLevel;
 
         # Initial seasonal components
         if(modelIsSeasonal){
@@ -907,7 +916,7 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
 
         # Parameters are chosen to speed up the optimisation process and have decent accuracy
         res <- nloptr(B, CF, lb=BList$BLower, ub=BList$BUpper,
-                      opts=list(algorithm=algorithm1, xtol_rel=xtol_rel1, maxeval=maxeval, print_level=print_level),
+                      opts=list(algorithm=algorithm1, xtol_rel=xtol_rel1, maxeval=maxevalUsed, print_level=print_level),
                       loss=lossNew, Etype=Etype);
         B[] <- res$solution;
 
@@ -922,7 +931,7 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
         }
 
         res2 <- nloptr(B, CF, lb=BList$BLower, ub=BList$BUpper,
-                       opts=list(algorithm=algorithm2, xtol_rel=xtol_rel2, maxeval=maxeval, print_level=print_level),
+                       opts=list(algorithm=algorithm2, xtol_rel=xtol_rel2, maxeval=maxevalUsed, print_level=print_level),
                        loss=lossNew, Etype=Etype);
         # This condition is needed in order to make sure that we did not make the solution worse
         if(res2$objective <= res$objective){

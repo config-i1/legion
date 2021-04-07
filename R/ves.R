@@ -1023,7 +1023,7 @@ ves <- function(y, model="PPP", lags=c(frequency(y)),
 
         # Parameters are chosen to speed up the optimisation process and have decent accuracy
         res <- nloptr(B, CF, lb=BList$BLower, ub=BList$BUpper,
-                      opts=list(algorithm=algorithm1, xtol_rel=xtol_rel1, maxeval=maxeval, print_level=print_level),
+                      opts=list(algorithm=algorithm1, xtol_rel=xtol_rel1, maxeval=maxevalUsed, print_level=print_level),
                       loss=lossNew, Etype=Etype, Ttype=Ttype, damped=damped,
                       nComponentsNonSeasonal=nComponentsNonSeasonal, nComponentsAll=nComponentsAll, lagsModelMax=lagsModelMax);
         B <- res$solution;
@@ -1039,7 +1039,7 @@ ves <- function(y, model="PPP", lags=c(frequency(y)),
         }
 
         res2 <- nloptr(B, CF, lb=BList$BLower, ub=BList$BUpper,
-                       opts=list(algorithm=algorithm2, xtol_rel=xtol_rel2, maxeval=maxeval, print_level=print_level),
+                       opts=list(algorithm=algorithm2, xtol_rel=xtol_rel2, maxeval=maxevalUsed, print_level=print_level),
                        loss=lossNew, Etype=Etype, Ttype=Ttype, damped=damped,
                        nComponentsNonSeasonal=nComponentsNonSeasonal, nComponentsAll=nComponentsAll, lagsModelMax=lagsModelMax);
         # This condition is needed in order to make sure that we did not make the solution worse

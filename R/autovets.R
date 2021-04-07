@@ -79,6 +79,10 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
     vetsCall$initials <- "none";
     vetsCall$components <- "none";
 
+    if(!silent){
+        cat("Selecting the best unrestricted model... \n");
+    }
+
     # Select the model for the basic
     initialModel <- do.call("vets",vetsCall);
     vetsCall$model <- modelType(initialModel);
@@ -113,7 +117,6 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
                 as.list(as.data.frame(combn(initials,i),stringsAsFactors=F));
         }
     }
-
     # List of all the combinations of components restrictions
     componentsCombinations <- choose(length(components),c(1:length(components)));
     componentsCombinationNumber <- sum(componentsCombinations);
@@ -138,6 +141,7 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
         componentsToCheck <- unique(componentsToCheck);
     }
 
+    #### Start the fitting of all the models ####
     # All the options from models to check
     nToCheck <- length(parametersToCheck)+length(initialsToCheck)+length(componentsToCheck);
     # +1 is for the initial model
@@ -148,9 +152,17 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
         cat(paste0("Initial model is VETS(",modelType(vetsModels[[1]]),"), IC is: ", round(vetsModels[[1]]$ICs[ic],3),"\n"));
     }
 
+    if(!silent){
+        cat("Testing parameters restrictions... ");
+    }
     # Test the models with parameters restrictions
     j <- 2;
     for(i in 1:parametersCombinationNumber){
+        if(i>1){
+            cat(paste0(rep("\b",nchar(round((i-1)/parametersCombinationNumber,2)*100)+1),collapse=""));
+        }
+        cat(round(i/parametersCombinationNumber,2)*100,"\b%");
+
         vetsCall$parameters <- parametersToCheck[[i]];
         vetsModels[[j]] <- do.call("vets",vetsCall);
         j[] <- j+1;
@@ -166,12 +178,20 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
         vetsCall$parameters <- parametersToCheck[[jBest-1]];
     }
     if(!silent){
-        cat(paste0("Parameters restrictions model is (",paste0(vetsCall$parameters,collapse=","),
+        cat(paste0("\nParameters restrictions model is (",paste0(vetsCall$parameters,collapse=","),
                    "), IC is: ", round(ICBest,3),"\n"));
     }
 
+    if(!silent){
+        cat("Testing initials restrictions... ");
+    }
     # Test the models with initials restrictions
     for(i in 1:initialsCombinationNumber){
+        if(i>1){
+            cat(paste0(rep("\b",nchar(round((i-1)/initialsCombinationNumber,2)*100)+1),collapse=""));
+        }
+        cat(round(i/initialsCombinationNumber,2)*100,"\b%");
+
         vetsCall$initials <- initialsToCheck[[i]];
         vetsModels[[j]] <- do.call("vets",vetsCall);
         j[] <- j+1;
@@ -188,12 +208,20 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
         vetsCall$initials <- "none";
     }
     if(!silent){
-        cat(paste0("Initials restrictions model is (",paste0(vetsCall$initials,collapse=","),
+        cat(paste0("\nInitials restrictions model is (",paste0(vetsCall$initials,collapse=","),
                    "), IC is: ", round(ICBest,3),"\n"));
     }
 
+    if(!silent){
+        cat("Testing components restrictions... ");
+    }
     # Test the models with initials restrictions
     for(i in 1:componentsCombinationNumber){
+        if(i>1){
+            cat(paste0(rep("\b",nchar(round((i-1)/componentsCombinationNumber,2)*100)+1),collapse=""));
+        }
+        cat(round(i/componentsCombinationNumber,2)*100,"\b%");
+
         vetsCall$components <- initialsToCheck[[i]];
         vetsModels[[j]] <- do.call("vets",vetsCall);
         j[] <- j+1;
@@ -211,7 +239,7 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
         vetsCall$components <- "none";
     }
     if(!silent){
-        cat(paste0("Components restrictions model is (",paste0(vetsCall$components,collapse=","),
+        cat(paste0("\nComponents restrictions model is (",paste0(vetsCall$components,collapse=","),
                    "), IC is: ", round(ICBest,3),"\n"));
     }
 
