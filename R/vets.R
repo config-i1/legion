@@ -529,8 +529,6 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
             initialSeasonValue[,-1] <- initialSeasonValue[,-1] + initialSeasonValue[,1];
             # Renormalise initials
             initialSeasonValue[] <- initialSeasonValue - rowMeans(initialSeasonValue);
-            # print(initialSeasonValue)
-            # stop()
 
             if(initialsCommonSeasonal){
                 matVt[j+1:nComponentsSeasonal,1:lagsModelMax] <- initialSeasonValue <- matrix(colMeans(initialSeasonValue),1);
@@ -674,7 +672,8 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
         }
 
         if(modelIsSeasonal){
-            matVt[k+1:nComponentsSeasonal,2:lagsModelMax] <- B[j+1:(nInitialsSeasonal*(lagsModelMax-1))];
+            matVt[k+1:nComponentsSeasonal,2:lagsModelMax] <- matrix(B[j+1:(nInitialsSeasonal*(lagsModelMax-1))],
+                                                                    nComponentsSeasonal,(lagsModelMax-1),byrow=TRUE);
             # Normalise initials
             matVt[k+1:nComponentsSeasonal,1] <- -rowSums(matVt[k+1:nComponentsSeasonal,2:lagsModelMax,drop=FALSE]);
         }
@@ -746,7 +745,7 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
         # Initial seasonal components
         if(modelIsSeasonal){
             # -1 is due to normalisation of seasonal states
-            B[j+1:(nInitialsSeasonal*(lagsModelMax-1))] <- initialSeasonValue;
+            B[j+1:(nInitialsSeasonal*(lagsModelMax-1))] <- t(initialSeasonValue);
             BLower[j+1:(nInitialsSeasonal*(lagsModelMax-1))] <- -Inf;
             BUpper[j+1:(nInitialsSeasonal*(lagsModelMax-1))] <- Inf;
             names(B)[j+1:(nInitialsSeasonal*(lagsModelMax-1))] <- paste0(rep(paste0("seasonal",c(1:nInitialsSeasonal),"_"),
@@ -858,6 +857,34 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
         }
     }
 
+    ##### IC values for VETS #####
+    ICsVETS <- function(B, logLikVETSValue, nSeries, nParamAll, obsInSample){
+        ICs <- setNames(vector("numeric",4),c("AIC","AICc","BIC","BICc"));
+
+        # AIC
+        ICs[1] <- AIC(logLikVETSValue);
+        # AICc
+        if(obsInSample - (nParamAll + nSeries + 1) <=0){
+            ICs[2] <- Inf;
+        }
+        else{
+            ICs[2] <- -2*logLikVETSValue + ((2*obsInSample*(nParamAll*nSeries + nSeries*(nSeries+1)/2)) /
+                                        (obsInSample - (nParamAll + nSeries + 1)));
+        }
+        # BIC
+        ICs[3] <- BIC(logLikVETSValue);
+        # BICc
+        if(obsInSample * nSeries - nParamAll - nSeries*(nSeries+1)/2 <=0){
+            ICs[4] <- Inf;
+        }
+        else{
+            ICs[4] <- -2*logLikVETSValue + (((nParamAll + nSeries*(nSeries+1)/2) *
+                                                 log(obsInSample * nSeries) * obsInSample * nSeries) /
+                                                (obsInSample * nSeries - nParamAll - nSeries*(nSeries+1)/2));
+        }
+        return(ICs);
+    }
+
     ##### Basic estimation function for vets() #####
     estimatorVETS <- function(...){
         environment(creatorVETS) <- environment();
@@ -961,8 +988,8 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
         # likelihood and ICs
         logLikVETSValue <- structure(logLikVETS(B=B,loss=loss,Etype=Etype),
                                      nobs=obsInSample,df=nParam,class="logLik");
-        ICs <- setNames(c(AIC(logLikVETSValue), AICc(logLikVETSValue), BIC(logLikVETSValue), BICc(logLikVETSValue)),
-                        c("AIC","AICc","BIC","BICc"));
+        ICs <- ICsVETS(B=B, logLikVETSValue=logLikVETSValue, nSeries=nSeries,
+                       nParamAll=nParam, obsInSample=obsInSample);
 
         # If this is a special case, recalculate CF to get the proper loss value
         if(loss=="likelihood" && Etype=="A"){

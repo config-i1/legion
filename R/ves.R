@@ -341,6 +341,34 @@ ves <- function(y, model="PPP", lags=c(frequency(y)),
         }
     }
 
+    ##### IC values for VETS #####
+    ICsVES <- function(B, logLikVESValue, nSeries, nParamAll, obsInSample){
+        ICs <- setNames(vector("numeric",4),c("AIC","AICc","BIC","BICc"));
+
+        # AIC
+        ICs[1] <- AIC(logLikVESValue);
+        # AICc
+        if(obsInSample - (nParamAll + nSeries + 1) <=0){
+            ICs[2] <- Inf;
+        }
+        else{
+            ICs[2] <- -2*logLikVESValue + ((2*obsInSample*(nParamAll*nSeries + nSeries*(nSeries+1)/2)) /
+                                        (obsInSample - (nParamAll + nSeries + 1)));
+        }
+        # BIC
+        ICs[3] <- BIC(logLikVESValue);
+        # BICc
+        if(obsInSample * nSeries - nParamAll - nSeries*(nSeries+1)/2 <=0){
+            ICs[4] <- Inf;
+        }
+        else{
+            ICs[4] <- -2*logLikVESValue + (((nParamAll + nSeries*(nSeries+1)/2) *
+                                                 log(obsInSample * nSeries) * obsInSample * nSeries) /
+                                                (obsInSample * nSeries - nParamAll - nSeries*(nSeries+1)/2));
+        }
+        return(ICs);
+    }
+
     ##### B values for estimation #####
     # Function constructs default bounds where B values should lie
     initialiserVES <- function(Ttype,Stype,lagsModelMax,nComponentsAll,nComponentsNonSeasonal,nSeries){
@@ -1073,8 +1101,8 @@ ves <- function(y, model="PPP", lags=c(frequency(y)),
         # likelihood and ICs
         logLikVESValue <- structure(logLikVES(B=B,loss=loss,Etype=Etype),
                                     nobs=obsInSample,df=nParam,class="logLik");
-        ICs <- setNames(c(AIC(logLikVESValue), AICc(logLikVESValue), BIC(logLikVESValue), BICc(logLikVESValue)),
-                        c("AIC","AICc","BIC","BICc"));
+        ICs <- ICsVES(B=B, logLikVESValue=logLikVESValue, nSeries=nSeries,
+                      nParamAll=nParam, obsInSample=obsInSample);
 
         # If this is a special case, recalculate CF to get the proper loss value
         if(loss=="likelihood" && Etype=="A"){

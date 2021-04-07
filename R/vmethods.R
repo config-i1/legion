@@ -26,8 +26,13 @@ AICc.legion <- function(object, ...){
                                                    "diagonal" = 1);
 
     obs <- nobs(object);
-    IC <- -2*llikelihood + ((2*obs*(nParamAll*nSeries + nSeries*(nSeries+1)/2)) /
-                                (obs - (nParamAll + nSeries + 1)));
+    if(obs - (nParamAll + nSeries + 1) <=0){
+        IC <- Inf;
+    }
+    else{
+        IC <- -2*llikelihood + ((2*obs*(nParamAll*nSeries + nSeries*(nSeries+1)/2)) /
+                                    (obs - (nParamAll + nSeries + 1)));
+    }
 
     return(IC);
 }
@@ -45,9 +50,14 @@ BICc.legion <- function(object, ...){
                                                    "diagonal" = 1);
 
     obs <- nobs(object);
-    IC <- -2*llikelihood + (((nParamAll + nSeries*(nSeries+1)/2) *
-                                 log(obs * nSeries) * obs * nSeries) /
-                                (obs * nSeries - nParamAll - nSeries*(nSeries+1)/2));
+    if(obs * nSeries - nParamAll - nSeries*(nSeries+1)/2 <=0){
+        IC <- Inf;
+    }
+    else{
+        IC <- -2*llikelihood + (((nParamAll + nSeries*(nSeries+1)/2) *
+                                     log(obs * nSeries) * obs * nSeries) /
+                                    (obs * nSeries - nParamAll - nSeries*(nSeries+1)/2));
+    }
 
     return(IC);
 }
