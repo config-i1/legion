@@ -2,6 +2,7 @@
 
 S3method(AICc,legion)
 S3method(BICc,legion)
+S3method(actuals,legion)
 S3method(coef,legion)
 S3method(errorType,legion)
 S3method(logLik,legion)

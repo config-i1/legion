@@ -62,6 +62,12 @@ BICc.legion <- function(object, ...){
     return(IC);
 }
 
+#' @importFrom greybox actuals
+#' @export
+actuals.legion <- function(object, ...){
+    return(object$y);
+}
+
 #' @importFrom stats nobs
 #' @export
 nobs.legion <- function(object, ...){
