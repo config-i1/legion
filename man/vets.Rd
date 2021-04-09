@@ -251,7 +251,7 @@ In case of multiplicative model, instead of the vector y_t we use its logarithms
 As a result the multiplicative model is much easier to work with.
 
 For some more information about the model and its implementation, see the
-vignette: \code{vignette("ves","legion")}
+vignette: \code{vignette("vets","legion")}
 }
 \examples{
 
@@ -281,8 +281,9 @@ Springer-Verlag.
 Analysis. New introduction to Multiple Time Series Analysis. Berlin,
 Heidelberg: Springer Berlin Heidelberg.
 \doi{10.1007/978-3-540-27752-1}
-\item Chen H., Svetunkov I., Boylan J. (2021). A New Taxonomy of Vector
-Exponential Smoothing for Seasonal Time Series.
+\item Chen H., Svetunkov I., Boylan J. (2021). A New Taxonomy for
+Vector Exponential Smoothing and Its Application to Seasonal Time
+Series.
 }
 }
 \seealso{

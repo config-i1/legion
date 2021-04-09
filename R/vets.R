@@ -61,7 +61,7 @@ utils::globalVariables(c("obsInSample","componentsCommonLevel","componentsCommon
 #' As a result the multiplicative model is much easier to work with.
 #'
 #' For some more information about the model and its implementation, see the
-#' vignette: \code{vignette("ves","legion")}
+#' vignette: \code{vignette("vets","legion")}
 #'
 #' @template vssBasicParam
 #' @template vssAdvancedParam
