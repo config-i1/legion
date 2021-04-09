@@ -1,5 +1,6 @@
 utils::globalVariables(c("initialSeason","persistence","phi","otObs",
-                         "occurrence","ovesModel","occurrenceModelProvided","seasonal","lags"));
+                         "occurrence","ovesModel","occurrenceModelProvided","seasonal","lags",
+                         "loss"));
 
 ##### *Checker of input of vector functions* #####
 vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
@@ -1092,13 +1093,13 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     assign("print_level",print_level,ParentEnvironment);
 }
 #
-# ##### *Likelihood function* #####
+# ##### *Likelihood function*
 # vLikelihoodFunction <- function(B){
 #     return(- obsInSample/2 * (nSeries*log(2*pi*exp(1)) + CF(B)) -
 #                switch(Etype,"M"=sum(log(yInSample[ot==1])),0));
 # }
 #
-# ##### *Function calculates ICs* #####
+# ##### *Function calculates ICs*
 # vICFunction <- function(nParam=nParam,B,Etype=Etype){
 #     # Information criteria are calculated with the constant part "log(2*pi*exp(1)*h+log(obs))*obs".
 #     # And it is based on the mean of the sum squared residuals either than sum.
@@ -1125,6 +1126,22 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
 #
 #     return(list(llikelihood=llikelihood,ICs=ICs));
 # }
+
+
+##### CF for scale calculation #####
+# This is needed for the models with multiplicative error term
+scalerCF <- function(A, errors, scaleValue, yInSampleSum){
+    # Fill in the matrix
+    scaleValue[upper.tri(scaleValue,diag=TRUE)] <- A;
+    scaleValue[lower.tri(scaleValue)] <- t(scaleValue)[lower.tri(scaleValue)];
+    # If detereminant is positive, return logLik
+    if(det(scaleValue)<=0){
+        return(1e+100);
+    }
+    else{
+        return(-sum(dmvnormInternal(errors, -0.5*diag(scaleValue), scaleValue, log=TRUE))+yInSampleSum);
+    }
+}
 
 ##### *vssFitter function* #####
 vssFitter <- function(...){
@@ -1323,6 +1340,20 @@ vssForecaster <- function(...){
     # Divide each element by each degree of freedom
     Sigma <- (errors %*% t(errors)) / df;
     rownames(Sigma) <- colnames(Sigma) <- dataNames;
+
+    # Correct the sigma matrix
+    if(loss=="likelihood" && Etype=="M"){
+        A <- Sigma[upper.tri(Sigma,diag=TRUE)];
+        ALower <- rep(-max(abs(A)),length(A));
+        AUpper <- rep(max(abs(A)),length(A));
+        res <- nloptr(A, scalerCF, lb=ALower, ub=AUpper,
+                      opts=list(algorithm="NLOPT_LN_NELDERMEAD",
+                                                 xtol_rel=1e-8, maxeval=500, print_level=0),
+                      errors=errors, scaleValue=Sigma, yInSampleSum=sum(log(yInSample)));
+        A[] <- res$solution;
+        Sigma[upper.tri(Sigma,diag=TRUE)] <- A;
+        Sigma[lower.tri(Sigma)] <- t(Sigma)[lower.tri(Sigma)];
+    }
 
     # if(any((otObs - nParamPerSeries)<=0)){
     #     df <- 0;
