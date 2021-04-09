@@ -757,20 +757,6 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
         return(list(B=B,BLower=BLower,BUpper=BUpper));
     }
 
-    ##### CF for scale calculation #####
-    # scalerVETSCF <- function(A, errors, scaleValue){
-    #     # Fill in the matrix
-    #     scaleValue[upper.tri(scaleValue,diag=TRUE)] <- A;
-    #     scaleValue[lower.tri(scaleValue)] <- t(scaleValue)[lower.tri(scaleValue)];
-    #     # If detereminant is positive, return logLik
-    #     if(det(scaleValue)<=0){
-    #         return(1e+100);
-    #     }
-    #     else{
-    #         return(-sum(dmvnormInternal(errors, -0.5*diag(scaleValue), scaleValue, log=TRUE)));
-    #     }
-    # }
-
     ##### Calculation of scale #####
     scalerVETS <- function(distribution="dnorm", Etype, obsInSample, other=NULL,
                            errors, yFitted=NULL, normalizer=1){
@@ -785,7 +771,7 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
             # A <- scaleValue[upper.tri(scaleValue,diag=TRUE)];
             # ALower <- rep(-max(abs(A)),length(A));
             # AUpper <- rep(max(abs(A)),length(A));
-            # res <- nloptr(A, scalerVETSCF, lb=ALower, ub=AUpper,
+            # res <- nloptr(A, scalerCF, lb=ALower, ub=AUpper,
             #               opts=list(algorithm="NLOPT_LN_NELDERMEAD",
             #                                          xtol_rel=1e-8, maxeval=500, print_level=0),
             #               errors=errors, scaleValue=scaleValue);
@@ -1393,12 +1379,10 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
     #     }
 
     ##### Print output #####
-    if(!silent){
-        if(any(abs(eigen(matF - matG %*% matW)$values)>(1 + 1E-10))){
-            warning(paste0("Model VETS(",model,") is unstable! ",
-                           "Use a different value of 'bounds' parameter to address this issue!"),
-                    call.=FALSE);
-        }
+    if(any(abs(eigen(matF - matG %*% matW)$values)>(1 + 1E-10))){
+        warning(paste0("Model VETS(",model,") is unstable! ",
+                       "Use a different value of 'bounds' parameter to address this issue!"),
+                call.=FALSE);
     }
 
     ##### Make a plot #####
