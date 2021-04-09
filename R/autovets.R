@@ -222,10 +222,12 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
         j <- 2;
         # Test the models with initials restrictions
         for(i in 1:initialsCombinationNumber){
-            if(i>1){
-                cat(paste0(rep("\b",nchar(round((i-1)/initialsCombinationNumber,2)*100)+1),collapse=""));
+            if(!silent){
+                if(i>1){
+                    cat(paste0(rep("\b",nchar(round((i-1)/initialsCombinationNumber,2)*100)+1),collapse=""));
+                }
+                cat(round(i/initialsCombinationNumber,2)*100,"\b%");
             }
-            cat(round(i/initialsCombinationNumber,2)*100,"\b%");
 
             vetsCall$initials <- initialsToCheck[[i]];
             vetsModels[[j]] <- do.call("vets",vetsCall);
@@ -261,10 +263,12 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
     if(!parallel){
         # Test the models with parameters restrictions
         for(i in 1:parametersCombinationNumber){
-            if(i>1){
-                cat(paste0(rep("\b",nchar(round((i-1)/parametersCombinationNumber,2)*100)+1),collapse=""));
+            if(!silent){
+                if(i>1){
+                    cat(paste0(rep("\b",nchar(round((i-1)/parametersCombinationNumber,2)*100)+1),collapse=""));
+                }
+                cat(round(i/parametersCombinationNumber,2)*100,"\b%");
             }
-            cat(round(i/parametersCombinationNumber,2)*100,"\b%");
 
             vetsCall$parameters <- parametersToCheck[[i]];
             vetsModels[[j]] <- do.call("vets",vetsCall);
@@ -300,10 +304,12 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
     if(!parallel){
         # Test the models with initials restrictions
         for(i in 1:componentsCombinationNumber){
-            if(i>1){
-                cat(paste0(rep("\b",nchar(round((i-1)/componentsCombinationNumber,2)*100)+1),collapse=""));
+            if(!silent){
+                if(i>1){
+                    cat(paste0(rep("\b",nchar(round((i-1)/componentsCombinationNumber,2)*100)+1),collapse=""));
+                }
+                cat(round(i/componentsCombinationNumber,2)*100,"\b%");
             }
-            cat(round(i/componentsCombinationNumber,2)*100,"\b%");
 
             vetsCall$components <- componentsToCheck[[i]];
             vetsModels[[j]] <- do.call("vets",vetsCall);
