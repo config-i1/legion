@@ -1631,7 +1631,7 @@ ves <- function(y, model="PPP", lags=c(frequency(y)),
                   measurement=matW, phi=dampedValue, B=B,
                   initialType=initialType,initial=initialValue,initialSeason=initialSeasonValue,
                   nParam=parametersNumber, imodel=ovesModel,
-                  y=y,fitted=yFitted,holdout=yHoldout,residuals=errors,Sigma=Sigma,
+                  y=yInSample,fitted=yFitted,holdout=yHoldout,residuals=errors,Sigma=Sigma,
                   forecast=yForecast,PI=PI,interval=intervalType,level=level,
                   ICs=ICs,ICsAll=ICsAll,logLik=logLik,lossValue=cfObjective,loss=loss,accuracy=errorMeasures,
                   FI=FI);

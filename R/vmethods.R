@@ -346,11 +346,11 @@ plot.legion <- function(x, which=c(1,2,4,6), level=0.95, legend=FALSE,
         ellipsis$actuals <- y;
         if(!is.null(yHoldout)){
             if(is.zoo(ellipsis$actuals)){
-                ellipsis$actuals <- zoo(c(as.vector(y),as.vector(yHoldout)),
+                ellipsis$actuals <- zoo(rbind(y,yHoldout),
                                         order.by=c(time(y),time(yHoldout)));
             }
             else{
-                ellipsis$actuals <- ts(c(y,yHoldout),
+                ellipsis$actuals <- ts(rbind(y,yHoldout),
                                        start=start(y),
                                        frequency=frequency(y));
             }
