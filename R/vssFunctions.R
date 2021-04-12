@@ -871,7 +871,7 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
 
     if(is.logical(intervalType)){
         if(intervalType){
-            intervalType <- "c";
+            intervalType <- "i";
         }
         else{
             intervalType <- "none";
@@ -882,7 +882,7 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
                            "individual","likelihood"))){
         warning(paste0("Wrong type of interval: '",intervalType, "'. Switching to 'conditional'."),
                 call.=FALSE);
-        intervalType <- "c";
+        intervalType <- "i";
     }
 
     if(intervalType=="none"){

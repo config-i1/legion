@@ -1401,6 +1401,7 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
             packs <- c(packs,nSeries+1);
         }
         parDefault <- par(no.readonly=TRUE);
+        print(intervalType)
         for(j in 1:pages){
             par(mar=c(4,4,2,1),mfcol=c(perPage,1));
             for(i in packs[j]:(packs[j+1]-1)){
