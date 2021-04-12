@@ -403,7 +403,7 @@ plot.legion <- function(x, which=c(1,2,4,6), level=0.95, legend=FALSE,
 
     if(any(which==7)){
         for(i in 1:nSeries){
-            plot5(x, actuals(x)[,i], fitted(x)[,i], x$holdout, x$forecast[,i], x$lower[,i], x$upper[,i], ...);
+            plot5(x, actuals(x)[,i], fitted(x)[,i], x$holdout[,i], x$forecast[,i], x$lower[,i], x$upper[,i], ...);
         }
     }
 }
