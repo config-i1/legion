@@ -5,23 +5,24 @@
 \alias{vets}
 \title{Vector ETS-PIC model}
 \usage{
-auto.vets(y, model = "PPP", lags = c(frequency(y)),
+auto.vets(data, model = "PPP", lags = c(frequency(data)),
   loss = c("likelihood", "diagonal", "trace"), ic = c("AICc", "AIC", "BIC",
   "BICc"), h = 10, holdout = FALSE, interval = c("none", "conditional",
   "unconditional", "individual", "likelihood"), level = 0.95,
   occurrence = c("none", "fixed", "logistic"), bounds = c("admissible",
   "usual", "none"), silent = TRUE, parallel = FALSE, ...)
 
-vets(y, model = "PPP", lags = c(frequency(y)), parameters = c("level",
-  "trend", "seasonal", "damped"), initials = c("seasonal"),
-  components = c("none"), loss = c("likelihood", "diagonal", "trace"),
-  ic = c("AICc", "AIC", "BIC", "BICc"), h = 10, holdout = FALSE,
-  interval = c("none", "conditional", "unconditional", "individual",
-  "likelihood"), level = 0.95, occurrence = c("none", "fixed", "logistic"),
-  bounds = c("admissible", "usual", "none"), silent = TRUE, ...)
+vets(data, model = "PPP", lags = c(frequency(data)),
+  parameters = c("level", "trend", "seasonal", "damped"),
+  initials = c("seasonal"), components = c("none"),
+  loss = c("likelihood", "diagonal", "trace"), ic = c("AICc", "AIC", "BIC",
+  "BICc"), h = 10, holdout = FALSE, interval = c("none", "conditional",
+  "unconditional", "individual", "likelihood"), level = 0.95,
+  occurrence = c("none", "fixed", "logistic"), bounds = c("admissible",
+  "usual", "none"), silent = TRUE, ...)
 }
 \arguments{
-\item{y}{The matrix with the data, where series are in columns and
+\item{data}{The matrix with the data, where series are in columns and
 observations are in rows.}
 
 \item{model}{The type of ETS model. Can consist of 3 or 4 chars: \code{ANN},
@@ -176,7 +177,7 @@ values:
 \item \code{initialSeason} - The initial values of the seasonal components;
 \item \code{nParam} - The number of estimated parameters;
 \item \code{occurrence} - The occurrence model estimated with VETS;
-\item \code{y} - The matrix with the original data;
+\item \code{data} - The matrix with the original data;
 \item \code{fitted} - The matrix of the fitted values;
 \item \code{holdout} - The matrix with the holdout values (if \code{holdout=TRUE} in
 the estimation);

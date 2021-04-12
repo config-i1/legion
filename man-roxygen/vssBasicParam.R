@@ -1,4 +1,4 @@
-#' @param y The matrix with the data, where series are in columns and
+#' @param data The matrix with the data, where series are in columns and
 #' observations are in rows.
 #' @param h Length of forecasting horizon.
 #' @param holdout If \code{TRUE}, holdout sample of size \code{h} is taken from

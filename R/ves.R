@@ -169,7 +169,7 @@ utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","
 #' \item \code{initialSeason} - The initial values of the seasonal components;
 #' \item \code{nParam} - The number of estimated parameters;
 #' \item \code{occurrence} - The occurrence part of the model estimated with VES;
-#' \item \code{y} - The matrix with the original data;
+#' \item \code{data} - The matrix with the original data;
 #' \item \code{fitted} - The matrix of the fitted values;
 #' \item \code{holdout} - The matrix with the holdout values (if \code{holdout=TRUE} in
 #' the estimation);
@@ -213,11 +213,11 @@ utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","
 #'
 #' @importFrom smooth sowhat
 #' @export
-ves <- function(y, model="PPP", lags=c(frequency(y)),
+ves <- function(data, model="PPP", lags=c(frequency(data)),
                 persistence=c("common","individual","dependent"),
                 transition=c("common","individual","dependent"), phi=c("common","individual"),
                 initial=c("individual","common"), initialSeason=c("common","individual"),
-                # seasonal=c("individual","common"), weights=rep(1/ncol(y),ncol(y)),
+                # seasonal=c("individual","common"), weights=rep(1/ncol(data),ncol(data)),
                 loss=c("likelihood","diagonal","trace"),
                 ic=c("AICc","AIC","BIC","BICc"), h=10, holdout=FALSE,
                 interval=c("none","conditional","unconditional","individual","likelihood"), level=0.95,
@@ -259,7 +259,7 @@ ves <- function(y, model="PPP", lags=c(frequency(y)),
 
     # Set up seasonal components as individual. Use vets() otherwise.
     seasonal <- "individual";
-    weights <- rep(1/ncol(y),ncol(y));
+    weights <- rep(1/ncol(data),ncol(data));
 
     ##### Set environment for vssInput and make all the checks #####
     environment(vssInput) <- environment();
@@ -1476,10 +1476,7 @@ ves <- function(y, model="PPP", lags=c(frequency(y)),
         colnames(initialSeasonValue) <- paste0("Seasonal",c(1:lagsModelMax));
     }
 
-    matVt <- ts(t(matVt),start=(time(y)[1] - dataDeltat*lagsModelMax),frequency=dataFreq);
     yFitted <- ts(t(yFitted),start=dataStart,frequency=dataFreq);
-    errors <- ts(t(errors),start=dataStart,frequency=dataFreq);
-
     yForecast <- ts(t(yForecast),start=yForecastStart,frequency=dataFreq);
     if(!is.matrix(yForecast)){
         yForecast <- as.matrix(yForecast,h,nSeries);
@@ -1505,10 +1502,7 @@ ves <- function(y, model="PPP", lags=c(frequency(y)),
 
     ##### Now let's deal with the holdout #####
     if(holdout){
-        # if(modelIsMultiplicative){
-        #     yInSample[] <- exp(yInSample);
-        # }
-        yHoldout <- ts(y[(obsInSample+1):obsAll,],start=yForecastStart,frequency=dataFreq);
+        yHoldout <- ts(data[(obsInSample+1):obsAll,],start=yForecastStart,frequency=dataFreq);
         colnames(yHoldout) <- dataNames;
 
         measureFirst <- measures(yHoldout[,1],yForecast[,1],yInSample[1,]);
@@ -1587,15 +1581,15 @@ ves <- function(y, model="PPP", lags=c(frequency(y)),
             par(mar=c(4,4,2,1),mfcol=c(perPage,1));
             for(i in packs[j]:(packs[j+1]-1)){
                 if(any(intervalType==c("u","i","l"))){
-                    plotRange <- range(min(y[,i],yForecast[,i],yFitted[,i],PI[,i*2-1]),
-                                       max(y[,i],yForecast[,i],yFitted[,i],PI[,i*2]));
+                    plotRange <- range(min(data[,i],yForecast[,i],yFitted[,i],PI[,i*2-1]),
+                                       max(data[,i],yForecast[,i],yFitted[,i],PI[,i*2]));
                 }
                 else{
-                    plotRange <- range(min(y[,i],yForecast[,i],yFitted[,i]),
-                                       max(y[,i],yForecast[,i],yFitted[,i]));
+                    plotRange <- range(min(data[,i],yForecast[,i],yFitted[,i]),
+                                       max(data[,i],yForecast[,i],yFitted[,i]));
                 }
-                plot(y[,i],main=paste0(modelname," on ",dataNames[i]),ylab="Y",
-                     ylim=plotRange, xlim=range(time(y[,i])[1],time(yForecast)[max(h,1)]),
+                plot(data[,i],main=paste0(modelname," on ",dataNames[i]),ylab="Y",
+                     ylim=plotRange, xlim=range(time(data[,i])[1],time(yForecast)[max(h,1)]),
                      type="l");
                 lines(yFitted[,i],col="purple",lwd=2,lty=2);
                 if(h>1){
@@ -1627,13 +1621,18 @@ ves <- function(y, model="PPP", lags=c(frequency(y)),
 
     ##### Return values #####
     model <- list(model=modelname,timeElapsed=Sys.time()-startTime,
-                  states=matVt,persistence=persistenceValue,transition=transitionValue,
+                  states=NA,persistence=persistenceValue,transition=transitionValue,
                   measurement=matW, phi=dampedValue, B=B,
                   initialType=initialType,initial=initialValue,initialSeason=initialSeasonValue,
                   nParam=parametersNumber, imodel=ovesModel,
-                  y=yInSample,fitted=yFitted,holdout=yHoldout,residuals=errors,Sigma=Sigma,
+                  data=NA,fitted=yFitted,holdout=yHoldout,residuals=NA,Sigma=Sigma,
                   forecast=yForecast,PI=PI,interval=intervalType,level=level,
                   ICs=ICs,ICsAll=ICsAll,logLik=logLik,lossValue=cfObjective,loss=loss,accuracy=errorMeasures,
                   FI=FI);
+    # Produce proper objects and return them
+    model$states <- ts(t(matVt), start=(time(data)[1] - dataDeltat*lagsModelMax), frequency=dataFreq);
+    model$data <- ts(t(yInSample), start=dataStart, frequency=dataFreq);
+    model$residuals <- ts(t(errors), start=dataStart, frequency=dataFreq);
+
     return(structure(model,class=c("legion","smooth")));
 }

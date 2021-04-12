@@ -30,32 +30,32 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     }
 
     #### Check data ####
-    if(any(is.legion.sim(y))){
-        y <- y$data;
-        if(length(dim(y))==3){
+    if(any(is.legion.sim(data))){
+        data <- data$data;
+        if(length(dim(data))==3){
             warning("Simulated data contains several samples. Selecting a random one.",call.=FALSE);
-            y <- ts(y[,,runif(1,1,dim(y)[3])]);
+            data <- ts(data[,,runif(1,1,dim(data)[3])]);
         }
     }
 
-    if(!is.data.frame(y) && !is.numeric(y)){
+    if(!is.data.frame(data) && !is.numeric(data)){
         stop("The provided data is not a numeric matrix! Can't construct any model!", call.=FALSE);
     }
 
-    if(is.null(dim(y))){
+    if(is.null(dim(data))){
         stop("The provided data is not a matrix or a data.frame! If it is a vector, please use ",
              "es() function instead.",
              call.=FALSE);
     }
 
-    if(is.data.frame(y)){
-        y <- as.matrix(y);
+    if(is.data.frame(data)){
+        data <- as.matrix(data);
     }
 
     # Number of series in the matrix
-    nSeries <- ncol(y);
+    nSeries <- ncol(data);
 
-    correlatedSeries <- cor(y)[upper.tri(cor(y))];
+    correlatedSeries <- cor(data)[upper.tri(cor(data))];
     if(any(correlatedSeries>0.999)){
         warning("Some of series are almost perfectly correlated. This might cause difficulties ",
                 "in the estimation. ",
@@ -63,28 +63,28 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
                 call.=FALSE);
     }
 
-    if(is.null(ncol(y))){
+    if(is.null(ncol(data))){
         stop("The provided data is not a matrix! Use es() or adam() function instead!",
              call.=FALSE);
     }
-    if(ncol(y)==1){
+    if(ncol(data)==1){
         stop("The provided data contains only one column. Use es() or adam() function instead!",
              call.=FALSE);
     }
     # Check the data for NAs
-    if(any(is.na(y))){
+    if(any(is.na(data))){
         if(!silent){
             warning("Data contains NAs. These observations will be substituted by zeroes.",
                     call.=FALSE);
         }
-        y[is.na(y)] <- 0;
+        data[is.na(data)] <- 0;
     }
 
     # Define obs, the number of observations of in-sample
-    obsInSample <- nrow(y) - holdout*h;
+    obsInSample <- nrow(data) - holdout*h;
 
     # Define obsAll, the overal number of observations (in-sample + holdout)
-    obsAll <- nrow(y) + (1 - holdout)*h;
+    obsAll <- nrow(data) + (1 - holdout)*h;
 
     # If obsInSample is negative, this means that we can't do anything...
     if(obsInSample<=0){
@@ -92,13 +92,13 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
              call.=FALSE);
     }
     # Define the actual values. Transpose the matrix!
-    yInSample <- t(y[1:obsInSample,,drop=FALSE]);
+    yInSample <- t(data[1:obsInSample,,drop=FALSE]);
     #### For now we just get the first lag. This would need to be modified for multiple seasonal models
     dataFreq <- lags[1];
-    dataDeltat <- deltat(y);
-    dataStart <- start(y);
-    yForecastStart <- time(y)[obsInSample]+deltat(y);
-    dataNames <- colnames(y);
+    dataDeltat <- deltat(data);
+    dataStart <- start(data);
+    yForecastStart <- time(data)[obsInSample]+deltat(data);
+    dataNames <- colnames(data);
     if(!is.null(dataNames)){
         dataNames <- make.names(dataNames);
     }
@@ -1005,7 +1005,7 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     assign("obsStates",obsStates,ParentEnvironment);
     assign("nSeries",nSeries,ParentEnvironment);
     assign("nParamMax",nParamMax,ParentEnvironment);
-    assign("y",y,ParentEnvironment);
+    assign("data",data,ParentEnvironment);
     assign("yInSample",yInSample,ParentEnvironment);
     assign("dataFreq",dataFreq,ParentEnvironment);
     assign("dataDeltat",dataDeltat,ParentEnvironment);

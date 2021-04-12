@@ -4,13 +4,14 @@
 \alias{oves}
 \title{Occurrence part of Vector State Space}
 \usage{
-oves(y, occurrence = c("logistic", "none", "fixed"), ic = c("AICc", "AIC",
-  "BIC", "BICc"), h = 10, holdout = FALSE, probability = c("dependent",
-  "independent"), model = "ANN", persistence = NULL, transition = NULL,
-  phi = NULL, initial = NULL, initialSeason = NULL, xreg = NULL, ...)
+oves(data, occurrence = c("logistic", "none", "fixed"), ic = c("AICc",
+  "AIC", "BIC", "BICc"), h = 10, holdout = FALSE,
+  probability = c("dependent", "independent"), model = "ANN",
+  persistence = NULL, transition = NULL, phi = NULL, initial = NULL,
+  initialSeason = NULL, xreg = NULL, ...)
 }
 \arguments{
-\item{y}{The matrix with data, where series are in columns and
+\item{data}{The matrix with data, where series are in columns and
 observations are in rows.}
 
 \item{occurrence}{Type of method used in probability estimation. Can be
@@ -68,7 +69,7 @@ values:
 \item \code{logLik} - likelihood value for the model
 \item \code{nParam} - number of parameters used in the model;
 \item \code{residuals} - residuals of the model;
-\item \code{y} - actual values of probabilities (zeros and ones).
+\item \code{data} - actual values of probabilities (zeros and ones).
 \item \code{persistence} - the vector of smoothing parameters;
 \item \code{initial} - initial values of the state vector;
 \item \code{initialSeason} - the matrix of initials seasonal states;

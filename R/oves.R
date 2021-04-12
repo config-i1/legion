@@ -9,7 +9,7 @@
 #' @template ssAuthor
 #' @template vssKeywords
 #'
-#' @param y The matrix with data, where series are in columns and
+#' @param data The matrix with data, where series are in columns and
 #' observations are in rows.
 #' @param occurrence Type of method used in probability estimation. Can be
 #' \code{"none"} - none, \code{"fixed"} - constant probability or
@@ -52,7 +52,7 @@
 #' \item \code{logLik} - likelihood value for the model
 #' \item \code{nParam} - number of parameters used in the model;
 #' \item \code{residuals} - residuals of the model;
-#' \item \code{y} - actual values of probabilities (zeros and ones).
+#' \item \code{data} - actual values of probabilities (zeros and ones).
 #' \item \code{persistence} - the vector of smoothing parameters;
 #' \item \code{initial} - initial values of the state vector;
 #' \item \code{initialSeason} - the matrix of initials seasonal states;
@@ -73,7 +73,7 @@
 #'
 #' @importFrom smooth oes
 #' @export oves
-oves <- function(y, occurrence=c("logistic","none","fixed"),
+oves <- function(data, occurrence=c("logistic","none","fixed"),
                  ic=c("AICc","AIC","BIC","BICc"), h=10, holdout=FALSE,
                  probability=c("dependent","independent"),
                  model="ANN", persistence=NULL, transition=NULL, phi=NULL,
@@ -155,23 +155,23 @@ oves <- function(y, occurrence=c("logistic","none","fixed"),
         }
     }
 
-    if(is.data.frame(y)){
-        y <- as.matrix(y);
+    if(is.data.frame(data)){
+        data <- as.matrix(data);
     }
 
     # Number of series in the matrix
-    nSeries <- ncol(y);
+    nSeries <- ncol(data);
 
-    if(is.null(ncol(y))){
+    if(is.null(ncol(data))){
         stop("The provided data is not a matrix! Use oes() function instead!", call.=FALSE);
     }
-    if(ncol(y)==1){
+    if(ncol(data)==1){
         stop("The provided data contains only one column. Use oes() function instead!", call.=FALSE);
     }
     # Check the data for NAs
-    if(any(is.na(y))){
+    if(any(is.na(data))){
         warning("Data contains NAs. These observations will be substituted by zeroes.", call.=FALSE);
-        y[is.na(y)] <- 0;
+        data[is.na(data)] <- 0;
     }
 
     if(occurrence=="n"){
@@ -179,24 +179,24 @@ oves <- function(y, occurrence=c("logistic","none","fixed"),
     }
 
     # Define obs, the number of observations of in-sample
-    obsInSample <- nrow(y) - holdout*h;
+    obsInSample <- nrow(data) - holdout*h;
 
     # Define obsAll, the overal number of observations (in-sample + holdout)
-    obsAll <- nrow(y) + (1 - holdout)*h;
+    obsAll <- nrow(data) + (1 - holdout)*h;
 
     # If obsInSample is negative, this means that we can't do anything...
     if(obsInSample<=2){
         stop("Not enough observations in sample.", call.=FALSE);
     }
     # Define the actual values.
-    dataFreq <- frequency(y);
-    dataDeltat <- deltat(y);
-    dataStart <- start(y);
-    yInSample <- ts(matrix(y[1:obsInSample,],obsInSample,nSeries),start=dataStart,frequency=dataFreq);
-    yForecastStart <- time(y)[obsInSample]+deltat(y);
+    dataFreq <- frequency(data);
+    dataDeltat <- deltat(data);
+    dataStart <- start(data);
+    yInSample <- ts(matrix(data[1:obsInSample,],obsInSample,nSeries),start=dataStart,frequency=dataFreq);
+    yForecastStart <- time(data)[obsInSample]+deltat(data);
 
     ot <- (yInSample!=0)*1;
-    otAll <- (y!=0)*1;
+    otAll <- (data!=0)*1;
     obsOnes <- apply(ot,2,sum);
 
     pFitted <- matrix(NA,obsInSample,nSeries);
@@ -321,11 +321,11 @@ oves <- function(y, occurrence=c("logistic","none","fixed"),
 
     states <- ts(states, start=dataStart, frequency=dataFreq);
     pFitted <- ts(pFitted, start=dataStart, frequency=dataFreq);
-    pForecast <- ts(pForecast, start=time(y)[obsInSample] + dataDeltat, frequency=dataFreq);
+    pForecast <- ts(pForecast, start=time(data)[obsInSample] + dataDeltat, frequency=dataFreq);
 
     output <- list(model=model, fitted=pFitted, forecast=pForecast, states=states,
                    variance=pForecast*(1-pForecast), logLik=logLik, nParam=nParam,
-                   residuals=errors, y=otAll, persistence=persistence, initial=initial,
+                   residuals=errors, data=otAll, persistence=persistence, initial=initial,
                    initialSeason=initialSeason, occurrence=occurrence, issModel=issModel,
                    probability=probability);
 

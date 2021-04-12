@@ -4,18 +4,19 @@
 \alias{ves}
 \title{Vector Exponential Smoothing in SSOE state space model}
 \usage{
-ves(y, model = "PPP", lags = c(frequency(y)), persistence = c("common",
-  "individual", "dependent"), transition = c("common", "individual",
-  "dependent"), phi = c("common", "individual"), initial = c("individual",
-  "common"), initialSeason = c("common", "individual"),
-  loss = c("likelihood", "diagonal", "trace"), ic = c("AICc", "AIC", "BIC",
-  "BICc"), h = 10, holdout = FALSE, interval = c("none", "conditional",
-  "unconditional", "individual", "likelihood"), level = 0.95,
-  occurrence = c("none", "fixed", "logistic"), cumulative = FALSE,
-  bounds = c("admissible", "usual", "none"), silent = TRUE, ...)
+ves(data, model = "PPP", lags = c(frequency(data)),
+  persistence = c("common", "individual", "dependent"),
+  transition = c("common", "individual", "dependent"), phi = c("common",
+  "individual"), initial = c("individual", "common"),
+  initialSeason = c("common", "individual"), loss = c("likelihood",
+  "diagonal", "trace"), ic = c("AICc", "AIC", "BIC", "BICc"), h = 10,
+  holdout = FALSE, interval = c("none", "conditional", "unconditional",
+  "individual", "likelihood"), level = 0.95, occurrence = c("none",
+  "fixed", "logistic"), cumulative = FALSE, bounds = c("admissible",
+  "usual", "none"), silent = TRUE, ...)
 }
 \arguments{
-\item{y}{The matrix with the data, where series are in columns and
+\item{data}{The matrix with the data, where series are in columns and
 observations are in rows.}
 
 \item{model}{The type of ETS model. Can consist of 3 or 4 chars: \code{ANN},
@@ -193,7 +194,7 @@ values:
 \item \code{initialSeason} - The initial values of the seasonal components;
 \item \code{nParam} - The number of estimated parameters;
 \item \code{occurrence} - The occurrence part of the model estimated with VES;
-\item \code{y} - The matrix with the original data;
+\item \code{data} - The matrix with the original data;
 \item \code{fitted} - The matrix of the fitted values;
 \item \code{holdout} - The matrix with the holdout values (if \code{holdout=TRUE} in
 the estimation);

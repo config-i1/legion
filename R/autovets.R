@@ -7,7 +7,7 @@ utils::globalVariables(c("parameters","initials","components"))
 #' @importFrom utils combn
 #' @rdname vets
 #' @export
-auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
+auto.vets <- function(data, model="PPP", lags=c(frequency(data)),
                       loss=c("likelihood","diagonal","trace"),
                       ic=c("AICc","AIC","BIC","BICc"), h=10, holdout=FALSE,
                       interval=c("none","conditional","unconditional","individual","likelihood"), level=0.95,
@@ -70,7 +70,7 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
     #### Call the basic vets() ####
     # Prepare the call of vets()
     vetsCall <- list(...);
-    vetsCall$y <- y;
+    vetsCall$data <- data;
     vetsCall$model <- model;
     vetsCall$lags <- lags;
     vetsCall$ic <- ic;

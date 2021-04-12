@@ -66,7 +66,7 @@ BICc.legion <- function(object, ...){
 #' @importFrom greybox actuals
 #' @export
 actuals.legion <- function(object, ...){
-    return(object$y);
+    return(object$data);
 }
 
 #' @importFrom stats nobs
@@ -346,11 +346,11 @@ plot.legion <- function(x, which=c(1,2,4,6), level=0.95, legend=FALSE,
         ellipsis$actuals <- y;
         if(!is.null(yHoldout)){
             if(is.zoo(ellipsis$actuals)){
-                ellipsis$actuals <- zoo(rbind(y,yHoldout),
+                ellipsis$actuals <- zoo(c(as.vector(y),as.vector(yHoldout)),
                                         order.by=c(time(y),time(yHoldout)));
             }
             else{
-                ellipsis$actuals <- ts(rbind(y,yHoldout),
+                ellipsis$actuals <- ts(c(y,yHoldout),
                                        start=start(y),
                                        frequency=frequency(y));
             }
@@ -635,7 +635,7 @@ simulate.legion <- function(object, nsim=1, seed=NULL, obs=NULL, ...){
     # Start a list of arguments
     args <- vector("list",0);
 
-    args$nSeries <- ncol(actuals(object));
+    args$nSeries <- nvariate(object);
 
     if(!is.null(ellipsis$randomizer)){
         randomizer <- ellipsis$randomizer;

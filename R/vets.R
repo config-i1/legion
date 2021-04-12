@@ -135,7 +135,7 @@ utils::globalVariables(c("obsInSample","componentsCommonLevel","componentsCommon
 #' \item \code{initialSeason} - The initial values of the seasonal components;
 #' \item \code{nParam} - The number of estimated parameters;
 #' \item \code{occurrence} - The occurrence model estimated with VETS;
-#' \item \code{y} - The matrix with the original data;
+#' \item \code{data} - The matrix with the original data;
 #' \item \code{fitted} - The matrix of the fitted values;
 #' \item \code{holdout} - The matrix with the holdout values (if \code{holdout=TRUE} in
 #' the estimation);
@@ -173,7 +173,7 @@ utils::globalVariables(c("obsInSample","componentsCommonLevel","componentsCommon
 #' @importFrom stats setNames
 #' @rdname vets
 #' @export
-vets <- function(y, model="PPP", lags=c(frequency(y)),
+vets <- function(data, model="PPP", lags=c(frequency(data)),
                  parameters=c("level","trend","seasonal","damped"),
                  initials=c("seasonal"), components=c("none"),
                  loss=c("likelihood","diagonal","trace"),
@@ -1274,8 +1274,6 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
     # }
 
     yFitted <- ts(t(yFitted),start=dataStart,frequency=dataFreq);
-    errors <- ts(t(errors),start=dataStart,frequency=dataFreq);
-
     yForecast <- ts(t(yForecast),start=yForecastStart,frequency=dataFreq);
     if(!is.matrix(yForecast)){
         yForecast <- as.matrix(yForecast,h,nSeries);
@@ -1304,7 +1302,7 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
         # if(modelIsMultiplicative){
         #     yInSample[] <- exp(yInSample);
         # }
-        yHoldout <- ts(y[(obsInSample+1):obsAll,],start=yForecastStart,frequency=dataFreq);
+        yHoldout <- ts(data[(obsInSample+1):obsAll,],start=yForecastStart,frequency=dataFreq);
         colnames(yHoldout) <- dataNames;
 
         measureFirst <- measures(yHoldout[,1],yForecast[,1],yInSample[1,]);
@@ -1407,15 +1405,15 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
             par(mar=c(4,4,2,1),mfcol=c(perPage,1));
             for(i in packs[j]:(packs[j+1]-1)){
                 if(any(intervalType==c("u","i","l"))){
-                    plotRange <- range(min(y[,i],yForecast[,i],yFitted[,i],PI[,i*2-1]),
-                                       max(y[,i],yForecast[,i],yFitted[,i],PI[,i*2]));
+                    plotRange <- range(min(data[,i],yForecast[,i],yFitted[,i],PI[,i*2-1]),
+                                       max(data[,i],yForecast[,i],yFitted[,i],PI[,i*2]));
                 }
                 else{
-                    plotRange <- range(min(y[,i],yForecast[,i],yFitted[,i]),
-                                       max(y[,i],yForecast[,i],yFitted[,i]));
+                    plotRange <- range(min(data[,i],yForecast[,i],yFitted[,i]),
+                                       max(data[,i],yForecast[,i],yFitted[,i]));
                 }
-                plot(y[,i],main=paste0(modelName," on ",dataNames[i]),ylab="Y",
-                     ylim=plotRange, xlim=range(time(y[,i])[1],time(yForecast)[max(h,1)]),
+                plot(data[,i],main=paste0(modelName," on ",dataNames[i]),ylab="Y",
+                     ylim=plotRange, xlim=range(time(data[,i])[1],time(yForecast)[max(h,1)]),
                      type="l");
                 lines(yFitted[,i],col="purple",lwd=2,lty=2);
                 if(h>1){
@@ -1447,13 +1445,17 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
 
     ##### Return values #####
     model <- list(model=modelName,timeElapsed=Sys.time()-startTime,
-                  states=ts(t(matVt),start=(time(y)[1] - dataDeltat*lagsModelMax),frequency=dataFreq),
+                  states=NA,
                   persistence=matG, transition=matF, measurement=matW, B=B,
                   # initialType=initialType,initial=initialValue,initialSeason=initialSeasonValue,
                   nParam=parametersNumber, occurrence=ovesModel,
-                  y=yInSample,fitted=yFitted,holdout=yHoldout,residuals=errors,Sigma=Sigma,
+                  data=NA,fitted=yFitted,holdout=yHoldout,residuals=NA,Sigma=Sigma,
                   forecast=yForecast,PI=PI,interval=intervalType,level=level,
                   ICs=ICs,ICsAll=ICsAll,logLik=logLikVETS,lossValue=cfObjective,loss=loss,accuracy=errorMeasures,
                   FI=FI);
+    model$states <- ts(t(matVt), start=(time(data)[1] - dataDeltat*lagsModelMax), frequency=dataFreq)
+    model$data <- ts(t(yInSample), start=dataStart, frequency=dataFreq);
+    model$residuals <- ts(t(errors), start=dataStart, frequency=dataFreq);
+
     return(structure(model,class=c("legion","smooth")));
 }
