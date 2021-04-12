@@ -1338,7 +1338,12 @@ vssForecaster <- function(...){
     }
 
     # Divide each element by each degree of freedom
-    Sigma <- (errors %*% t(errors)) / df;
+    if(loss=="diagonal"){
+        Sigma <- diag(rowSums(errors^2)) / diag(df);
+    }
+    else{
+        Sigma <- (errors %*% t(errors)) / df;
+    }
     rownames(Sigma) <- colnames(Sigma) <- dataNames;
 
     # Correct the sigma matrix

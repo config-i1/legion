@@ -316,10 +316,14 @@ ves <- function(y, model="PPP", lags=c(frequency(y)),
             cfRes <- suppressWarnings(log(det(scaleValue)) + nSeries * log(normalizer^2));
         }
         else if(loss=="diagonal"){
-            cfRes <- sum(log(colSums(fitting$errors^2) / obsInSample));
+            scaleValue <- diag(rowSums(fitting$errors^2) / obsInSample);
+            cfRes <- -sum(switch(Etype,
+                                 "A"=dmvnormInternal(fitting$errors, 0, scaleValue, log=TRUE),
+                                 "M"=dmvnormInternal(fitting$errors, -0.5*diag(scaleValue), scaleValue, log=TRUE)-
+                                     colSums(log(yInSample))));
         }
         else{
-            cfRes <- sum(colSums(fitting$errors^2) / obsInSample);
+            cfRes <- sum(rowSums(fitting$errors^2)) / obsInSample;
         }
 
         if(is.nan(cfRes) | is.na(cfRes) | is.infinite(cfRes)){
@@ -331,7 +335,7 @@ ves <- function(y, model="PPP", lags=c(frequency(y)),
 
     ##### LogLik for VES #####
     logLikVES <- function(B, loss="likelihood", Etype="A"){
-        if(loss=="likelihood"){
+        if(any(loss==c("likelihood","diagonal"))){
             return(-CF(B, loss=loss, Etype=Etype, Ttype=Ttype, damped=damped,
                        nComponentsNonSeasonal, nComponentsAll, lagsModelMax));
         }
@@ -342,29 +346,30 @@ ves <- function(y, model="PPP", lags=c(frequency(y)),
     }
 
     ##### IC values for VETS #####
-    ICsVES <- function(B, logLikVESValue, nSeries, nParamAll, obsInSample){
+    ICsVES <- function(B, logLikVESValue, nSeries, nParamPerSeries, obsInSample){
         ICs <- setNames(vector("numeric",4),c("AIC","AICc","BIC","BICc"));
+        nParamAll <- nparam(logLikVESValue);
 
         # AIC
         ICs[1] <- AIC(logLikVESValue);
         # AICc
-        if(obsInSample - (nParamAll + nSeries + 1) <=0){
+        if(obsInSample - (nParamPerSeries + nSeries + 1) <=0){
             ICs[2] <- Inf;
         }
         else{
-            ICs[2] <- -2*logLikVESValue + ((2*obsInSample*(nParamAll*nSeries + nSeries*(nSeries+1)/2)) /
-                                        (obsInSample - (nParamAll + nSeries + 1)));
+            ICs[2] <- -2*logLikVESValue + 2*(obsInSample*nParamAll /
+                                                  (obsInSample - (nParamPerSeries + nSeries + 1)));
         }
         # BIC
         ICs[3] <- BIC(logLikVESValue);
         # BICc
-        if(obsInSample * nSeries - nParamAll - nSeries*(nSeries+1)/2 <=0){
+        # All the estimated parameters (would differ depending on loss)
+        if(obsInSample - (nParamPerSeries + nSeries + 1) <=0){
             ICs[4] <- Inf;
         }
         else{
-            ICs[4] <- -2*logLikVESValue + (((nParamAll + nSeries*(nSeries+1)/2) *
-                                                 log(obsInSample * nSeries) * obsInSample * nSeries) /
-                                                (obsInSample * nSeries - nParamAll - nSeries*(nSeries+1)/2));
+            ICs[4] <- -2*logLikVESValue + log(obsInSample)*(obsInSample*nParamAll /
+                                                                 (obsInSample - (nParamPerSeries + nSeries + 1)));
         }
         return(ICs);
     }
@@ -1090,6 +1095,9 @@ ves <- function(y, model="PPP", lags=c(frequency(y)),
         }
         names(B) <- BList$BNames;
 
+        # This is needed for AICc / BICc
+        nParamPerSeries <- length(B) / nSeries;
+
         # First part is for the covariance matrix
         if(loss=="likelihood"){
             nParam <- nSeries * (nSeries + 1) / 2 + length(B);
@@ -1102,7 +1110,7 @@ ves <- function(y, model="PPP", lags=c(frequency(y)),
         logLikVESValue <- structure(logLikVES(B=B,loss=loss,Etype=Etype),
                                     nobs=obsInSample,df=nParam,class="logLik");
         ICs <- ICsVES(B=B, logLikVESValue=logLikVESValue, nSeries=nSeries,
-                      nParamAll=nParam, obsInSample=obsInSample);
+                      nParamPerSeries=nParamPerSeries, obsInSample=obsInSample);
 
         # If this is a special case, recalculate CF to get the proper loss value
         if(loss=="likelihood" && Etype=="A"){
@@ -1248,7 +1256,7 @@ ves <- function(y, model="PPP", lags=c(frequency(y)),
             return(listToReturn);
         }
         else if(modelDo=="select"){
-            return(selectorVES(ParentEnvironment=environment()));
+            return(selectorVES(silent=silent,ParentEnvironment=environment()));
         }
         else{
             environment(CF) <- environment();

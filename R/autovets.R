@@ -14,13 +14,14 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
                       occurrence=c("none","fixed","logistic"),
                       bounds=c("admissible","usual","none"),
                       silent=TRUE, parallel=FALSE, ...){
+    # The function selects the restrictions on PIC elements
     # Copyright (C) 2021 - Inf  Ivan Svetunkov
 
     # Start measuring the time of calculations
     startTime <- Sys.time();
 
-    # The function selects the restrictions on PIC elements
     ic <- match.arg(ic);
+    loss <- match.arg(loss);
 
     #### Architector for ETS part ####
     architectorAutoVETS <- function(model){
@@ -72,7 +73,6 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
     vetsCall$y <- y;
     vetsCall$model <- model;
     vetsCall$lags <- lags;
-    vetsCall$loss <- loss;
     vetsCall$ic <- ic;
     vetsCall$h <- h;
     vetsCall$holdout <- holdout;
@@ -84,6 +84,10 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
     vetsCall$parameters <- "none";
     vetsCall$initials <- "none";
     vetsCall$components <- "none";
+    # Use diagonal in order to be able to select something
+    if(loss=="likelihood"){
+        vetsCall$loss <- "diagonal";
+    }
 
     if(!silent){
         cat("Selecting the best unrestricted model... \n");
@@ -91,7 +95,9 @@ auto.vets <- function(y, model="PPP", lags=c(frequency(y)),
 
     # Select the model for the basic
     initialModel <- do.call("vets",vetsCall);
-    vetsCall$model <- modelType(initialModel);
+    vetsCall$model[] <- modelType(initialModel);
+    # Use the specified loss
+    vetsCall$loss[] <- loss;
 
     # Get parameters, initials and components based on the selected model
     list2env(architectorAutoVETS(vetsCall$model),environment());

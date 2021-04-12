@@ -19,19 +19,20 @@ AICc.legion <- function(object, ...){
     llikelihood <- logLik(object);
     llikelihood <- llikelihood[1:length(llikelihood)];
     nSeries <- ncol(actuals(object));
-    # Remove covariances in the number of parameters
-    nParamAll <- nparam(object) / nSeries - switch(object$loss,
-                                                   "likelihood" = nSeries*(nSeries+1)/2,
-                                                   "trace" = ,
-                                                   "diagonal" = 1);
+    # Number of parameters per series
+    nParamPerSeries <- nparam(object)/nSeries - switch(object$loss,
+                                                       "likelihood" = (nSeries+1)/2,
+                                                       "trace" = ,
+                                                       "diagonal" = 1);
+    # All the estimated parameters (would differ depending on loss)
+    nParamAll <- nparam(object);
 
     obs <- nobs(object);
-    if(obs - (nParamAll + nSeries + 1) <=0){
+    if(obs - (nParamPerSeries + nSeries + 1) <=0){
         IC <- Inf;
     }
     else{
-        IC <- -2*llikelihood + ((2*obs*(nParamAll*nSeries + nSeries*(nSeries+1)/2)) /
-                                    (obs - (nParamAll + nSeries + 1)));
+        IC <- -2*llikelihood + 2*(obs*nParamAll / (obs - (nParamPerSeries + nSeries + 1)));
     }
 
     return(IC);
@@ -43,20 +44,20 @@ BICc.legion <- function(object, ...){
     llikelihood <- logLik(object);
     llikelihood <- llikelihood[1:length(llikelihood)];
     nSeries <- ncol(actuals(object));
-    # Remove covariances in the number of parameters
-    nParamAll <- nparam(object) / nSeries - switch(object$loss,
-                                                   "likelihood" = nSeries*(nSeries+1)/2,
-                                                   "trace" = ,
-                                                   "diagonal" = 1);
+    # Number of parameters per series
+    nParamPerSeries <- nparam(object)/nSeries - switch(object$loss,
+                                                       "likelihood" = (nSeries+1)/2,
+                                                       "trace" = ,
+                                                       "diagonal" = 1);
+    # All the estimated parameters (would differ depending on loss)
+    nParamAll <- nparam(object);
 
     obs <- nobs(object);
-    if(obs * nSeries - nParamAll - nSeries*(nSeries+1)/2 <=0){
+    if(obs - (nParamPerSeries + nSeries + 1) <=0){
         IC <- Inf;
     }
     else{
-        IC <- -2*llikelihood + (((nParamAll + nSeries*(nSeries+1)/2) *
-                                     log(obs * nSeries) * obs * nSeries) /
-                                    (obs * nSeries - nParamAll - nSeries*(nSeries+1)/2));
+        IC <- -2*llikelihood + log(obs)*(obs*nParamAll / (obs - (nParamPerSeries + nSeries + 1)));
     }
 
     return(IC);

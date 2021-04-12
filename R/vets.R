@@ -820,10 +820,14 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
             cfRes <- suppressWarnings(log(det(scaleValue)) + nSeries * log(normalizer^2));
         }
         else if(loss=="diagonal"){
-            cfRes <- sum(log(colSums(fitting$errors^2) / obsInSample));
+            scaleValue <- diag(rowSums(fitting$errors^2) / obsInSample);
+            cfRes <- -sum(switch(Etype,
+                                 "A"=dmvnormInternal(fitting$errors, 0, scaleValue, log=TRUE),
+                                 "M"=dmvnormInternal(fitting$errors, -0.5*diag(scaleValue), scaleValue, log=TRUE)-
+                                     colSums(log(yInSample))));
         }
         else{
-            cfRes <- sum(colSums(fitting$errors^2) / obsInSample);
+            cfRes <- sum(rowSums(fitting$errors^2)) / obsInSample;
         }
 
         if(is.nan(cfRes) | is.na(cfRes) | is.infinite(cfRes)){
@@ -835,7 +839,7 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
 
     ##### LogLik for VETS #####
     logLikVETS <- function(B, loss="likelihood", Etype="A"){
-        if(loss=="likelihood"){
+        if(any(loss==c("likelihood","diagonal"))){
             return(-CF(B, loss=loss, Etype=Etype));
         }
         else{
@@ -844,29 +848,30 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
     }
 
     ##### IC values for VETS #####
-    ICsVETS <- function(B, logLikVETSValue, nSeries, nParamAll, obsInSample){
+    ICsVETS <- function(B, logLikVETSValue, nSeries, nParamPerSeries, obsInSample){
         ICs <- setNames(vector("numeric",4),c("AIC","AICc","BIC","BICc"));
+        nParamAll <- nparam(logLikVETSValue);
 
         # AIC
         ICs[1] <- AIC(logLikVETSValue);
         # AICc
-        if(obsInSample - (nParamAll + nSeries + 1) <=0){
+        if(obsInSample - (nParamPerSeries + nSeries + 1) <=0){
             ICs[2] <- Inf;
         }
         else{
-            ICs[2] <- -2*logLikVETSValue + ((2*obsInSample*(nParamAll*nSeries + nSeries*(nSeries+1)/2)) /
-                                        (obsInSample - (nParamAll + nSeries + 1)));
+            ICs[2] <- -2*logLikVETSValue + 2*(obsInSample*nParamAll /
+                                                  (obsInSample - (nParamPerSeries + nSeries + 1)));
         }
         # BIC
         ICs[3] <- BIC(logLikVETSValue);
         # BICc
-        if(obsInSample * nSeries - nParamAll - nSeries*(nSeries+1)/2 <=0){
+        # All the estimated parameters (would differ depending on loss)
+        if(obsInSample - (nParamPerSeries + nSeries + 1) <=0){
             ICs[4] <- Inf;
         }
         else{
-            ICs[4] <- -2*logLikVETSValue + (((nParamAll + nSeries*(nSeries+1)/2) *
-                                                 log(obsInSample * nSeries) * obsInSample * nSeries) /
-                                                (obsInSample * nSeries - nParamAll - nSeries*(nSeries+1)/2));
+            ICs[4] <- -2*logLikVETSValue + log(obsInSample)*(obsInSample*nParamAll /
+                                                                 (obsInSample - (nParamPerSeries + nSeries + 1)));
         }
         return(ICs);
     }
@@ -963,6 +968,9 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
                     call.=FALSE);
         }
 
+        # This is needed for AICc / BICc
+        nParamPerSeries <- length(B) / nSeries;
+
         # First part is for the covariance matrix
         if(loss=="likelihood"){
             nParam <- nSeries * (nSeries + 1) / 2 + length(B);
@@ -975,7 +983,7 @@ vets <- function(y, model="PPP", lags=c(frequency(y)),
         logLikVETSValue <- structure(logLikVETS(B=B,loss=loss,Etype=Etype),
                                      nobs=obsInSample,df=nParam,class="logLik");
         ICs <- ICsVETS(B=B, logLikVETSValue=logLikVETSValue, nSeries=nSeries,
-                       nParamAll=nParam, obsInSample=obsInSample);
+                       nParamPerSeries=nParamPerSeries, obsInSample=obsInSample);
 
         # If this is a special case, recalculate CF to get the proper loss value
         if(loss=="likelihood" && Etype=="A"){

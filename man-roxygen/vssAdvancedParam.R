@@ -1,14 +1,13 @@
 #' @param loss Type of Loss Function used in optimization. \code{loss} can
 #' be:
 #' \itemize{
-#' \item \code{likelihood} - which assumes the minimisation of the determinant
-#' of the covariance matrix of errors between the series. This implies that the
-#' series could be correlated;
-#' \item \code{diagonal} - the covariance matrix is assumed to be diagonal with
-#' zeros off the diagonal. The determinant of this matrix is just a product of
-#' variances. This thing is minimised in this situation in logs.
-#' \item \code{trace} - the trace of the covariance matrix. The sum of variances
-#' is minimised in this case.
+#' \item \code{"likelihood"} - which implies the maximisation of likelihood of
+#' multivariate normal distribution (or log Normal if the multiplicative model
+#' is constructed);
+#' \item \code{"diagonal"} - similar to \code{"likelihood"}, but assumes that
+#' covariances between the error terms are zero.
+#' \item \code{"trace"} - the trace of the covariance matrix of errorrs.
+#' The sum of variances is minimised in this case.
 #' }
 #' @param bounds What type of bounds to use in the model estimation. The first
 #' letter can be used instead of the whole word. \code{"admissible"} means that the
