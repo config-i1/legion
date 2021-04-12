@@ -292,7 +292,7 @@ auto.vets <- function(data, model="PPP", lags=c(frequency(data)),
     vetsICsParameters <- sapply(vetsModels[1+initialsCombinationNumber+1:parametersCombinationNumber],"[[","ICs")[ic,];
     jBestParameters <- which.min(vetsICsParameters);
     if(vetsICsParameters[jBestParameters]<ICBest){
-        jBest <- jBestParameters+parametersCombinationNumber+1;
+        jBest <- jBestParameters+initialsCombinationNumber+1;
         ICBest <- vetsICsParameters[jBestParameters];
         vetsCall$parameters <- parametersToCheck[[jBestParameters]];
     }
