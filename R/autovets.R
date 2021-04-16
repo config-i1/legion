@@ -84,6 +84,7 @@ auto.vets <- function(data, model="PPP", lags=c(frequency(data)),
     vetsCall$parameters <- "none";
     vetsCall$initials <- "none";
     vetsCall$components <- "none";
+    vetsCall$loss <- loss;
     # Use diagonal in order to be able to select something
     if(loss=="likelihood"){
         vetsCall$loss <- "diagonal";
