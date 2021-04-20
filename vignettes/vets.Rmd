@@ -1,0 +1,64 @@
+---
+title: "vets() - Vector ETS"
+author: "Ivan Svetunkov"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{vets() - Vector ETS}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+bibliography: library.bib
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=6, fig.height=5.5, fig.path='Figs/', fig.show='hold',
+                      warning=FALSE, message=FALSE)
+```
+
+This vignette covers `vets()` function, which is a part of [legion package](legion.html). In this vignette we will use data from `Mcomp` package, so it is advised to install it.
+
+Let's load the necessary packages:
+
+```{r load_libraries, message=FALSE, warning=FALSE}
+require(Mcomp)
+require(legion)
+```
+
+We will use to time series from the M3 united in a vector:
+```{r form_the_vector, message=FALSE, warning=FALSE}
+Y <- cbind(M3$N2570$x,M3$N2571$x);
+```
+
+`vets()` function implements Vector ETS from @Svetunkov2021. This is a model that introduces two dimensional taxonomy: the original ETS one from @Hyndman2008b and the extended for the restrictions on Parameters, Initials and Components (PIC) of the model. By default the function makes smoothing and dampening parameters common between different products and forces a common seasonal initials, resulting in ETS-PIC(LTSD,S,N):
+```{r vets_basic}
+vetsModel <- vets(Y, "MMdM", h=18, holdout=TRUE, silent=FALSE)
+```
+
+The output tells us how much time the estimation took, what model was estimated, the loss function type used and its value, general information about sample size, number of parameters, number of variates and degrees of freedom and finally the information criteria for the model. Using the latter, it is possible to select the most appropriate ETS model and PIC restrictions. However, this process might take a lot of time, so there is also `auto.vets()` function that does a stepwise selection of components and restrictions:
+```{r autovets}
+vetsModel <- auto.vets(Y, "PPP", h=18, holdout=TRUE, silent=FALSE)
+```
+
+`model="PPP"` tells function to select the best between pure additive and pure multiplicative models. This parameter also accepts `model="XXX"`, selecting between pure additive and `model="YYY"`, selecting between pure multiplicative models. Note that if you want to impose restrictions on the initials and components, then pure multiplicative models typically make more sense, aligning with the idea of percentage change of value, rather than the change in the units of data (as in additive models).
+
+Some methods to consider when working with `vets()`:
+```{r}
+par(mfcol=c(2,1))
+plot(vetsModel,1)
+plot(vetsModel,7)
+```
+
+```{r}
+modelType(vetsModel)
+modelType(vetsModel,pic=TRUE)
+```
+
+```{r eval=FALSE}
+actuals(vetsModel)
+fitted(vetsModel)
+residuals(vetsModel)
+```
+
+The detailed explanation of the underlying model and possible restrictions are provided in @Svetunkov2021.
+
+### References

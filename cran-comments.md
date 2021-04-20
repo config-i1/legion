@@ -21,13 +21,39 @@ This is an initial submission of ``legion`` package, v0.1.0.
 
 This is expected, because doMC is not available for Windows.
 
+>Possibly mis-spelled words in DESCRIPTION:
+>  ETS (15:21, 16:57)
+>  VES (16:89)
+>  al (15:94)
+>  de (15:82)
+>  et (15:91)
+
+Everything is correct.
+
+>Found the following (possibly) invalid URLs:
+>  URL: https://doi.org/10.2307/2533213
+>    From: inst/doc/ves.html
+>    Status: 403
+>    Message: Forbidden
+
+URL works and leads to the paper of Bedrick & Tsai (1994). Model Selection for Multivariate Regression in Small Samples.
 
 ## rhub checks
 ### Fedora Linux, R-devel, clang, gfortran
 PREPERROR with "Error: Bioconductor version '3.13' requires R version '4.1'; R version is too new". Seems to be an issue with rhub rather than with the package.
 
-### Debian Linux, R-devel, GCC ASAN/UBSAN
+### Ubuntu Linux 20.04.1 LTS, R-release, GCC; Windows Server 2008 R2 SP1, R-devel, 32/64 bit
+>Possibly mis-spelled words in DESCRIPTION:
+>  ETS (15:21, 16:57)
+>  VES (16:89)
+>  al (15:94)
+>  de (15:82)
+>  et (15:91)
 
+Everything is correct.
+
+### Debian Linux, R-devel, GCC ASAN/UBSAN
+PREPERROR due to "ERROR: compilation failed for package ‘forecast‘". Not clear, what is wrong with forecast package.
 
 
 ## Downstream dependencies

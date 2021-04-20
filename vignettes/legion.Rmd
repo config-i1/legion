@@ -19,35 +19,30 @@ This vignette explains how to use functions in `legion` package, what they produ
 The package includes the following functions:
 
 1. [ves() - Vector Exponential Smoothing](ves.html);
-2. vets() - Vector ETS with PIC taxonomy;
+2. [vets() - Vector ETS with PIC taxonomy](vets.html);
 3. oves() - Occurrence part of the vector ETS model.
 
 ## Methods for the class `legion`
 
 There are several methods that can be used together with the forecasting functions of the package. When a model is saved to some object `ourModel`, these function will do some magic. Here's the list of all the available methods with brief explanations:
 
-1. `summary(ourModel)` -- function prints brief output with explanation of what was fitted, with what parameters and errors;
-2. `fitted(ourModel)` -- fitted values of the model;
-3. `forecast(ourModel)` -- point and interval forecasts. This is needed for compatibility with Rob Hyndman's "forecast" package;
-4. `residuals(ourModel)` -- residuals of constructed model;
-5. `rstandard(ourModel)` -- standardised residuals of the model;
-6. `rstudent(ourModel)` -- studentised residuals of the model;
-7. `AIC(ourModel)`, `BIC(ourModel)`, `AICc(ourModel)` and `BICc(ourModel)` -- information criteria of the constructed model. `AICc()` and `BICc()` functions are not standard `stats` functions and are imported from `greybox` package and modified in `legion` for the specific models;
-8. `plot(ourModel)` -- produces plots for the diagnostics of the constructed model. There are 9 options of what to produce, see `?plot.legion()` for more details. Note that if the number of states is higher than 10, then several graphs are produced for the option `which=9`.
-9. `simulate(ourModel)` -- produces data simulated from provided model;
-10. `summary(forecast(ourModel))` -- prints point and interval forecasts;
-11. `plot(forecast(ourModel))` -- produces graph with actuals, forecast, fitted and prediction interval using `graphmaker()` function from `greybox` package.
-12. `logLik(ourModel)` -- returns log-likelihood of the model;
-13. `nobs(ourModel)` -- returns number of observations in-sample we had;
-14. `nParam(ourModel)` -- number of estimated parameters (originally from `greybox` package);
-15. `pointLik(ourModel)` -- likelihood values for each separate observation;
-16. `sigma(ourModel)` -- variance of the residuals of the model;
-17. `lags(ourModel)` -- lags of the model (used with `ssarima()` and `gum()`);
-18. `orders(ourModel)` -- orders of the model (can be used with `ssarima()`, `gum()` and `sma()`);
-19. `modelType(ourModel)` -- returns the type of the model. Returns something like "MMM" for ETS(MMM). Can be used with `es()`, `ces()`, `ves()` and `ets()`;
-20. `errorType(ourModel)` -- the type of the error of a model (additive or multiplicative);
-21. `coef(ourModel)` -- returns the vector of all the estimated coefficients of the model;
-22. `formula(ourModel)` -- returns the formula for the measurement equation. This is just for the information and general understanding what we work with;
-23. `actuals(ourModel)` -- returns actual values;
-24. `multicov(ourModel)` -- covariance matrix of multiple steps ahead forecast errors;
-25. `pls(ourModel)` - Prediction Likelihood Score for the model and the provided holdout. This is buggy and needs to be updated. Don't rely on this method too much.
+1. `print(ourModel)` -- function prints brief output with explanation of what was fitted, with what parameters, errors etc;
+2. `summary(ourModel)` -- alias for `print(ourModel)`;
+3. `actuals(ourModel)` -- returns actual values;
+4. `fitted(ourModel)` -- fitted values of the model;
+5. `residuals(ourModel)` -- residuals of constructed model;
+<!-- 5. `rstandard(ourModel)` -- standardised residuals of the model; -->
+<!-- 6. `rstudent(ourModel)` -- studentised residuals of the model; -->
+6. `AIC(ourModel)`, `BIC(ourModel)`, `AICc(ourModel)` and `BICc(ourModel)` -- information criteria of the constructed model. `AICc()` and `BICc()` functions are not standard `stats` functions and are imported from `greybox` package and modified in `legion` for the specific models;
+7. `plot(ourModel)` -- produces plots for the diagnostics of the constructed model. There are 9 options of what to produce, see `?plot.legion()` for more details. Prepare the canvas via `par(mfcol=...)` before using this function otherwise the plotting might take time.
+8. `forecast(ourModel)` -- point and interval forecasts;
+9. `plot(forecast(ourModel))` -- produces graph with actuals, forecast, fitted and prediction interval using `graphmaker()` function from `greybox` package.
+10. `simulate(ourModel)` -- produces data simulated from provided model. Only works for `ves() `for now;
+11. `logLik(ourModel)` -- returns log-likelihood of the model;
+12. `nobs(ourModel)` -- returns number of observations in-sample we had;
+13. `nparam(ourModel)` -- number of estimated parameters (originally from `greybox` package);
+14. `nvariate(ourModel)` -- number of variates, time series in the model (originally from `greybox` package);
+15. `sigma(ourModel)` -- covariance matrix of the residuals of the model;
+16. `modelType(ourModel)` -- returns the type of the model. Returns something like "MMM" for ETS(MMM). Can be used with `ves()` and `vets()`. In the latter case can also accept `pic=TRUE`, returning the PIC restrictions;
+17. `errorType(ourModel)` -- the type of the error of a model (additive or multiplicative);
+18. `coef(ourModel)` -- returns the vector of all the estimated coefficients of the model;
