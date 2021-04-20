@@ -278,6 +278,100 @@ plot.legion <- function(x, which=c(1,2,4,6), level=0.95, legend=FALSE,
         }
     }
 
+    # 2 and 3: Standardised  / studentised residuals vs Fitted
+    plot2 <- function(x, yFitted, yResid, yName, statistic, i, ...){
+        ellipsis <- list(...);
+
+        ellipsis$x <- yFitted;
+        ellipsis$y <- yResid;
+
+        if(is.occurrence(x$occurrence)){
+            ellipsis$x <- ellipsis$x[ellipsis$y!=0];
+            ellipsis$y <- ellipsis$y[ellipsis$y!=0];
+        }
+
+        # Remove NAs
+        if(any(is.na(ellipsis$x))){
+            ellipsis$y <- ellipsis$y[!is.na(ellipsis$x)];
+            ellipsis$x <- ellipsis$x[!is.na(ellipsis$x)];
+        }
+        if(any(is.na(ellipsis$y))){
+            ellipsis$x <- ellipsis$x[!is.na(ellipsis$y)];
+            ellipsis$y <- ellipsis$y[!is.na(ellipsis$y)];
+        }
+
+        # Main, labs etc
+        if(!any(names(ellipsis)=="main")){
+            if(errorType(x)=="M"){
+                ellipsis$main <- paste0("Series ",i,", log(",yName," Residuals) vs Fitted");
+            }
+            else{
+                ellipsis$main <- paste0("Series ",i,", ",yName," Residuals vs Fitted");
+            }
+        }
+
+        if(!any(names(ellipsis)=="xlab")){
+            ellipsis$xlab <- "Fitted";
+        }
+        if(!any(names(ellipsis)=="ylab")){
+            ellipsis$ylab <- paste0(yName," Residuals");
+        }
+
+        if(legend){
+            if(ellipsis$x[length(ellipsis$x)]>mean(ellipsis$x)){
+                legendPosition <- "bottomright";
+            }
+            else{
+                legendPosition <- "topright";
+            }
+        }
+
+        outliers <- which(ellipsis$y >statistic[2] | ellipsis$y <statistic[1]);
+        # cat(paste0(round(length(outliers)/length(ellipsis$y),3)*100,"% of values are outside the bounds\n"));
+
+        if(!any(names(ellipsis)=="ylim")){
+            ellipsis$ylim <- range(c(ellipsis$y,statistic), na.rm=TRUE)*1.2;
+            if(legend){
+                if(legendPosition=="bottomright"){
+                    ellipsis$ylim[1] <- ellipsis$ylim[1] - 0.2*diff(ellipsis$ylim);
+                }
+                else{
+                    ellipsis$ylim[2] <- ellipsis$ylim[2] + 0.2*diff(ellipsis$ylim);
+                }
+            }
+        }
+
+        xRange <- range(ellipsis$x, na.rm=TRUE);
+        xRange[1] <- xRange[1] - sd(ellipsis$x, na.rm=TRUE);
+        xRange[2] <- xRange[2] + sd(ellipsis$x, na.rm=TRUE);
+
+        do.call(plot,ellipsis);
+        abline(h=0, col="grey", lty=2);
+        polygon(c(xRange,rev(xRange)),c(statistic[1],statistic[1],statistic[2],statistic[2]),
+                col="lightgrey", border=NA, density=10);
+        abline(h=statistic, col="red", lty=2);
+        if(length(outliers)>0){
+            points(ellipsis$x[outliers], ellipsis$y[outliers], pch=16);
+            text(ellipsis$x[outliers], ellipsis$y[outliers], labels=outliers, pos=(ellipsis$y[outliers]>0)*2+1);
+        }
+        if(lowess){
+            lines(lowess(ellipsis$x[!is.na(ellipsis$y)], ellipsis$y[!is.na(ellipsis$y)]), col="red");
+        }
+
+        if(legend){
+            if(lowess){
+                legend(legendPosition,
+                       legend=c(paste0(round(level,3)*100,"% bounds"),"outside the bounds","LOWESS line"),
+                       col=c("red", "black","red"), lwd=c(1,NA,1), lty=c(2,1,1), pch=c(NA,16,NA));
+            }
+            else{
+                legend(legendPosition,
+                       legend=c(paste0(round(level,3)*100,"% bounds"),"outside the bounds"),
+                       col=c("red", "black"), lwd=c(1,NA), lty=c(2,1), pch=c(NA,16));
+            }
+        }
+    }
+
     # 4 and 5. Fitted vs |Residuals| or Fitted vs Residuals^2
     plot3 <- function(x, yResid, yFitted, i,  type="abs", ...){
         ellipsis <- list(...);
@@ -384,33 +478,208 @@ plot.legion <- function(x, which=c(1,2,4,6), level=0.95, legend=FALSE,
         do.call(graphmaker, ellipsis);
     }
 
-    # Do plots
-    if(any(which==1)){
-        for(i in 1:nSeries){
-            plot1(x, as.vector(actuals(x)[,i]), as.vector(fitted(x)[,i]), i=i, ...);
+    # 8 and 9. Standardised / Studentised residuals vs time
+    plot6 <- function(x, yResid, yName, statistic, i, ...){
+
+        ellipsis <- list(...);
+
+        ellipsis$x <- yResid;
+
+        if(is.occurrence(x$occurrence)){
+            ellipsis$x[ellipsis$x==0] <- NA;
+        }
+
+        if(!any(names(ellipsis)=="main")){
+            ellipsis$main <- paste0("Series ",i,", ",yName," Residuals vs Time");
+        }
+
+        if(!any(names(ellipsis)=="xlab")){
+            ellipsis$xlab <- "Time";
+        }
+        if(!any(names(ellipsis)=="ylab")){
+            ellipsis$ylab <- paste0(yName," Residuals");
+        }
+
+        # If type and ylab are not provided, set them...
+        if(!any(names(ellipsis)=="type")){
+            ellipsis$type <- "l";
+        }
+
+        outliers <- which(ellipsis$x >statistic[2] | ellipsis$x <statistic[1]);
+
+        if(!any(names(ellipsis)=="ylim")){
+            ellipsis$ylim <- c(-max(abs(ellipsis$x),na.rm=TRUE),
+                               max(abs(ellipsis$x),na.rm=TRUE))*1.2;
+        }
+
+        if(legend){
+            legendPosition <- "topright";
+            ellipsis$ylim[2] <- ellipsis$ylim[2] + 0.2*diff(ellipsis$ylim);
+            ellipsis$ylim[1] <- ellipsis$ylim[1] - 0.2*diff(ellipsis$ylim);
+        }
+
+        # Start plotting
+        do.call(plot,ellipsis);
+        if(length(outliers)>0){
+            points(time(ellipsis$x)[outliers], ellipsis$x[outliers], pch=16);
+            text(time(ellipsis$x)[outliers], ellipsis$x[outliers], labels=outliers, pos=(ellipsis$x[outliers]>0)*2+1);
+        }
+        # If there is occurrence model, plot points to fill in breaks
+        if(is.occurrence(x$occurrence)){
+            points(time(ellipsis$x), ellipsis$x);
+        }
+        if(lowess){
+            # Substitute NAs with the mean
+            if(any(is.na(ellipsis$x))){
+                ellipsis$x[is.na(ellipsis$x)] <- mean(ellipsis$x, na.rm=TRUE);
+            }
+            lines(lowess(c(1:length(ellipsis$x)),ellipsis$x), col="red");
+        }
+        abline(h=0, col="grey", lty=2);
+        abline(h=statistic[1], col="red", lty=2);
+        abline(h=statistic[2], col="red", lty=2);
+        polygon(c(1:nobs(x), c(nobs(x):1)),
+                c(rep(statistic[1],nobs(x)), rep(statistic[2],nobs(x))),
+                col="lightgrey", border=NA, density=10);
+        if(legend){
+            legend(legendPosition,legend=c("Residuals",paste0(level*100,"% prediction interval")),
+                   col=c("black","red"), lwd=rep(1,3), lty=c(1,1,2));
         }
     }
 
-    if(any(which %in% c(2,3,8:12))){
-        warning("The plots 2, 3, 8-12 are not available yet for the legion class.",
-                call.=FALSE);
+    # 10 and 11. ACF and PACF
+    plot7 <- function(x, yResid, type="acf", i, ...){
+        ellipsis <- list(...);
+
+        if(!any(names(ellipsis)=="main")){
+            if(type=="acf"){
+                ellipsis$main <- paste0("Series ",i,", Autocorrelation Function of Residuals");
+            }
+            else{
+                ellipsis$main <- paste0("Series ",i,", Partial Autocorrelation Function of Residuals");
+            }
+        }
+
+        if(!any(names(ellipsis)=="xlab")){
+            ellipsis$xlab <- "Lags";
+        }
+        if(!any(names(ellipsis)=="ylab")){
+            if(type=="acf"){
+                ellipsis$ylab <- "ACF";
+            }
+            else{
+                ellipsis$ylab <- "PACF";
+            }
+        }
+
+        if(!any(names(ellipsis)=="ylim")){
+            ellipsis$ylim <- c(-1,1);
+        }
+
+        if(type=="acf"){
+            theValues <- acf(yResid, plot=FALSE, na.action=na.pass);
+        }
+        else{
+            theValues <- pacf(yResid, plot=FALSE, na.action=na.pass);
+        }
+        ellipsis$x <- theValues$acf[-1];
+        statistic <- qnorm(c((1-level)/2, (1+level)/2),0,sqrt(1/nobs(x)));
+
+        ellipsis$type <- "h"
+
+        do.call(plot,ellipsis);
+        abline(h=0, col="black", lty=1);
+        abline(h=statistic, col="red", lty=2);
+        if(any(ellipsis$x>statistic[2] | ellipsis$x<statistic[1])){
+            outliers <- which(ellipsis$x >statistic[2] | ellipsis$x <statistic[1]);
+            points(outliers, ellipsis$x[outliers], pch=16);
+            text(outliers, ellipsis$x[outliers], labels=outliers, pos=(ellipsis$x[outliers]>0)*2+1);
+        }
+    }
+
+    # 12. Plot of states
+    plot8 <- function(x, ...){
+        ellipsis <- list(...);
+
+        parDefault <- par(no.readonly = TRUE);
+        statesNames <- c(colnames(x$states),
+                         paste0("residuals of ",colnames(actuals(x))));
+        x$states <- cbind(x$states,residuals(x));
+        colnames(x$states) <- statesNames;
+        if(ncol(x$states)>10){
+            message("Too many states. Plotting them one by one on several graphs.");
+            if(is.null(ellipsis$main)){
+                ellipsisMain <- NULL;
+            }
+            else{
+                ellipsisMain <- ellipsis$main;
+            }
+            nPlots <- ceiling(ncol(x$states)/10);
+            for(i in 1:nPlots){
+                if(is.null(ellipsisMain)){
+                    ellipsis$main <- paste0("States of ",x$model,", part ",i);
+                }
+                ellipsis$x <- x$states[,(1+(i-1)*10):min(i*10,ncol(x$states)),drop=FALSE];
+                do.call(plot, ellipsis);
+            }
+        }
+        else{
+            if(ncol(x$states)<=5){
+                ellipsis$nc <- 1;
+            }
+            if(is.null(ellipsis$main)){
+                ellipsis$main <- paste0("States of ",x$model);
+            }
+            ellipsis$x <- x$states;
+            do.call(plot, ellipsis);
+        }
+        par(parDefault);
+    }
+
+    # Do plots
+    if(any(which==1)){
+        for(i in 1:nSeries){
+            plot1(x, as.vector(actuals(x)[,i]), as.vector(fitted(x)[,i]), i, ...);
+        }
+    }
+
+    if(any(which==2)){
+        # Get the residuals and statistic for outliers
+        errors <- rstandard(x);
+        outliers <- outlierdummy(x, level=level, type="rstandard");
+        statistic <- outliers$statistic;
+
+        for(i in 1:nSeries){
+            plot2(x, as.vector(fitted(x)[,i]), as.vector(errors[,i]), "Standardised", statistic, i, ...);
+        }
+    }
+
+    if(any(which==3)){
+        # Get the residuals and statistic for outliers
+        errors <- rstudent(x);
+        outliers <- outlierdummy(x, level=level, type="rstudent");
+        statistic <- outliers$statistic;
+
+        for(i in 1:nSeries){
+            plot2(x, as.vector(fitted(x)[,i]), as.vector(errors[,i]), "Studentised", statistic, i, ...);
+        }
     }
 
     if(any(which==4)){
         for(i in 1:nSeries){
-            plot3(x, as.vector(residuals(x)[,i]), as.vector(fitted(x)[,i]), i=i, ...);
+            plot3(x, as.vector(residuals(x)[,i]), as.vector(fitted(x)[,i]), i, ...);
         }
     }
 
     if(any(which==5)){
         for(i in 1:nSeries){
-            plot3(x, as.vector(residuals(x)[,i]), as.vector(fitted(x)[,i]), i=i, type="squared", ...);
+            plot3(x, as.vector(residuals(x)[,i]), as.vector(fitted(x)[,i]), i, type="squared", ...);
         }
     }
 
     if(any(which==6)){
         for(i in 1:nSeries){
-            plot4(x, as.vector(residuals(x)[,i]), i=i, ...);
+            plot4(x, as.vector(residuals(x)[,i]), i, ...);
         }
     }
 
@@ -418,6 +687,46 @@ plot.legion <- function(x, which=c(1,2,4,6), level=0.95, legend=FALSE,
         for(i in 1:nSeries){
             plot5(x, actuals(x)[,i], fitted(x)[,i], x$holdout[,i], x$forecast[,i], x$PI[,i*2-1], x$PI[,i*2], ...);
         }
+    }
+
+    if(any(which==8)){
+        # Get the residuals and statistic for outliers
+        errors <- rstandard(x);
+        outliers <- outlierdummy(x, level=level, type="rstandard");
+        statistic <- outliers$statistic;
+
+        for(i in 1:nSeries){
+            plot6(x, errors[,i], "Standardised", statistic, i, ...);
+        }
+    }
+
+    if(any(which==9)){
+        # Get the residuals and statistic for outliers
+        errors <- rstudent(x);
+        outliers <- outlierdummy(x, level=level, type="rstudent");
+        statistic <- outliers$statistic;
+
+        for(i in 1:nSeries){
+            plot6(x, errors[,i], "Studentised", statistic, i, ...);
+        }
+    }
+
+    if(any(which==10)){
+        errors <- residuals(x);
+        for(i in 1:nSeries){
+            plot7(x, errors[,i], "acf", i, ...);
+        }
+    }
+
+    if(any(which==11)){
+        errors <- residuals(x);
+        for(i in 1:nSeries){
+            plot7(x, errors[,i], "pacf", i, ...);
+        }
+    }
+
+    if(any(which==12)){
+        plot8(x, ...);
     }
 }
 
@@ -760,4 +1069,110 @@ summary.oves <- function(object, ...){
 #' @export
 residuals.legion <- function(object, ...){
     return(object$residuals);
+}
+
+# Function decomposes the sigma matrix and returns the Sigma^{-1/2}
+# This is an internal function, needed for rstandard and rstudent
+sigmasqrtCalculator <- function(sigmaMatrix,nSeries){
+    sigmaMatrixEigen <- eigen(sigmaMatrix,symmetric=TRUE);
+    return(sigmaMatrixEigen$vectors %*% diag(sigmaMatrixEigen$values^{-0.5}) %*%
+               solve(sigmaMatrixEigen$vectors,diag(nSeries)));
+
+}
+
+#' @importFrom stats rstandard
+#' @export
+rstandard.legion <- function(model, ...){
+    obs <- nobs(model);
+    nSeries <- nvariate(model);
+    rstandardValues <- residuals(model);
+    errors <- t(residuals(model));
+    # If this is an occurrence model, then only modify the non-zero obs
+    # Also, if there are NAs in actuals, consider them as occurrence
+    # if(is.occurrence(model$occurrence)){
+    #     residsToGo <- which(actuals(model$occurrence)!=0 & !is.na(actuals(model)));
+    # }
+    # else{
+    residsToGo <- c(1:obs);
+    # }
+
+    sigmaMatrix <- sigma(model);
+    # Decompose the sigma matrix and get the Sigma^{-1/2}
+    sigmaMatrixSQRT <- sigmasqrtCalculator(sigmaMatrix,nSeries);
+
+    # Either additive or multiplicative error -> Normal or Log Normal
+    if(errorType(model)=="A"){
+        rstandardValues[] <- t(sigmaMatrixSQRT %*% (errors - rowMeans(errors[,residsToGo])));
+    }
+    else{
+        # Debias the residuals
+        errors[] <- errors - diag(sigmaMatrix);
+        rstandardValues[] <- t(sigmaMatrixSQRT %*% errors);
+    }
+    return(rstandardValues);
+}
+
+#' @importFrom stats rstudent
+#' @export
+rstudent.legion <- function(model, ...){
+    obs <- nobs(model);
+    nSeries <- nvariate(model);
+    df <- obs - nparam(model) / nSeries;
+    rstudentised <- errors <- t(residuals(model));
+    rstudentValues <- errorsT <- residuals(model);
+    # If this is an occurrence model, then only modify the non-zero obs
+    # Also, if there are NAs in actuals, consider them as occurrence
+    # if(is.occurrence(model$occurrence)){
+    #     residsToGo <- which(actuals(model$occurrence)!=0 & !is.na(actuals(model)));
+    # }
+    # else{
+    residsToGo <- c(1:obs);
+    # }
+
+    sigmaMatrix <- sigma(model);
+
+    # Either additive or multiplicative error -> Normal or Log Normal
+    if(errorType(model)=="A"){
+        errors[] <- errors - rowMeans(errors[,residsToGo]);
+    }
+    else{
+        # Debias the residuals
+        errors[] <- errors - diag(sigmaMatrix);
+    }
+
+    # Go through each observation, remove it and recalculate sigma matrix
+    for(i in residsToGo){
+        sigmaMatrix[] <- (errors[,-i,drop=FALSE] %*% errorsT[-i,,drop=FALSE]) / df;
+        sigmaMatrixSQRT <- sigmasqrtCalculator(sigmaMatrix,nSeries);
+        rstudentised[,i] <- sigmaMatrixSQRT %*% errors[,i,drop=FALSE];
+    }
+
+    # Return the original object
+    rstudentValues[] <- t(rstudentised);
+
+    return(rstudentValues);
+}
+
+#' @importFrom greybox outlierdummy
+#' @export
+outlierdummy.legion <- function(object, level=0.999, type=c("rstandard","rstudent"), ...){
+    # Function returns the matrix of dummies with outliers
+    type <- match.arg(type);
+    errors <- switch(type,"rstandard"=rstandard(object),"rstudent"=rstudent(object));
+    statistic <- qnorm(c((1-level)/2, (1+level)/2), 0, 1);
+    outliersID <- which(errors>statistic[2] | errors<statistic[1], arr.ind=TRUE);
+    outliersNumber <- nrow(outliersID);
+    if(outliersNumber>0){
+        outliers <- matrix(0, nobs(object), nvariate(object),
+                           dimnames=list(rownames(actuals(object)), colnames(actuals(object))));
+        outliers[outliersID] <- 1;
+    }
+    else{
+        outliers <- NULL;
+    }
+    outliersID <- which(errors>statistic[2] | errors<statistic[1], arr.ind=FALSE);
+
+    return(structure(list(outliers=outliers, statistic=statistic, id=outliersID,
+                          level=level, type=type),
+                     class="outlierdummy"));
 }

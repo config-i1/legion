@@ -1,4 +1,4 @@
-legion v0.1.0 (Release data: 2021-04-20)
+legion v0.1.0 (Release data: 2021-04-21)
 =======
 
 Changes:
@@ -17,3 +17,5 @@ Changes:
 * loss="diagonal" now refers to likelihood maximisation, assuming that the series are independent.
 * auto.vets() now starts with the model with loss="diagonal", implying that covariances are all zero.
 * Substituted the parameters "y" with "data".
+* A brief vignette for vets().
+* plot.legion() method now supports all plots.
