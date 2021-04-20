@@ -1,8 +1,8 @@
 Package: legion
 Type: Package
 Title: Forecasting Using Multivariate Models
-Version: 0.0.1.41014
-Date: 2021-04-12
+Version: 0.1.0
+Date: 2021-04-20
 Authors@R: c(person("Ivan", "Svetunkov", email = "ivan@svetunkov.ru", role = c("aut", "cre"),
                   comment="Lecturer at Centre for Marketing Analytics and Forecasting, Lancaster University, UK"),
              person("Kandrika Fadhlan", "Pritularga", email = "k.pritularga@lancaster.ac.uk", role = c("aut"),
@@ -10,9 +10,10 @@ Authors@R: c(person("Ivan", "Svetunkov", email = "ivan@svetunkov.ru", role = c("
 URL: https://github.com/config-i1/legion
 BugReports: https://github.com/config-i1/legion/issues
 Language: en-GB
-Description: Functions implementing Single Source of Error state space models for purposes of time series analysis and forecasting.
-             The focus of the package is on multivariate models. It includes Vector Exponential Smoothing
-             (de Silva et al., 2010, <doi: 10.1177/1471082X0901000401>), Vector ETS and simulation function for VES.
+Description: Functions implementing multivariate state space models for purposes of time series analysis and forecasting.
+             The focus of the package is on multivariate models, such as Vectore Exponential Smoothing,
+             Vector ETS etc. It currently includes Vector Exponential Smoothing (de Silva et al., 2010,
+             <doi: 10.1177/1471082X0901000401>), Vector ETS and simulation function for VES.
 License: GPL (>=2)
 Depends:
     R (>= 3.5.0),
@@ -31,7 +32,6 @@ Imports:
 LinkingTo: Rcpp, RcppArmadillo (>= 0.8.100.0.0)
 Suggests:
     Mcomp,
-    forecast (>= 7.0),
     numDeriv,
     testthat,
     knitr,
