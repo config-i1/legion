@@ -280,16 +280,16 @@ ves(Y,model="ANN",h=10,holdout=TRUE)
 ves(Y,model="AAdN",persistence="d",h=10,holdout=TRUE)
 
 # Multiplicative damped trend model with individual phi
-ves(Y,model="MMdM",persistence="i",h=10,holdout=TRUE,initialSeason="c")
+\dontrun{ves(Y,model="MMdM",persistence="i",h=10,holdout=TRUE,initialSeason="c")}
 
 # Automatic selection between pure models
-ves(Y,model="PPP",persistence="i",h=10,holdout=TRUE,initialSeason="c")
+\dontrun{ves(Y,model="PPP",persistence="i",h=10,holdout=TRUE,initialSeason="c")}
 
 # Intermittent demand vector model
 Y <- cbind(c(rpois(25,0.1),rpois(25,0.5),rpois(25,1),rpois(25,5)),
            c(rpois(25,0.1),rpois(25,0.5),rpois(25,1),rpois(25,5)))
 
-ves(Y,model="MNN",h=10,holdout=TRUE,occurrence="l")
+\dontrun{ves(Y,model="MNN",h=10,holdout=TRUE,occurrence="l")}
 
 }
 \references{
