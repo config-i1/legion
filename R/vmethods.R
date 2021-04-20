@@ -114,15 +114,28 @@ coef.legion <- function(object, ...){
 #' @importFrom smooth modelType
 #' @export
 modelType.legion <- function(object, ...){
+    ellipsis <- list(...);
     model <- object$model;
-    modelType <- NA;
-    if(!is.null(model)){
-        if(gregexpr("VES",model)!=-1 || gregexpr("VETS",model)!=-1){
-            modelType <- substring(model,unlist(gregexpr("\\(",model))+1,unlist(gregexpr("\\)",model))-1)[1];
+    modelTypeReturned <- NA;
+    # If a person asked for PIC part, extract it
+    if(!is.null(ellipsis$pic) && ellipsis$pic){
+        if(!is.null(model) && gregexpr("VETS",model)!=-1){
+            modelTypeReturned <- substring(model,unlist(gregexpr("\\(",model))+1,unlist(gregexpr("\\)",model))-1)[2];
+        }
+        # Return just basic type for VES
+        else{
+            modelTypeReturned <- modelType(object);
+        }
+    }
+    else{
+        if(!is.null(model)){
+            if(gregexpr("VES",model)!=-1 || gregexpr("VETS",model)!=-1){
+                modelTypeReturned <- substring(model,unlist(gregexpr("\\(",model))+1,unlist(gregexpr("\\)",model))-1)[1];
+            }
         }
     }
 
-    return(modelType);
+    return(modelTypeReturned);
 }
 
 #### Plotting things ####
