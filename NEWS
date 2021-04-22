@@ -1,4 +1,4 @@
-legion v0.1.0 (Release data: 2021-04-21)
+legion v0.1.0 (Release data: 2021-04-22)
 =======
 
 Changes:
@@ -19,3 +19,4 @@ Changes:
 * Substituted the parameters "y" with "data".
 * A brief vignette for vets().
 * plot.legion() method now supports all plots.
+* forecast.legion() and related methods is now available.

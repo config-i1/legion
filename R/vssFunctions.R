@@ -866,52 +866,52 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     }
 
     ##### interval, intervalType, level #####
-    intervalType <- interval[1];
+    # intervalType <- interval[1];
     # Check the provided type of interval
 
-    if(is.logical(intervalType)){
-        if(intervalType){
-            intervalType <- "i";
-        }
-        else{
-            intervalType <- "none";
-        }
-    }
+    # if(is.logical(intervalType)){
+    #     if(intervalType){
+    #         intervalType <- "i";
+    #     }
+    #     else{
+    #         intervalType <- "none";
+    #     }
+    # }
 
-    if(all(intervalType!=c("c","u","i","l","n","none","conditional","unconditional",
-                           "individual","likelihood"))){
-        warning(paste0("Wrong type of interval: '",intervalType, "'. Switching to 'conditional'."),
-                call.=FALSE);
-        intervalType <- "i";
-    }
-
-    if(intervalType=="none"){
-        intervalType <- "n";
-        interval <- FALSE;
-    }
-    else if(intervalType=="conditional"){
-        intervalType <- "c";
-        interval <- TRUE;
-    }
-    else if(intervalType=="unconditional"){
-        intervalType <- "u";
-        interval <- TRUE;
-    }
-    else if(intervalType=="individual"){
-        intervalType <- "i";
-        interval <- TRUE;
-    }
-    else if(intervalType=="likelihood"){
-        intervalType <- "l";
-        interval <- TRUE;
-    }
-    else{
-        interval <- TRUE;
-    }
-
-    if(level>1){
-        level <- level / 100;
-    }
+    # if(all(intervalType!=c("c","u","i","l","n","none","conditional","unconditional",
+    #                        "individual","likelihood"))){
+    #     warning(paste0("Wrong type of interval: '",intervalType, "'. Switching to 'conditional'."),
+    #             call.=FALSE);
+    #     intervalType <- "i";
+    # }
+    #
+    # if(intervalType=="none"){
+    #     intervalType <- "n";
+    #     interval <- FALSE;
+    # }
+    # else if(intervalType=="conditional"){
+    #     intervalType <- "c";
+    #     interval <- TRUE;
+    # }
+    # else if(intervalType=="unconditional"){
+    #     intervalType <- "u";
+    #     interval <- TRUE;
+    # }
+    # else if(intervalType=="individual"){
+    #     intervalType <- "i";
+    #     interval <- TRUE;
+    # }
+    # else if(intervalType=="likelihood"){
+    #     intervalType <- "l";
+    #     interval <- TRUE;
+    # }
+    # else{
+    #     interval <- TRUE;
+    # }
+    #
+    # if(level>1){
+    #     level <- level / 100;
+    # }
 
     ##### bounds #####
     bounds <- substring(bounds[1],1,1);
@@ -1063,8 +1063,8 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
 
     assign("ic",ic,ParentEnvironment);
 
-    assign("intervalType",intervalType,ParentEnvironment);
-    assign("interval",interval,ParentEnvironment);
+    # assign("intervalType",intervalType,ParentEnvironment);
+    # assign("interval",interval,ParentEnvironment);
 
     assign("occurrence",occurrence,ParentEnvironment);
     assign("ot",ot,ParentEnvironment);
@@ -1130,10 +1130,15 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
 
 ##### CF for scale calculation #####
 # This is needed for the models with multiplicative error term
-scalerCF <- function(A, errors, scaleValue, yInSampleSum){
+scalerCF <- function(A, errors, scaleValue, yInSampleSum, loss){
     # Fill in the matrix
-    scaleValue[upper.tri(scaleValue,diag=TRUE)] <- A;
-    scaleValue[lower.tri(scaleValue)] <- t(scaleValue)[lower.tri(scaleValue)];
+    if(loss=="likelihood"){
+        scaleValue[upper.tri(scaleValue,diag=TRUE)] <- A;
+        scaleValue[lower.tri(scaleValue)] <- t(scaleValue)[lower.tri(scaleValue)];
+    }
+    else{
+        diag(scaleValue) <- A;
+    }
     # If detereminant is positive, return logLik
     if(det(scaleValue)<=0){
         return(1e+100);
@@ -1162,180 +1167,15 @@ vssFitter <- function(...){
         }
     }
 
-    assign("matVt",matVt,ParentEnvironment);
-    assign("yFitted",yFitted,ParentEnvironment);
-    assign("errors",errors,ParentEnvironment);
-}
-
-##### *State space interval* #####
-# This is not implemented yet
-#' @importFrom stats qchisq
-vssIntervals <- function(level=0.95, intervalType=c("c","u","i","l"), Sigma=NULL,
-                         measurement=NULL, transition=NULL, persistence=NULL,
-                         lagsModel=NULL, cumulative=FALSE, df=0,
-                         nComponents=1, nSeries=1, h=1){
-
-    lagsModelMax <- max(lagsModel);
-    # nElements <- nComponents*nSeries;
-    nElements <- length(lagsModel);
-
-    # This is a temporary solution, needed while we work on other types.
-    if(intervalType!="i"){
-        intervalType <- "i";
-    }
-    # In case of likelihood interval, construct the individual ones
-    # if(intervalType=="l"){
-    #     intervalType <- "i";
-    # }
-
-    # In case of individual we use either Z distribution or Chebyshev inequality
-    if(intervalType=="i"){
-        if(df>0){
-            quantUpper <- qnorm((1+level)/2,0,1);
-            quantLower <- qnorm((1-level)/2,0,1);
-        }
-        else{
-            quantUpper <- sqrt(1/((1-level)/2));
-            quantLower <- -quantUpper;
-        }
-    }
-    # In case of conditional / unconditional, we use Chi-squared distribution
-    else{
-        quant <- qchisq(level,df=nSeries);
-    }
-
-    nPoints <- 100;
-    if(intervalType=="c"){
-        # Number of points in the ellipse
-        PI <- array(NA, c(h,2*nPoints^(nSeries-1),nSeries),
-                    dimnames=list(paste0("h",c(1:h)), NULL,
-                                  paste0("Series_",1:nSeries)));
-    }
-    else{
-        PI <- matrix(NA, nrow=h, ncol=nSeries*2,
-                     dimnames=list(paste0("h",c(1:h)),
-                                   paste0("Series_",rep(c(1:nSeries),each=2),c("_lower","_upper"))));
-    }
-
-    # Array of final variance matrices
-    varVec <- array(NA,c(h,nSeries,nSeries));
-    # This is needed for the first observations, where we do not care about the transition equation
-    for(i in 1:min(h,lagsModelMax)){
-        varVec[i,,] <- Sigma;
-    }
-
-    if(h>1){
-        if(cumulative){
-            covarVec <- array(NA,c(h,nSeries,nSeries));
-        }
-
-        matrixOfVarianceOfStates <- array(0,c(nElements,nElements,h+lagsModelMax));
-        # This multiplication does not make sense
-        matrixOfVarianceOfStates[,,1:lagsModelMax] <- persistence %*% Sigma %*% t(persistence);
-        matrixOfVarianceOfStatesLagged <- as.matrix(matrixOfVarianceOfStates[,,1]);
-
-        # New transition and measurement for the internal use
-        transitionNew <- matrix(0,nElements,nElements);
-        measurementNew <- matrix(0,nSeries,nElements);
-
-        # selectionMat is needed for the correct selection of lagged variables in the array
-        # elementsNew are needed for the correct fill in of all the previous matrices
-        selectionMat <- transitionNew;
-        elementsNew <- rep(FALSE,nElements);
-
-        # Define chunks, which correspond to the lags with h being the final one
-        chuncksOfHorizon <- c(1,unique(lagsModel),h);
-        chuncksOfHorizon <- sort(chuncksOfHorizon);
-        chuncksOfHorizon <- chuncksOfHorizon[chuncksOfHorizon<=h];
-        chuncksOfHorizon <- unique(chuncksOfHorizon);
-
-        # Length of the vector, excluding the h at the end
-        chunksLength <- length(chuncksOfHorizon) - 1;
-
-        elementsNew <- lagsModel<=(chuncksOfHorizon[1]);
-        measurementNew[,elementsNew] <- measurement[,elementsNew];
-
-        for(j in 1:chunksLength){
-            selectionMat[lagsModel==chuncksOfHorizon[j],] <- chuncksOfHorizon[j];
-            selectionMat[,lagsModel==chuncksOfHorizon[j]] <- chuncksOfHorizon[j];
-
-            elementsNew <- lagsModel < (chuncksOfHorizon[j]+1);
-            transitionNew[,elementsNew] <- transition[,elementsNew];
-            measurementNew[,elementsNew] <- measurement[,elementsNew];
-
-            for(i in (chuncksOfHorizon[j]+1):chuncksOfHorizon[j+1]){
-                selectionMat[lagsModel>chuncksOfHorizon[j],] <- i;
-                selectionMat[,lagsModel>chuncksOfHorizon[j]] <- i;
-
-                matrixOfVarianceOfStatesLagged[elementsNew,
-                                               elementsNew] <- matrixOfVarianceOfStates[
-                                                   cbind(rep(c(1:nElements),
-                                                             each=nElements),
-                                                         rep(c(1:nElements),
-                                                             nElements),
-                                                         i - c(selectionMat))];
-
-                matrixOfVarianceOfStates[,,i] <- (transitionNew %*%
-                                                      matrixOfVarianceOfStatesLagged %*% t(transitionNew) +
-                                                      persistence %*% Sigma %*% t(persistence));
-                varVec[i,,] <- measurementNew %*% matrixOfVarianceOfStatesLagged %*% t(measurementNew) + Sigma;
-                if(cumulative){
-                    covarVec[i] <- measurementNew %*% transitionNew %*% persistence;
-                }
-            }
-        }
-
-        if(cumulative){
-            varVec <- apply(varVec,c(2,3),sum) + 2*Sigma %*% apply(covarVec*array(c(0,h:2),
-                                                                                  c(h,nSeries,nSeries)),
-                                                                   c(2,3),sum);
-        }
-    }
-
-    # Produce PI matrix
-    if(any(intervalType==c("c","u"))){
-        # eigensList contains eigenvalues and eigenvectors of the covariance matrix
-        eigensList <- apply(varVec,1,eigen);
-        # eigenLimits specify the lowest and highest ellipse points in all dimensions
-        eigenLimits <- matrix(NA,nSeries,2);
-        # ellipsePoints contains coordinates of the ellipse on the eigenvectors basis
-        ellipsePoints <- array(NA, c(h, 2*nPoints^(nSeries-1), nSeries));
-        for(i in 1:h){
-            eigenLimits[,2] <- sqrt(quant / eigensList[[i]]$value);
-            eigenLimits[,1] <- -eigenLimits[,2];
-            ellipsePoints[i,,nSeries] <- rep(seq(eigenLimits[nSeries,1],
-                                                      eigenLimits[nSeries,2],
-                                                      length.out=nPoints),nSeries);
-            for(j in (nSeries-1):1){
-                ellipsePoints[i,,nSeries];
-            }
-        }
-    }
-    else if(intervalType=="i"){
-        variances <- apply(varVec,1,diag);
-        for(i in 1:nSeries){
-            PI[,2*i-1] <- quantLower * sqrt(variances[i,]);
-            PI[,2*i] <- quantUpper * sqrt(variances[i,]);
-        }
-    }
-
-    return(PI);
-}
-
-##### *Forecaster of state space functions* #####
-vssForecaster <- function(...){
-    ellipsis <- list(...);
-    ParentEnvironment <- ellipsis[['ParentEnvironment']];
-
     # Division by nSeries gives the df per series, which agrees with Lutkepohl (2005), p.75
     nParamPerSeries <- nParam / nSeries;
     # df <- (otObs - nParamPerSeries);
-    if(intervalType!="l" && any(otObs >= nParamPerSeries)){
+    # if(intervalType!="l" && any(otObs >= nParamPerSeries)){
         df <- otObs - nParamPerSeries;
-    }
-    else{
-        df <- otObs;
-    }
+    # }
+    # else{
+    #     df <- otObs;
+    # }
 
     # Divide each element by each degree of freedom
     if(loss=="diagonal"){
@@ -1348,17 +1188,41 @@ vssForecaster <- function(...){
 
     # Correct the sigma matrix
     if(any(loss==c("likelihood","diagonal")) && Etype=="M"){
-        A <- Sigma[upper.tri(Sigma,diag=TRUE)];
-        ALower <- rep(-max(abs(A)),length(A));
-        AUpper <- rep(max(abs(A)),length(A));
+        if(loss=="likelihood"){
+            A <- Sigma[upper.tri(Sigma,diag=TRUE)];
+            ALower <- rep(-max(abs(A))*1.1,length(A));
+            AUpper <- rep(max(abs(A))*1.1,length(A));
+        }
+        else{
+            A <- diag(Sigma);
+            ALower <- rep(-max(diag(abs(A)))*1.1,nSeries);
+            AUpper <- rep(max(abs(diag(A)))*1.1,nSeries);
+        }
         res <- nloptr(A, scalerCF, lb=ALower, ub=AUpper,
                       opts=list(algorithm="NLOPT_LN_NELDERMEAD",
                                                  xtol_rel=1e-8, maxeval=500, print_level=0),
-                      errors=errors, scaleValue=Sigma, yInSampleSum=sum(log(yInSample)));
+                      errors=errors, scaleValue=Sigma, yInSampleSum=sum(log(yInSample)), loss=loss);
         A[] <- res$solution;
-        Sigma[upper.tri(Sigma,diag=TRUE)] <- A;
-        Sigma[lower.tri(Sigma)] <- t(Sigma)[lower.tri(Sigma)];
+        if(loss=="likelihood"){
+            Sigma[upper.tri(Sigma,diag=TRUE)] <- A;
+            Sigma[lower.tri(Sigma)] <- t(Sigma)[lower.tri(Sigma)];
+        }
+        else{
+            diag(Sigma) <- A;
+        }
     }
+
+    assign("matVt",matVt,ParentEnvironment);
+    assign("yFitted",yFitted,ParentEnvironment);
+    assign("errors",errors,ParentEnvironment);
+    assign("Sigma",Sigma,ParentEnvironment);
+    assign("df",df,ParentEnvironment);
+}
+
+##### *Forecaster of state space functions* #####
+vssForecaster <- function(...){
+    ellipsis <- list(...);
+    ParentEnvironment <- ellipsis[['ParentEnvironment']];
 
     # if(any((otObs - nParamPerSeries)<=0)){
     #     df <- 0;
@@ -1374,24 +1238,6 @@ vssForecaster <- function(...){
         yForecast[] <- vForecasterWrap(matrix(matVt[,(obsInSample+1):(obsInSample+lagsModelMax)],
                                               ncol=lagsModelMax),
                                      matF, matW, nSeries, h, Etype, Ttype, Stype, lagsModel);
-
-        if(cumulative){
-            yForecast <- rowSums(yForecast);
-        }
-
-        if(interval){
-            PI <- vssIntervals(level=level, intervalType=intervalType, Sigma=Sigma,
-                               measurement=matW, transition=matF, persistence=matG,
-                               lagsModel=lagsModel, cumulative=cumulative, df=df,
-                               nComponents=nComponentsAll, nSeries=nSeries, h=h);
-
-            if(any(intervalType==c("i","l","u"))){
-                for(i in 1:nSeries){
-                    PI[,i*2-1] <- PI[,i*2-1] + yForecast[i,];
-                    PI[,i*2] <- PI[,i*2] + yForecast[i,];
-                }
-            }
-        }
     }
     else{
         yForecast[] <- NA;
@@ -1418,7 +1264,6 @@ vssForecaster <- function(...){
         yForecast[] <- yForecast * t(ovesModel$forecast);
     }
 
-    assign("Sigma",Sigma,ParentEnvironment);
     assign("yForecast",yForecast,ParentEnvironment);
     assign("PI",PI,ParentEnvironment);
     assign("ovesModel",ovesModel,ParentEnvironment);

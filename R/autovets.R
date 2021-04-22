@@ -10,7 +10,6 @@ utils::globalVariables(c("parameters","initials","components"))
 auto.vets <- function(data, model="PPP", lags=c(frequency(data)),
                       loss=c("likelihood","diagonal","trace"),
                       ic=c("AICc","AIC","BIC","BICc"), h=10, holdout=FALSE,
-                      interval=c("none","conditional","unconditional","individual","likelihood"), level=0.95,
                       occurrence=c("none","fixed","logistic"),
                       bounds=c("admissible","usual","none"),
                       silent=TRUE, parallel=FALSE, ...){
@@ -76,8 +75,6 @@ auto.vets <- function(data, model="PPP", lags=c(frequency(data)),
     vetsCall$ic <- ic;
     vetsCall$h <- h;
     vetsCall$holdout <- holdout;
-    vetsCall$interval <- interval;
-    vetsCall$level <- level;
     vetsCall$occurrence <- occurrence;
     vetsCall$bounds <- bounds
     vetsCall$silent <- TRUE;

@@ -7,19 +7,17 @@
 \usage{
 auto.vets(data, model = "PPP", lags = c(frequency(data)),
   loss = c("likelihood", "diagonal", "trace"), ic = c("AICc", "AIC", "BIC",
-  "BICc"), h = 10, holdout = FALSE, interval = c("none", "conditional",
-  "unconditional", "individual", "likelihood"), level = 0.95,
-  occurrence = c("none", "fixed", "logistic"), bounds = c("admissible",
-  "usual", "none"), silent = TRUE, parallel = FALSE, ...)
+  "BICc"), h = 10, holdout = FALSE, occurrence = c("none", "fixed",
+  "logistic"), bounds = c("admissible", "usual", "none"), silent = TRUE,
+  parallel = FALSE, ...)
 
 vets(data, model = "PPP", lags = c(frequency(data)),
   parameters = c("level", "trend", "seasonal", "damped"),
   initials = c("seasonal"), components = c("none"),
   loss = c("likelihood", "diagonal", "trace"), ic = c("AICc", "AIC", "BIC",
-  "BICc"), h = 10, holdout = FALSE, interval = c("none", "conditional",
-  "unconditional", "individual", "likelihood"), level = 0.95,
-  occurrence = c("none", "fixed", "logistic"), bounds = c("admissible",
-  "usual", "none"), silent = TRUE, ...)
+  "BICc"), h = 10, holdout = FALSE, occurrence = c("none", "fixed",
+  "logistic"), bounds = c("admissible", "usual", "none"), silent = TRUE,
+  ...)
 }
 \arguments{
 \item{data}{The matrix with the data, where series are in columns and
@@ -56,35 +54,6 @@ The sum of variances is minimised in this case.
 
 \item{holdout}{If \code{TRUE}, holdout sample of size \code{h} is taken from
 the end of the data.}
-
-\item{interval}{Type of interval to construct.
-
-This can be:
-
-\itemize{
-\item \code{"none"}, aka \code{"n"} - do not produce prediction
-interval.
-\item \code{"conditional"}, \code{"c"} - produces multidimensional elliptic
-interval for each step ahead forecast. NOT AVAILABLE YET!
-\item \code{"unconditional"}, \code{"u"} - produces separate bounds for each series
-based on ellipses for each step ahead. These bounds correspond to min and max
-values of the ellipse assuming that all the other series but one take values in
-the centre of the ellipse. This leads to less accurate estimates of bounds
-(wider interval than needed), but these could still be useful. NOT AVAILABLE YET!
-\item \code{"independent"}, \code{"i"} - produces interval based on variances of
-each separate series. This does not take vector structure into account. In the
-calculation of covariance matrix, the division is done by T-k rather than T.
-\item \code{"likelihood"}, \code{"l"} - produces \code{"individual"} interval with
-the variance matrix estimated from the likelihood, which is a biased estimate of
-the true matrix. This means that the division of sum of squares is done by T
-rather than T-k.
-}
-The parameter also accepts \code{TRUE} and \code{FALSE}. The former means that
-the independent interval are constructed, while the latter is equivalent to
-\code{none}.
-You can also use the first letter instead of writing the full word.}
-
-\item{level}{Confidence level. Defines width of prediction interval.}
 
 \item{occurrence}{Defines type of occurrence model used. Can be:
 \itemize{
@@ -173,8 +142,7 @@ values:
 \item \code{measurement} - The measurement matrix;
 \item \code{phi} - The damping parameter value;
 \item \code{B} - The vector of all the estimated coefficients;
-\item \code{initial} - The initial values of the non-seasonal components;
-\item \code{initialSeason} - The initial values of the seasonal components;
+\item \code{lagsAll} - The vector of the internal lags used in the model;
 \item \code{nParam} - The number of estimated parameters;
 \item \code{occurrence} - The occurrence model estimated with VETS;
 \item \code{data} - The matrix with the original data;
@@ -185,9 +153,6 @@ the estimation);
 \item \code{Sigma} - The covariance matrix of the errors (estimated with the correction
 for the number of degrees of freedom);
 \item \code{forecast} - The matrix of point forecasts;
-\item \code{PI} - The bounds of the prediction interval;
-\item \code{interval} - The type of the constructed prediction interval;
-\item \code{level} - The level of the confidence for the prediction interval;
 \item \code{ICs} - The values of the information criteria;
 \item \code{logLik} - The log-likelihood function;
 \item \code{lossValue} - The value of the loss function;

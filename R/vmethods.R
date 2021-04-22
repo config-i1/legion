@@ -210,9 +210,11 @@ modelType.legion <- function(object, ...){
 #' plot(ourModel, c(1:11))
 #' plot(ourModel, 12)
 #'
+#' @importFrom graphics text
 #' @importFrom greybox nvariate is.occurrence graphmaker
 #' @importFrom grDevices dev.interactive devAskNewPage
 #' @importFrom stats fitted qqline qqnorm
+#' @importFrom stats na.pass sd acf pacf qnorm
 #' @export
 plot.legion <- function(x, which=c(1,2,4,6), level=0.95, legend=FALSE,
                         ask=prod(par("mfcol")) < length(which) * nvariate(x) && dev.interactive(),
@@ -857,8 +859,8 @@ print.legion <- function(x, ...){
     }
 
     holdout <- any(!is.na(x$holdout));
-    interval <- any(!is.na(x$PI));
-
+    # interval <- any(!is.na(x$PI));
+    #
     # if(all(holdout,interval)){
     #     insideinterval <- sum((x$holdout <= x$upper) & (x$holdout >= x$lower)) / length(x$forecast) * 100;
     # }
@@ -866,7 +868,7 @@ print.legion <- function(x, ...){
     #     insideinterval <- NULL;
     # }
 
-    intervalType <- x$interval;
+    # intervalType <- x$interval;
 
     cat(paste0("Time elapsed: ",round(as.numeric(x$timeElapsed,units="secs"),digits)," seconds\n"));
     cat(paste0("Model estimated: ",x$model,"\n"));
@@ -924,21 +926,21 @@ print.legion <- function(x, ...){
     cat("Information criteria:\n");
     print(round(x$ICs,digits));
 
-    if(interval){
-        if(x$interval=="c"){
-            intervalType <- "conditional";
-        }
-        else if(x$interval=="u"){
-            intervalType <- "unconditional";
-        }
-        else if(x$interval=="i"){
-            intervalType <- "independent";
-        }
-        else if(x$interval=="l"){
-            intervalType <- "likelihood-based";
-        }
-        cat(paste0("\n",x$level*100,"% ",intervalType," prediction interval was constructed\n"));
-    }
+    # if(interval){
+    #     if(x$interval=="c"){
+    #         intervalType <- "conditional";
+    #     }
+    #     else if(x$interval=="u"){
+    #         intervalType <- "unconditional";
+    #     }
+    #     else if(x$interval=="i"){
+    #         intervalType <- "independent";
+    #     }
+    #     else if(x$interval=="l"){
+    #         intervalType <- "likelihood-based";
+    #     }
+    #     cat(paste0("\n",x$level*100,"% ",intervalType," prediction interval was constructed\n"));
+    # }
 
 }
 
@@ -1178,11 +1180,244 @@ outlierdummy.legion <- function(object, level=0.999, type=c("rstandard","rstuden
 }
 
 #### Forecasts ####
-# @importFrom greybox forecast
-# @export
-# forecast.legion <- function(object, h=10, newdata=NULL, occurrence=NULL,
-#                             interval=c("none", "prediction"),
-#                             level=0.95, side=c("both","upper","lower"), cumulative=FALSE, nsim=10000, ...){
-#     # Forecast function for VES and VETS
-#
-# }
+#' @importFrom greybox forecast
+#' @importFrom stats qchisq
+#' @export
+forecast.legion <- function(object, h=10, #newdata=NULL, occurrence=NULL,
+                            interval=c("none", "prediction"),
+                            level=0.95, side=c("both","upper","lower"), cumulative=FALSE, nsim=10000, ...){
+    # Forecast function for VES and VETS
+    interval <- match.arg(interval);
+    side <- match.arg(side);
+
+    obsInSample <- nobs(object);
+    nSeries <- nvariate(object);
+    nParam <- nparam(object);
+    lagsModel <- object$lagsAll;
+    lagsModelMax <- max(lagsModel);
+
+    matF <- object$transition;
+    matG <- object$persistence;
+    matW <- object$measurement;
+    matVt <- t(object$states[obsInSample+(1:lagsModelMax),,drop=FALSE]);
+
+    model <- modelType(object);
+    # If chosen model is "AAdN" or anything like that, we are taking the appropriate values
+    Etype <- substring(model,1,1);
+    Ttype <- substring(model,2,2);
+    Stype <- substring(model,nchar(model),nchar(model));
+
+    dataFreq <- frequency(actuals(object));
+    yForecastStart <- time(actuals(object))[obsInSample]+deltat(actuals(object));
+
+    #### Point forecasts ####
+    yForecast <- ts(matrix(NA,h,nSeries,
+                           dimnames=list(NULL,paste0("Series_",1:nSeries))),
+                    start=yForecastStart,frequency=dataFreq);
+
+    yForecast[] <- t(vForecasterWrap(matVt, matF, matW, nSeries, h,
+                                     Etype, Ttype, Stype, lagsModel));
+
+    if(cumulative){
+        yForecast <- colSums(yForecast);
+    }
+
+    #### Intervals ####
+    # Deal with prediction intervals
+    Sigma <- sigma(object);
+    PI <- NA;
+    if(interval!="none"){
+        nElements <- length(lagsModel);
+        df <- obsInSample - nParam;
+
+        # In case of individual we use either Z distribution or Chebyshev inequality
+        if(interval=="prediction"){
+            if(df>0){
+                quantUpper <- qnorm((1+level)/2,0,1);
+                quantLower <- qnorm((1-level)/2,0,1);
+            }
+            else{
+                quantUpper <- sqrt(1/((1-level)/2));
+                quantLower <- -quantUpper;
+            }
+        }
+        # In case of conditional / unconditional, we use Chi-squared distribution
+        else{
+            quant <- qchisq(level,df=nSeries);
+        }
+
+        nPoints <- 100;
+        if(interval=="conditional"){
+            # Number of points in the ellipse
+            PI <- array(NA, c(h,2*nPoints^(nSeries-1),nSeries),
+                        dimnames=list(paste0("h",c(1:h)), NULL,
+                                      paste0("Series_",1:nSeries)));
+        }
+        else{
+            PI <- matrix(NA, nrow=h, ncol=nSeries*2,
+                         dimnames=list(paste0("h",c(1:h)),
+                                       paste0("Series_",rep(c(1:nSeries),each=2),c("_lower","_upper"))));
+        }
+
+        # Array of final variance matrices
+        varVec <- array(NA,c(h,nSeries,nSeries));
+        # This is needed for the first observations, where we do not care about the transition equation
+        for(i in 1:min(h,lagsModelMax)){
+            varVec[i,,] <- Sigma;
+        }
+
+        if(h>1){
+            if(cumulative){
+                covarVec <- array(NA,c(h,nSeries,nSeries));
+            }
+
+            matrixOfVarianceOfStates <- array(0,c(nElements,nElements,h+lagsModelMax));
+            # This multiplication does not make sense
+            matrixOfVarianceOfStates[,,1:lagsModelMax] <- matG %*% Sigma %*% t(matG);
+            matrixOfVarianceOfStatesLagged <- as.matrix(matrixOfVarianceOfStates[,,1]);
+
+            # New transition and measurement for the internal use
+            matFNew <- matrix(0,nElements,nElements);
+            matWNew <- matrix(0,nSeries,nElements);
+
+            # selectionMat is needed for the correct selection of lagged variables in the array
+            # elementsNew are needed for the correct fill in of all the previous matrices
+            selectionMat <- matFNew;
+            elementsNew <- rep(FALSE,nElements);
+
+            # Define chunks, which correspond to the lags with h being the final one
+            chuncksOfHorizon <- c(1,unique(lagsModel),h);
+            chuncksOfHorizon <- sort(chuncksOfHorizon);
+            chuncksOfHorizon <- chuncksOfHorizon[chuncksOfHorizon<=h];
+            chuncksOfHorizon <- unique(chuncksOfHorizon);
+
+            # Length of the vector, excluding the h at the end
+            chunksLength <- length(chuncksOfHorizon) - 1;
+
+            elementsNew <- lagsModel<=(chuncksOfHorizon[1]);
+            matWNew[,elementsNew] <- matW[,elementsNew];
+
+            for(j in 1:chunksLength){
+                selectionMat[lagsModel==chuncksOfHorizon[j],] <- chuncksOfHorizon[j];
+                selectionMat[,lagsModel==chuncksOfHorizon[j]] <- chuncksOfHorizon[j];
+
+                elementsNew <- lagsModel < (chuncksOfHorizon[j]+1);
+                matFNew[,elementsNew] <- matF[,elementsNew];
+                matWNew[,elementsNew] <- matW[,elementsNew];
+
+                for(i in (chuncksOfHorizon[j]+1):chuncksOfHorizon[j+1]){
+                    selectionMat[lagsModel>chuncksOfHorizon[j],] <- i;
+                    selectionMat[,lagsModel>chuncksOfHorizon[j]] <- i;
+
+                    matrixOfVarianceOfStatesLagged[elementsNew,
+                                                   elementsNew] <- matrixOfVarianceOfStates[
+                                                       cbind(rep(c(1:nElements),
+                                                                 each=nElements),
+                                                             rep(c(1:nElements),
+                                                                 nElements),
+                                                             i - c(selectionMat))];
+
+                    matrixOfVarianceOfStates[,,i] <- (matFNew %*%
+                                                          matrixOfVarianceOfStatesLagged %*% t(matFNew) +
+                                                          matG %*% Sigma %*% t(matG));
+                    varVec[i,,] <- matWNew %*% matrixOfVarianceOfStatesLagged %*% t(matWNew) + Sigma;
+                    if(cumulative){
+                        covarVec[i] <- matWNew %*% matFNew %*% matG;
+                    }
+                }
+            }
+
+            if(cumulative){
+                varVec <- apply(varVec,c(2,3),sum) + 2*Sigma %*% apply(covarVec*array(c(0,h:2),
+                                                                                      c(h,nSeries,nSeries)),
+                                                                       c(2,3),sum);
+            }
+        }
+
+        #### Produce PI matrix
+        # This one doesn't work yet
+        if(any(interval==c("conditional","unconditional"))){
+            # eigensList contains eigenvalues and eigenvectors of the covariance matrix
+            eigensList <- apply(varVec,1,eigen);
+            # eigenLimits specify the lowest and highest ellipse points in all dimensions
+            eigenLimits <- matrix(NA,nSeries,2);
+            # ellipsePoints contains coordinates of the ellipse on the eigenvectors basis
+            ellipsePoints <- array(NA, c(h, 2*nPoints^(nSeries-1), nSeries));
+            for(i in 1:h){
+                eigenLimits[,2] <- sqrt(quant / eigensList[[i]]$value);
+                eigenLimits[,1] <- -eigenLimits[,2];
+                ellipsePoints[i,,nSeries] <- rep(seq(eigenLimits[nSeries,1],
+                                                     eigenLimits[nSeries,2],
+                                                     length.out=nPoints),nSeries);
+                for(j in (nSeries-1):1){
+                    ellipsePoints[i,,nSeries];
+                }
+            }
+        }
+        else if(interval=="prediction"){
+            variances <- apply(varVec,1,diag);
+            for(i in 1:nSeries){
+                PI[,2*i-1] <- quantLower * sqrt(variances[i,]);
+                PI[,2*i] <- quantUpper * sqrt(variances[i,]);
+            }
+        }
+
+        for(i in 1:nSeries){
+            PI[,i*2-1] <- PI[,i*2-1] + yForecast[,i];
+            PI[,i*2] <- PI[,i*2] + yForecast[,i];
+        }
+
+        PI <-  ts(PI,start=yForecastStart,frequency=dataFreq);
+    }
+
+    # Take exponent of the forecasts to get back to the original scale
+    if(Etype=="M"){
+        yForecast[] <- exp(yForecast);
+        PI[] <- exp(PI);
+    }
+
+    # This needs to be treated separately via forecast.oves
+    # if(occurrence!="n"){
+    #     if(!occurrenceModelProvided){
+    #         ovesModel <- oves(ts(t(ot),frequency=dataFreq),
+    #                           occurrence=occurrence, h=h, holdout=FALSE,
+    #                           probability="dependent", model=ovesModel);
+    #     }
+    #     yForecast[] <- yForecast * t(ovesModel$forecast);
+    # }
+
+    return(structure(list(mean=yForecast, PI=PI, model=object,
+                          level=level, interval=interval, side=side, cumulative=cumulative, h=h),
+                     class=c("legion.forecast","smooth.forecast","forecast")))
+}
+
+#' @export
+print.legion.forecast <- function(x, ...){
+    nSeries <- ncol(x$mean);
+
+    if(x$interval!="none"){
+        returnedValue <- switch(x$side,
+                                "both"=cbind(x$mean,x$PI),
+                                "lower"=cbind(x$mean,x$PI[,c(1:nSeries)*2-1]),
+                                "upper"=cbind(x$mean,x$PI[,c(1:nSeries)*2]));
+        colnames(returnedValue) <- switch(x$side,
+                                          "both"=c(paste0(colnames(x$mean), "_Mean"),colnames(x$PI)),
+                                          "lower"=c(paste0(colnames(x$mean), "_Mean"),colnames(x$PI)[c(1:nSeries)*2-1]),
+                                          "upper"=c(paste0(colnames(x$mean), "_Mean"),colnames(x$PI)[c(1:nSeries)*2]))
+    }
+    else{
+        returnedValue <- x$mean;
+    }
+    print(returnedValue);
+}
+
+#' @export
+plot.legion.forecast <- function(x, ...){
+    x$forecast <- x$mean;
+    x$holdout <- x$model$holdout;
+    x$data <- actuals(x);
+    x$fitted <- fitted(x);
+    x$model <- x$model$model;
+    class(x) <- "legion";
+    plot.legion(x, which=7, ...)
+}

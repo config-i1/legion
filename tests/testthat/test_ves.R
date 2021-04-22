@@ -37,9 +37,10 @@ test_that("Test VES with a trace cost function", {
 # Test VES with a dependent transition and independent interval
 test_that("Test VES with a dependent transition and independent interval", {
     skip_on_cran()
-    testModel <- ves(Y,"AAN", transition="d", interval="i", silent=TRUE)
+    testModel <- ves(Y,"AAN", transition="d", silent=TRUE)
     expect_false(isTRUE(all.equal(testModel$transition[1,4], 0)))
-    expect_equal(dim(testModel$PI),c(10,4))
+    testForecast <- forecast(testModel, h=10, interval="prediction")
+    expect_equal(dim(testForecast$PI),c(10,4))
 })
 
 # Model selection in VES

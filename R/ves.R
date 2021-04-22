@@ -5,8 +5,8 @@ utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","
                          "modelIsMultiplicative","matG","matW","B","ub","lb", "maxeval", "algorithm1",
                          "algorithm2", "xtol_rel1", "xtol_rel2", "Sigma","yFitted","PI","dataDeltat",
                          "dataFreq","dataStart","otObs","dataNames","seasonalType",
-                         "CF","Etype","FI","ICs","Stype","Ttype","cumulative","errors","h","holdout",
-                         "initial","initialType","interval","intervalType","is.vsmooth.sim","lagsModelMax",
+                         "CF","Etype","FI","ICs","Stype","Ttype","errors","h","holdout",
+                         "initial","initialType","is.vsmooth.sim","lagsModelMax",
                          "level","matF","matVt","measures","nParam","normalizer","obsStates","ot",
                          "transition","transitionEstimate","yInSample",
                          "allowMultiplicative","modelDo","ICsAll"));
@@ -69,7 +69,6 @@ utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","
 #'
 #' @template vssBasicParam
 #' @template vssAdvancedParam
-#' @template vssIntervals
 #' @template ssAuthor
 #' @template vssKeywords
 #'
@@ -134,9 +133,6 @@ utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","
 #' \item provided by user as a vector or as a matrix. The value is used by the model.
 #' }
 #' You can also use the first letter instead of writing the full word.
-#' @param cumulative If \code{TRUE}, then the cumulative forecast and prediction
-#' interval are produced instead of the normal ones. This is useful for
-#' inventory control systems.
 #' @param ...  Other non-documented parameters. For example \code{FI=TRUE} will
 #' make the function also produce Fisher Information matrix, which then can be
 #' used to calculated variances of smoothing parameters and initial states of
@@ -164,6 +160,7 @@ utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","
 #' \item \code{transition} - The transition matrix;
 #' \item \code{measurement} - The measurement matrix;
 #' \item \code{phi} - The damping parameter value;
+#' \item \code{lagsAll} - The vector of the internal lags used in the model;
 #' \item \code{B} - The vector of all the estimated coefficients;
 #' \item \code{initial} - The initial values of the non-seasonal components;
 #' \item \code{initialSeason} - The initial values of the seasonal components;
@@ -177,9 +174,6 @@ utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","
 #' \item \code{Sigma} - The covariance matrix of the errors (estimated with the correction
 #' for the number of degrees of freedom);
 #' \item \code{forecast} - The matrix of point forecasts;
-#' \item \code{PI} - The bounds of the prediction interval;
-#' \item \code{interval} - The type of the constructed prediction interval;
-#' \item \code{level} - The level of the confidence for the prediction interval;
 #' \item \code{ICs} - The values of the information criteria;
 #' \item \code{logLik} - The log-likelihood function;
 #' \item \code{lossValue} - The value of the loss function;
@@ -220,9 +214,7 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
                 # seasonal=c("individual","common"), weights=rep(1/ncol(data),ncol(data)),
                 loss=c("likelihood","diagonal","trace"),
                 ic=c("AICc","AIC","BIC","BICc"), h=10, holdout=FALSE,
-                interval=c("none","conditional","unconditional","individual","likelihood"), level=0.95,
                 occurrence=c("none","fixed","logistic"),
-                cumulative=FALSE,
                 bounds=c("admissible","usual","none"),
                 silent=TRUE, ...){
     # Copyright (C) 2017 - Inf  Ivan Svetunkov
@@ -1483,9 +1475,9 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
     }
     colnames(yForecast) <- dataNames;
     yForecastStart <- start(yForecast)
-    if(any(intervalType==c("i","u","l"))){
-        PI <-  ts(PI,start=yForecastStart,frequency=dataFreq);
-    }
+    # if(any(intervalType==c("i","u","l"))){
+    #     PI <-  ts(PI,start=yForecastStart,frequency=dataFreq);
+    # }
 
     if(loss=="likelihood"){
         parametersNumber[1,1] <- parametersNumber[1,1] + nSeries * (nSeries + 1) / 2;
@@ -1580,37 +1572,37 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
         for(j in 1:pages){
             par(mar=c(4,4,2,1),mfcol=c(perPage,1));
             for(i in packs[j]:(packs[j+1]-1)){
-                if(any(intervalType==c("u","i","l"))){
-                    plotRange <- range(min(data[,i],yForecast[,i],yFitted[,i],PI[,i*2-1]),
-                                       max(data[,i],yForecast[,i],yFitted[,i],PI[,i*2]));
-                }
-                else{
+                # if(any(intervalType==c("u","i","l"))){
+                #     plotRange <- range(min(data[,i],yForecast[,i],yFitted[,i],PI[,i*2-1]),
+                #                        max(data[,i],yForecast[,i],yFitted[,i],PI[,i*2]));
+                # }
+                # else{
                     plotRange <- range(min(data[,i],yForecast[,i],yFitted[,i]),
                                        max(data[,i],yForecast[,i],yFitted[,i]));
-                }
+                # }
                 plot(data[,i],main=paste0(modelname," on ",dataNames[i]),ylab="Y",
                      ylim=plotRange, xlim=range(time(data[,i])[1],time(yForecast)[max(h,1)]),
                      type="l");
                 lines(yFitted[,i],col="purple",lwd=2,lty=2);
                 if(h>1){
-                    if(any(intervalType==c("u","i","l"))){
-                        lines(PI[,i*2-1],col="darkgrey",lwd=3,lty=2);
-                        lines(PI[,i*2],col="darkgrey",lwd=3,lty=2);
-
-                        polygon(c(seq(dataDeltat*(yForecastStart[2]-1)+yForecastStart[1],
-                                      dataDeltat*(end(yForecast)[2]-1)+end(yForecast)[1],dataDeltat),
-                                  rev(seq(dataDeltat*(yForecastStart[2]-1)+yForecastStart[1],
-                                          dataDeltat*(end(yForecast)[2]-1)+end(yForecast)[1],dataDeltat))),
-                                c(as.vector(PI[,i*2]), rev(as.vector(PI[,i*2-1]))), col="lightgray",
-                                border=NA, density=10);
-                    }
+                    # if(any(intervalType==c("u","i","l"))){
+                    #     lines(PI[,i*2-1],col="darkgrey",lwd=3,lty=2);
+                    #     lines(PI[,i*2],col="darkgrey",lwd=3,lty=2);
+                    #
+                    #     polygon(c(seq(dataDeltat*(yForecastStart[2]-1)+yForecastStart[1],
+                    #                   dataDeltat*(end(yForecast)[2]-1)+end(yForecast)[1],dataDeltat),
+                    #               rev(seq(dataDeltat*(yForecastStart[2]-1)+yForecastStart[1],
+                    #                       dataDeltat*(end(yForecast)[2]-1)+end(yForecast)[1],dataDeltat))),
+                    #             c(as.vector(PI[,i*2]), rev(as.vector(PI[,i*2-1]))), col="lightgray",
+                    #             border=NA, density=10);
+                    # }
                     lines(yForecast[,i],col="blue",lwd=2);
                 }
                 else{
-                    if(any(intervalType==c("u","i","l"))){
-                        points(PI[,i*2-1],col="darkgrey",lwd=3,pch=4);
-                        points(PI[,i*2],col="darkgrey",lwd=3,pch=4);
-                    }
+                    # if(any(intervalType==c("u","i","l"))){
+                    #     points(PI[,i*2-1],col="darkgrey",lwd=3,pch=4);
+                    #     points(PI[,i*2],col="darkgrey",lwd=3,pch=4);
+                    # }
                     points(yForecast[,i],col="blue",lwd=2,pch=4);
                 }
                 abline(v=dataDeltat*(yForecastStart[2]-2)+yForecastStart[1],col="red",lwd=2);
@@ -1623,10 +1615,12 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
     model <- list(model=modelname,timeElapsed=Sys.time()-startTime,
                   states=NA,persistence=persistenceValue,transition=transitionValue,
                   measurement=matW, phi=dampedValue, B=B,
+                  lagsAll=lagsModel,
                   initialType=initialType,initial=initialValue,initialSeason=initialSeasonValue,
                   nParam=parametersNumber, imodel=ovesModel,
                   data=NA,fitted=yFitted,holdout=yHoldout,residuals=NA,Sigma=Sigma,
-                  forecast=yForecast,PI=PI,interval=intervalType,level=level,
+                  forecast=yForecast,
+                  # PI=PI,interval=intervalType,level=level,
                   ICs=ICs,ICsAll=ICsAll,logLik=logLik,lossValue=cfObjective,loss=loss,accuracy=errorMeasures,
                   FI=FI);
     # Produce proper objects and return them
