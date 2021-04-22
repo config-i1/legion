@@ -1188,11 +1188,11 @@ vssIntervals <- function(level=0.95, intervalType=c("c","u","i","l"), Sigma=NULL
     #     intervalType <- "i";
     # }
 
-    # In case of individual we use either t distribution or Chebyshev inequality
+    # In case of individual we use either Z distribution or Chebyshev inequality
     if(intervalType=="i"){
         if(df>0){
-            quantUpper <- qt((1+level)/2,df=df);
-            quantLower <- qt((1-level)/2,df=df);
+            quantUpper <- qnorm((1+level)/2,0,1);
+            quantLower <- qnorm((1-level)/2,0,1);
         }
         else{
             quantUpper <- sqrt(1/((1-level)/2));
@@ -1347,7 +1347,7 @@ vssForecaster <- function(...){
     rownames(Sigma) <- colnames(Sigma) <- dataNames;
 
     # Correct the sigma matrix
-    if(loss=="likelihood" && Etype=="M"){
+    if(any(loss==c("likelihood","diagonal")) && Etype=="M"){
         A <- Sigma[upper.tri(Sigma,diag=TRUE)];
         ALower <- rep(-max(abs(A)),length(A));
         AUpper <- rep(max(abs(A)),length(A));
