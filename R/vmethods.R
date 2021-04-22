@@ -1176,3 +1176,13 @@ outlierdummy.legion <- function(object, level=0.999, type=c("rstandard","rstuden
                           level=level, type=type),
                      class="outlierdummy"));
 }
+
+#### Forecasts ####
+# @importFrom greybox forecast
+# @export
+# forecast.legion <- function(object, h=10, newdata=NULL, occurrence=NULL,
+#                             interval=c("none", "prediction"),
+#                             level=0.95, side=c("both","upper","lower"), cumulative=FALSE, nsim=10000, ...){
+#     # Forecast function for VES and VETS
+#
+# }
