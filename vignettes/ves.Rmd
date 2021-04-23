@@ -74,7 +74,7 @@ Currently we don't do model selection, don't have exogenous variables and don't 
 ## Simulate data from VES
 There is a function `sim.ves()`, which allows generating data from VES model:
 ```{r simulate_smooth_ves}
-x <- sim.ves("ANN",frequency=4,obs=40,nSeries=3,randomizer="rnorm",mean=0,sd=100)
+x <- sim.ves("ANN",frequency=4,obs=40,nvariate=3,randomizer="rnorm",mean=0,sd=100)
 ```
 This way the we generate two independent time series with similar DGPs and the same parameters (initials, persistence etc). We can use options similar to the ones used in `sim.es()` from `smooth` in order to specify a more flexible model.
 
