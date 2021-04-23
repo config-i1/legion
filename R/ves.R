@@ -3,13 +3,14 @@ utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","
                          "persistenceValue","damped","dampedEstimate","dampedType","transitionType",
                          "initialEstimate","initialSeasonEstimate","initialSeasonValue","initialSeasonType",
                          "modelIsMultiplicative","matG","matW","B","ub","lb", "maxeval", "algorithm1",
-                         "algorithm2", "xtol_rel1", "xtol_rel2", "Sigma","yFitted","PI","dataDeltat",
-                         "dataFreq","dataStart","otObs","dataNames","seasonalType",
+                         "algorithm2", "xtol_rel1", "xtol_rel2", "Sigma","yFitted","PI","yDeltat",
+                         "yFrequency","yStart","otObs","dataNames","seasonalType",
                          "CF","Etype","FI","ICs","Stype","Ttype","errors","h","holdout",
-                         "initial","initialType","is.vsmooth.sim","lagsModelMax",
+                         "initial","initialType","is.vsmooth.sim","lagsModel","lagsModelMax",
                          "level","matF","matVt","measures","nParam","normalizer","obsStates","ot",
                          "transition","transitionEstimate","yInSample",
-                         "allowMultiplicative","modelDo","ICsAll"));
+                         "allowMultiplicative","modelDo","ICsAll",
+                         "yClasses","yForecastStart","yInSampleIndex","yForecastIndex"));
 
 #' Vector Exponential Smoothing in SSOE state space model
 #'
@@ -550,12 +551,12 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
     ### This function will accept Etype, Ttype, Stype and damped and would return:
     # nComponentsNonSeasonal, nComponentsAll, lagsModelMax, modelIsSeasonal, obsStates
     # This is needed for model selection
-    architectorVES <- function(Etype, Ttype, Stype, damped, nSeries){
+    architectorVES <- function(Etype, Ttype, Stype, damped, nSeries, lags){
         # Binaries for trend and seasonal
         modelIsTrendy <- Ttype!="N";
         modelIsSeasonal <- Stype!="N";
 
-        lagsModelMax <- dataFreq * modelIsSeasonal + 1 * (!modelIsSeasonal);
+        lagsModelMax <- max(lags) * modelIsSeasonal + 1 * (!modelIsSeasonal);
 
         # Define the number of rows that should be in the matVt
         obsStates <- max(obsAll + lagsModelMax, obsInSample + 2*lagsModelMax);
@@ -1004,7 +1005,7 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
         environment(logLikVES) <- environment();
         environment(CF) <- environment();
         environment(fillerVES) <- environment();
-        list2env(architectorVES(Etype, Ttype, Stype, damped, nSeries),environment());
+        list2env(architectorVES(Etype, Ttype, Stype, damped, nSeries, lags),environment());
         list2env(creatorVES(),environment());
 
         if(is.null(B) && is.null(ub) && is.null(lb)){
@@ -1254,7 +1255,7 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
             environment(CF) <- environment();
             environment(creatorVES) <- environment();
             environment(logLikVES) <- environment();
-            list2env(architectorVES(Etype, Ttype, Stype, damped, nSeries),environment());
+            list2env(architectorVES(Etype, Ttype, Stype, damped, nSeries, lags),environment());
             list2env(creatorVES(),environment());
 
             B <- c(persistenceValue);
@@ -1340,7 +1341,7 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
 
     ##### Fit the model and produce forecast #####
     list2env(callerVES(silent=silent),environment());
-    list2env(architectorVES(Etype, Ttype, Stype, damped, nSeries),environment());
+    list2env(architectorVES(Etype, Ttype, Stype, damped, nSeries, lags),environment());
     list2env(creatorVES(),environment());
     list2env(fillerVES(matVt,matF,matG,matW,B,Ttype,damped,
                        nComponentsNonSeasonal,nComponentsAll,lagsModelMax),environment());
@@ -1468,16 +1469,18 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
         colnames(initialSeasonValue) <- paste0("Seasonal",c(1:lagsModelMax));
     }
 
-    yFitted <- ts(t(yFitted),start=dataStart,frequency=dataFreq);
-    yForecast <- ts(t(yForecast),start=yForecastStart,frequency=dataFreq);
     if(!is.matrix(yForecast)){
         yForecast <- as.matrix(yForecast,h,nSeries);
     }
+    if(any(yClasses=="ts")){
+        yFitted <- ts(t(yFitted), start=yStart, frequency=yFrequency);
+        yForecast <- ts(t(yForecast), start=yForecastStart, frequency=yFrequency);
+    }
+    else{
+        yFitted <- zoo(t(yFitted), order.by=yInSampleIndex);
+        yForecast <- zoo(t(yForecast), order.by=yForecastIndex);
+    }
     colnames(yForecast) <- dataNames;
-    yForecastStart <- start(yForecast)
-    # if(any(intervalType==c("i","u","l"))){
-    #     PI <-  ts(PI,start=yForecastStart,frequency=dataFreq);
-    # }
 
     if(loss=="likelihood"){
         parametersNumber[1,1] <- parametersNumber[1,1] + nSeries * (nSeries + 1) / 2;
@@ -1494,7 +1497,12 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
 
     ##### Now let's deal with the holdout #####
     if(holdout){
-        yHoldout <- ts(data[(obsInSample+1):obsAll,],start=yForecastStart,frequency=dataFreq);
+        if(any(yClasses=="ts")){
+            yHoldout <- ts(data[(obsInSample+1):obsAll,], start=yForecastStart, frequency=yFrequency);
+        }
+        else{
+            yHoldout <- zoo(data[(obsInSample+1):obsAll,], order.by=yForecastIndex);
+        }
         colnames(yHoldout) <- dataNames;
 
         measureFirst <- measures(yHoldout[,1],yForecast[,1],yInSample[1,]);
@@ -1589,10 +1597,10 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
                     #     lines(PI[,i*2-1],col="darkgrey",lwd=3,lty=2);
                     #     lines(PI[,i*2],col="darkgrey",lwd=3,lty=2);
                     #
-                    #     polygon(c(seq(dataDeltat*(yForecastStart[2]-1)+yForecastStart[1],
-                    #                   dataDeltat*(end(yForecast)[2]-1)+end(yForecast)[1],dataDeltat),
-                    #               rev(seq(dataDeltat*(yForecastStart[2]-1)+yForecastStart[1],
-                    #                       dataDeltat*(end(yForecast)[2]-1)+end(yForecast)[1],dataDeltat))),
+                    #     polygon(c(seq(yDeltat*(yForecastStart[2]-1)+yForecastStart[1],
+                    #                   yDeltat*(end(yForecast)[2]-1)+end(yForecast)[1],yDeltat),
+                    #               rev(seq(yDeltat*(yForecastStart[2]-1)+yForecastStart[1],
+                    #                       yDeltat*(end(yForecast)[2]-1)+end(yForecast)[1],yDeltat))),
                     #             c(as.vector(PI[,i*2]), rev(as.vector(PI[,i*2-1]))), col="lightgray",
                     #             border=NA, density=10);
                     # }
@@ -1605,7 +1613,7 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
                     # }
                     points(yForecast[,i],col="blue",lwd=2,pch=4);
                 }
-                abline(v=dataDeltat*(yForecastStart[2]-2)+yForecastStart[1],col="red",lwd=2);
+                abline(v=yForecastStart-yDeltat,col="red",lwd=2);
             }
         }
         par(parDefault);
@@ -1624,9 +1632,19 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
                   ICs=ICs,ICsAll=ICsAll,logLik=logLik,lossValue=cfObjective,loss=loss,accuracy=errorMeasures,
                   FI=FI);
     # Produce proper objects and return them
-    model$states <- ts(t(matVt), start=(time(data)[1] - dataDeltat*lagsModelMax), frequency=dataFreq);
-    model$data <- ts(t(yInSample), start=dataStart, frequency=dataFreq);
-    model$residuals <- ts(t(errors), start=dataStart, frequency=dataFreq);
+    if(any(yClasses=="ts")){
+        model$states <- ts(t(matVt), start=(time(data)[1] - yDeltat*lagsModelMax), frequency=yFrequency)
+        model$data <- ts(t(yInSample), start=yStart, frequency=yFrequency);
+        model$residuals <- ts(t(errors), start=yStart, frequency=yFrequency);
+    }
+    else{
+        yStatesIndex <- yInSampleIndex[1] - lagsModelMax*diff(tail(yInSampleIndex,2)) +
+            c(1:lagsModelMax-1)*diff(tail(yInSampleIndex,2));
+        yStatesIndex <- c(yStatesIndex, yInSampleIndex);
+        model$states <- zoo(t(matVt), order.by=yStatesIndex);
+        model$data <- zoo(t(yInSample), order.by=yInSampleIndex);
+        model$residuals <- zoo(t(errors), order.by=yInSampleIndex);
+    }
 
     return(structure(model,class=c("legion","smooth")));
 }

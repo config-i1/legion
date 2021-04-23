@@ -1207,13 +1207,32 @@ forecast.legion <- function(object, h=10, #newdata=NULL, occurrence=NULL,
     Ttype <- substring(model,2,2);
     Stype <- substring(model,nchar(model),nchar(model));
 
-    dataFreq <- frequency(actuals(object));
-    yForecastStart <- time(actuals(object))[obsInSample]+deltat(actuals(object));
+    yIndex <- time(actuals(object));
+    yClasses <- class(actuals(object));
+    # Create indices for the future
+    if(any(yClasses=="ts")){
+        # ts structure
+        yForecastStart <- time(actuals(object))[obsInSample]+deltat(actuals(object));
+        yFrequency <- frequency(actuals(object));
+        yForecastIndex <- yIndex[obsInSample]+as.numeric(diff(tail(yIndex,2)))*c(1:h);
+    }
+    else{
+        # zoo
+        yIndex <- time(actuals(object));
+        yForecastIndex <- yIndex[obsInSample]+diff(tail(yIndex,2))*c(1:h);
+    }
 
     #### Point forecasts ####
-    yForecast <- ts(matrix(NA,h,nSeries,
-                           dimnames=list(NULL,paste0("Series_",1:nSeries))),
-                    start=yForecastStart,frequency=dataFreq);
+    if(any(yClasses=="ts")){
+        yForecast <- ts(matrix(NA,h,nSeries,
+                               dimnames=list(NULL,paste0("Series_",1:nSeries))),
+                        start=yForecastStart, frequency=yFrequency);
+    }
+    else{
+        yForecast <- zoo(matrix(NA,h,nSeries,
+                                dimnames=list(NULL,paste0("Series_",1:nSeries))),
+                         order.by=yForecastIndex);
+    }
 
     yForecast[] <- t(vForecasterWrap(matVt, matF, matW, nSeries, h,
                                      Etype, Ttype, Stype, lagsModel));
@@ -1367,7 +1386,12 @@ forecast.legion <- function(object, h=10, #newdata=NULL, occurrence=NULL,
             PI[,i*2] <- PI[,i*2] + yForecast[,i];
         }
 
-        PI <-  ts(PI,start=yForecastStart,frequency=dataFreq);
+        if(any(yClasses=="ts")){
+            PI <-  ts(PI, start=yForecastStart, frequency=yFrequency);
+        }
+        else{
+            PI <-  zoo(PI, order.by=yForecastIndex);
+        }
     }
 
     # Take exponent of the forecasts to get back to the original scale
@@ -1379,7 +1403,7 @@ forecast.legion <- function(object, h=10, #newdata=NULL, occurrence=NULL,
     # This needs to be treated separately via forecast.oves
     # if(occurrence!="n"){
     #     if(!occurrenceModelProvided){
-    #         ovesModel <- oves(ts(t(ot),frequency=dataFreq),
+    #         ovesModel <- oves(ts(t(ot),frequency=yFrequency),
     #                           occurrence=occurrence, h=h, holdout=FALSE,
     #                           probability="dependent", model=ovesModel);
     #     }

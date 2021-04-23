@@ -4,7 +4,8 @@ utils::globalVariables(c("obsInSample","componentsCommonLevel","componentsCommon
                          "nInitialsLevel","nInitialsSeasonal","nInitialsTrend",
                          "nParametersDamped","nParametersLevel","nParametersSeasonal","nParametersTrend",
                          "parametersCommonDamped","parametersCommonLevel","parametersCommonSeasonal","parametersCommonTrend",
-                         "allowMultiplicative","modelDo","ICsAll","cfObjective"));
+                         "allowMultiplicative","modelDo","ICsAll","cfObjective",
+                         "yClasses","yForecastStart","yInSampleIndex","yForecastIndex"));
 
 #' Vector ETS-PIC model
 #'
@@ -166,6 +167,8 @@ utils::globalVariables(c("obsInSample","componentsCommonLevel","componentsCommon
 #' vets(Y, model="PPP", h=10, holdout=TRUE, initials="seasonal")
 #'
 #' @importFrom stats setNames
+#' @importFrom utils tail
+#' @importFrom zoo zoo
 #' @rdname vets
 #' @export
 vets <- function(data, model="PPP", lags=c(frequency(data)),
@@ -216,12 +219,12 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
     # nComponentsNonSeasonal, nComponentsAll, lagsModelMax, modelIsSeasonal, modelIsTrendy, obsStates
     # and all the variables for PIC part of the model
     # This is needed for model selection
-    architectorVETS <- function(Etype, Ttype, Stype, damped, nSeries){
+    architectorVETS <- function(Etype, Ttype, Stype, damped, nSeries, lags){
         # Binaries for trend and seasonal
         modelIsTrendy <- Ttype!="N";
         modelIsSeasonal <- Stype!="N";
 
-        lagsModelMax <- dataFreq * modelIsSeasonal + 1 * (!modelIsSeasonal);
+        lagsModelMax <- max(lags) * modelIsSeasonal + 1 * (!modelIsSeasonal);
 
         # Define the number of rows that should be in the matVt
         obsStates <- max(obsAll + lagsModelMax, obsInSample + 2*lagsModelMax);
@@ -875,7 +878,7 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
         environment(logLikVETS) <- environment();
         environment(CF) <- environment();
 
-        list2env(architectorVETS(Etype, Ttype, Stype, damped, nSeries),environment());
+        list2env(architectorVETS(Etype, Ttype, Stype, damped, nSeries, lags),environment());
         elements <- creatorVETS();
         list2env(elements,environment());
         modelCurrent <- paste0(Etype, Ttype, ifelse(modelIsTrendy & damped,"d",""), Stype);
@@ -1200,7 +1203,7 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
 
     ##### Fit the model and produce forecast #####
     list2env(callerVETS(silent=silent),environment());
-    list2env(architectorVETS(Etype, Ttype, Stype, damped, nSeries),environment());
+    list2env(architectorVETS(Etype, Ttype, Stype, damped, nSeries, lags),environment());
     list2env(creatorVETS(),environment());
     list2env(fillerVETS(matVt, matF, matG, matW, B,
                         lagsModelMax, nSeries, modelIsTrendy, modelIsSeasonal, damped,
@@ -1265,16 +1268,18 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
     #     colnames(initialSeasonValue) <- paste0("Seasonal",c(1:lagsModelMax));
     # }
 
-    yFitted <- ts(t(yFitted),start=dataStart,frequency=dataFreq);
-    yForecast <- ts(t(yForecast),start=yForecastStart,frequency=dataFreq);
     if(!is.matrix(yForecast)){
-        yForecast <- as.matrix(yForecast,h,nSeries);
+        yForecast <- matrix(yForecast,h,nSeries);
+    }
+    if(any(yClasses=="ts")){
+        yFitted <- ts(t(yFitted), start=yStart, frequency=yFrequency);
+        yForecast <- ts(t(yForecast), start=yForecastStart, frequency=yFrequency);
+    }
+    else{
+        yFitted <- zoo(t(yFitted), order.by=yInSampleIndex);
+        yForecast <- zoo(t(yForecast), order.by=yForecastIndex);
     }
     colnames(yForecast) <- dataNames;
-    yForecastStart <- start(yForecast)
-    # if(any(intervalType==c("i","u","l"))){
-    #     PI <-  ts(PI,start=yForecastStart,frequency=dataFreq);
-    # }
 
     if(loss=="likelihood"){
         parametersNumber[1,1] <- parametersNumber[1,1] + nSeries * (nSeries + 1) / 2;
@@ -1291,10 +1296,12 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
 
     ##### Now let's deal with the holdout #####
     if(holdout){
-        # if(modelIsMultiplicative){
-        #     yInSample[] <- exp(yInSample);
-        # }
-        yHoldout <- ts(data[(obsInSample+1):obsAll,],start=yForecastStart,frequency=dataFreq);
+        if(any(yClasses=="ts")){
+            yHoldout <- ts(data[(obsInSample+1):obsAll,], start=yForecastStart, frequency=yFrequency);
+        }
+        else{
+            yHoldout <- zoo(data[(obsInSample+1):obsAll,], order.by=yForecastIndex);
+        }
         colnames(yHoldout) <- dataNames;
 
         measureFirst <- measures(yHoldout[,1],yForecast[,1],yInSample[1,]);
@@ -1413,10 +1420,10 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
                     #     lines(PI[,i*2-1],col="darkgrey",lwd=3,lty=2);
                     #     lines(PI[,i*2],col="darkgrey",lwd=3,lty=2);
                     #
-                    #     polygon(c(seq(dataDeltat*(yForecastStart[2]-1)+yForecastStart[1],
-                    #                   dataDeltat*(end(yForecast)[2]-1)+end(yForecast)[1],dataDeltat),
-                    #               rev(seq(dataDeltat*(yForecastStart[2]-1)+yForecastStart[1],
-                    #                       dataDeltat*(end(yForecast)[2]-1)+end(yForecast)[1],dataDeltat))),
+                    #     polygon(c(seq(yDeltat*(yForecastStart[2]-1)+yForecastStart[1],
+                    #                   yDeltat*(end(yForecast)[2]-1)+end(yForecast)[1],yDeltat),
+                    #               rev(seq(yDeltat*(yForecastStart[2]-1)+yForecastStart[1],
+                    #                       yDeltat*(end(yForecast)[2]-1)+end(yForecast)[1],yDeltat))),
                     #             c(as.vector(PI[,i*2]), rev(as.vector(PI[,i*2-1]))), col="lightgray",
                     #             border=NA, density=10);
                     # }
@@ -1429,7 +1436,7 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
                     # }
                     points(yForecast[,i],col="blue",lwd=2,pch=4);
                 }
-                abline(v=dataDeltat*(yForecastStart[2]-2)+yForecastStart[1],col="red",lwd=2);
+                abline(v=yForecastStart-yDeltat,col="red",lwd=2);
             }
         }
         par(parDefault);
@@ -1445,9 +1452,20 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
                   forecast=yForecast,
                   ICs=ICs,ICsAll=ICsAll,logLik=logLikVETS,lossValue=cfObjective,loss=loss,accuracy=errorMeasures,
                   FI=FI);
-    model$states <- ts(t(matVt), start=(time(data)[1] - dataDeltat*lagsModelMax), frequency=dataFreq)
-    model$data <- ts(t(yInSample), start=dataStart, frequency=dataFreq);
-    model$residuals <- ts(t(errors), start=dataStart, frequency=dataFreq);
+
+    if(any(yClasses=="ts")){
+        model$states <- ts(t(matVt), start=(time(data)[1] - yDeltat*lagsModelMax), frequency=yFrequency)
+        model$data <- ts(t(yInSample), start=yStart, frequency=yFrequency);
+        model$residuals <- ts(t(errors), start=yStart, frequency=yFrequency);
+    }
+    else{
+        yStatesIndex <- yInSampleIndex[1] - lagsModelMax*diff(tail(yInSampleIndex,2)) +
+            c(1:lagsModelMax-1)*diff(tail(yInSampleIndex,2));
+        yStatesIndex <- c(yStatesIndex, yInSampleIndex);
+        model$states <- zoo(t(matVt), order.by=yStatesIndex);
+        model$data <- zoo(t(yInSample), order.by=yInSampleIndex);
+        model$residuals <- zoo(t(errors), order.by=yInSampleIndex);
+    }
 
     return(structure(model,class=c("legion","smooth")));
 }

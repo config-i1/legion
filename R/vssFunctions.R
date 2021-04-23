@@ -48,6 +48,33 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
              call.=FALSE);
     }
 
+    # Get indices and classes of data
+    yIndex <- try(time(data),silent=TRUE);
+    # If we cannot extract time, do something
+    if(inherits(yIndex,"try-error")){
+        if(!is.data.frame(data) && !is.null(dim(data))){
+            yIndex <- as.POSIXct(rownames(data));
+        }
+        else if(is.data.frame(data)){
+            yIndex <- c(1:nrow(data));
+        }
+        else{
+            yIndex <- c(1:length(data));
+        }
+    }
+    yClasses <- class(data);
+
+    # If this is just a numeric variable, use ts class
+    if(all(yClasses=="integer") || all(yClasses=="numeric") ||
+       all(yClasses=="data.frame") || all(yClasses=="matrix")){
+        if(any(class(yIndex) %in% c("POSIXct","Date"))){
+            yClasses <- "zoo";
+        }
+        else{
+            yClasses <- "ts";
+        }
+    }
+
     if(is.data.frame(data)){
         data <- as.matrix(data);
     }
@@ -94,10 +121,30 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     # Define the actual values. Transpose the matrix!
     yInSample <- t(data[1:obsInSample,,drop=FALSE]);
     #### For now we just get the first lag. This would need to be modified for multiple seasonal models
-    dataFreq <- lags[1];
-    dataDeltat <- deltat(data);
-    dataStart <- start(data);
-    yForecastStart <- time(data)[obsInSample]+deltat(data);
+    lags <- unique(lags);
+    lagsModel <- lags;
+    yFrequency <- frequency(data);
+    yStart <- yIndex[1];
+    yDeltat <- yIndex[2]-yIndex[1];
+    if(holdout){
+        yForecastStart <- yIndex[obsInSample+1];
+        yForecastIndex <- yIndex[-c(1:obsInSample)];
+        yInSampleIndex <- yIndex[c(1:obsInSample)];
+        yIndexAll <- yIndex;
+    }
+    else{
+        yInSampleIndex <- yIndex;
+        yIndexDiff <- diff(tail(yIndex,2));
+        yForecastStart <- yIndex[obsInSample]+yIndexDiff;
+        if(any(yClasses=="ts")){
+            yForecastIndex <- yIndex[obsInSample]+as.numeric(yIndexDiff)*c(1:max(h,1));
+        }
+        else{
+            yForecastIndex <- yIndex[obsInSample]+yIndexDiff*c(1:max(h,1));
+        }
+        yIndexAll <- c(yIndex,yForecastIndex);
+    }
+
     dataNames <- colnames(data);
     if(!is.null(dataNames)){
         dataNames <- make.names(dataNames);
@@ -199,14 +246,14 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
             warning(paste0("Wrong seasonality type: ",Stype,". Should be 'N', 'A', 'M', 'P', 'X' or 'Y'.",
                            "Setting to 'P'."),
                     call.=FALSE);
-            if(dataFreq==1){
+            if(all(lagsModel==1)){
                 Stype <- "N";
             }
             else{
                 Stype <- "P";
             }
         }
-        if(Stype!="N" & dataFreq==1){
+        if(Stype!="N" & all(lagsModel==1)){
             warning(paste0("Cannot build the seasonal model on data with frequency 1. ",
                            "Switching to non-seasonal model: ETS(",substring(model,1,nchar(model)-1),"N)"),
                     call.=FALSE);
@@ -221,7 +268,7 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
             modelIsSeasonal <- TRUE;
         }
 
-        lagsModelMax <- dataFreq * modelIsSeasonal + 1 * (!modelIsSeasonal);
+        lagsModelMax <- max(lagsModel) * modelIsSeasonal + 1 * (!modelIsSeasonal);
 
         # Define the number of rows that should be in the matVt
         obsStates <- max(obsAll + lagsModelMax, obsInSample + 2*lagsModelMax);
@@ -697,8 +744,8 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
 
         ##### * initialSeason and seasonal for VES #####
         # Here we should check if initialSeason is character or not...
-        # if length(initialSeason) == dataFreq*nSeries, then ok
-        # if length(initialSeason) == dataFreq, then use it for all nSeries
+        # if length(initialSeason) == yFrequency*nSeries, then ok
+        # if length(initialSeason) == yFrequency, then use it for all nSeries
         if(Stype!="N"){
             #### Seasonal component
             seasonalType <- seasonal;
@@ -782,7 +829,7 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
                     initialSeasonEstimate <- TRUE;
                 }
                 else if(is.numeric(initialSeasonValue)){
-                    if(all(length(initialSeasonValue)!=c(dataFreq,dataFreq*nSeries))){
+                    if(all(length(initialSeasonValue)!=c(lagsModelMax,lagsModelMax*nSeries))){
                         warning(paste0("The length of initialSeason is wrong! ",
                                        "It should correspond to the frequency of the data.",
                                        "Values of initialSeason will be estimated as a common one."),
@@ -793,15 +840,15 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
                     }
                     else{
                         if(seasonalType=="i"){
-                            initialSeasonValue <- matrix(initialSeasonValue,nSeries,dataFreq);
+                            initialSeasonValue <- matrix(initialSeasonValue,nSeries,lagsModelMax);
                         }
                         else{
-                            if(length(initialSeasonValue)!=dataFreq){
+                            if(length(initialSeasonValue)!=lagsModelMax){
                                 warning(paste0("The initialSeason you provided contains too many elements ",
                                                "for the common seasonal model.",
-                                               "Using only the first ",dataFreq," values."), call.=FALSE);
+                                               "Using only the first ",lagsModelMax," values."), call.=FALSE);
                             }
-                            initialSeasonValue <- matrix(initialSeasonValue[1:dataFreq],1,dataFreq);
+                            initialSeasonValue <- matrix(initialSeasonValue[1:lagsModelMax],1,lagsModelMax);
                         }
                         initialSeasonType <- "p";
                         initialSeasonEstimate <- FALSE;
@@ -819,10 +866,10 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
             }
 
             if(initialSeasonType=="i"){
-                nParamMax <- nParamMax + dataFreq;
+                nParamMax <- nParamMax + lagsModelMax;
             }
             else if(initialSeasonType=="c"){
-                nParamMax <- nParamMax + dataFreq / nSeries;
+                nParamMax <- nParamMax + lagsModelMax / nSeries;
             }
         }
         else{
@@ -1007,10 +1054,18 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     assign("nParamMax",nParamMax,ParentEnvironment);
     assign("data",data,ParentEnvironment);
     assign("yInSample",yInSample,ParentEnvironment);
-    assign("dataFreq",dataFreq,ParentEnvironment);
-    assign("dataDeltat",dataDeltat,ParentEnvironment);
-    assign("dataStart",dataStart,ParentEnvironment);
+
+    # ts / zoo elements
+    assign("yClasses",yClasses,ParentEnvironment);
+    assign("yIndex",yIndex,ParentEnvironment);
+    assign("yInSampleIndex",yInSampleIndex,ParentEnvironment);
+    assign("yForecastIndex",yForecastIndex,ParentEnvironment);
+    assign("yIndexAll",yIndexAll,ParentEnvironment);
+    assign("yFrequency",yFrequency,ParentEnvironment);
+    assign("yStart",yStart,ParentEnvironment);
     assign("yForecastStart",yForecastStart,ParentEnvironment);
+    assign("yDeltat",yDeltat,ParentEnvironment);
+
     assign("dataNames",dataNames,ParentEnvironment);
     assign("parametersNumber",parametersNumber,ParentEnvironment);
 
@@ -1063,9 +1118,6 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
 
     assign("ic",ic,ParentEnvironment);
 
-    # assign("intervalType",intervalType,ParentEnvironment);
-    # assign("interval",interval,ParentEnvironment);
-
     assign("occurrence",occurrence,ParentEnvironment);
     assign("ot",ot,ParentEnvironment);
     assign("otObs",otObs,ParentEnvironment);
@@ -1092,41 +1144,6 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     assign("xtol_rel2",xtol_rel2,ParentEnvironment);
     assign("print_level",print_level,ParentEnvironment);
 }
-#
-# ##### *Likelihood function*
-# vLikelihoodFunction <- function(B){
-#     return(- obsInSample/2 * (nSeries*log(2*pi*exp(1)) + CF(B)) -
-#                switch(Etype,"M"=sum(log(yInSample[ot==1])),0));
-# }
-#
-# ##### *Function calculates ICs*
-# vICFunction <- function(nParam=nParam,B,Etype=Etype){
-#     # Information criteria are calculated with the constant part "log(2*pi*exp(1)*h+log(obs))*obs".
-#     # And it is based on the mean of the sum squared residuals either than sum.
-#     # Hyndman likelihood is: llikelihood <- obs*log(obs*cfObjective)
-#
-#     # Number of parameters per series needs to be used in the calculations of information criteria
-#     nParamPerSeries <- nParam / nSeries;
-#     llikelihood <- vLikelihoodFunction(B);
-#
-#     coefAIC <- 2*nParamPerSeries - 2*llikelihood;
-#     coefBIC <- log(obsInSample)*nParamPerSeries - 2*llikelihood;
-#
-#     # max here is needed in order to take into account cases with higher number
-#     # of parameters than observations
-#     coefAICc <- ((2*obsInSample*(nParamPerSeries*nSeries + nSeries*(nSeries+1)/2)) /
-#                                  max(obsInSample - (nParamPerSeries + nSeries + 1),0)) -2*llikelihood;
-#
-#     coefBICc <- (((nParamPerSeries + nSeries*(nSeries+1)/2) *
-#                       log(obsInSample * nSeries) * obsInSample * nSeries) /
-#                      (obsInSample * nSeries - nParamPerSeries - nSeries*(nSeries+1)/2)) -2*llikelihood;
-#
-#     ICs <- c(coefAIC, coefAICc, coefBIC, coefBICc);
-#     names(ICs) <- c("AIC", "AICc", "BIC", "BICc");
-#
-#     return(list(llikelihood=llikelihood,ICs=ICs));
-# }
-
 
 ##### CF for scale calculation #####
 # This is needed for the models with multiplicative error term
@@ -1257,7 +1274,7 @@ vssForecaster <- function(...){
 
     if(occurrence!="n"){
         if(!occurrenceModelProvided){
-            ovesModel <- oves(ts(t(ot),frequency=dataFreq),
+            ovesModel <- oves(ts(t(ot),frequency=yFrequency),
                               occurrence=occurrence, h=h, holdout=FALSE,
                               probability="dependent", model=ovesModel);
         }
