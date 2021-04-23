@@ -93,7 +93,7 @@ utils::globalVariables(c("obsInSample","componentsCommonLevel","componentsCommon
 #' components should be common. This can be \code{"level"}, \code{"trend"} and / or
 #' \code{"seasonal"}, setting initials of respective components to be common. This
 #' can also be \code{"none"}, making the initials individual for all series. An
-#' example is the model with only seasonal initials bein common:
+#' example is the model with only seasonal initials being common:
 #' \code{initials="seasonal"}. The order is not important, and the first letters can
 #' be used instead of the full words.
 #' @param components The character vector, specifying, which of the components

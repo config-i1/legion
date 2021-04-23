@@ -6,7 +6,7 @@
 #' is constructed);
 #' \item \code{"diagonal"} - similar to \code{"likelihood"}, but assumes that
 #' covariances between the error terms are zero.
-#' \item \code{"trace"} - the trace of the covariance matrix of errorrs.
+#' \item \code{"trace"} - the trace of the covariance matrix of errors.
 #' The sum of variances is minimised in this case.
 #' }
 #' @param bounds What type of bounds to use in the model estimation. The first

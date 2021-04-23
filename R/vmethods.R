@@ -959,7 +959,7 @@ simulate.legion <- function(object, nsim=1, seed=NULL, obs=NULL, ...){
     # Start a list of arguments
     args <- vector("list",0);
 
-    args$nSeries <- nvariate(object);
+    args$nvariate <- nvariate(object);
 
     if(!is.null(ellipsis$randomizer)){
         randomizer <- ellipsis$randomizer;

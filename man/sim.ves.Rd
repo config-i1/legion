@@ -4,10 +4,10 @@
 \alias{sim.ves}
 \title{Simulate Vector Exponential Smoothing}
 \usage{
-sim.ves(model = "ANN", obs = 10, nsim = 1, nSeries = 2,
+sim.ves(model = "ANN", obs = 10, nsim = 1, nvariate = 2,
   frequency = 1, persistence = NULL, phi = 1, transition = NULL,
   initial = NULL, initialSeason = NULL,
-  seasonal = c("individual, common"), weights = rep(1/nSeries, nSeries),
+  seasonal = c("individual, common"), weights = rep(1/nvariate, nvariate),
   bounds = c("usual", "admissible", "restricted"), randomizer = c("rnorm",
   "rt", "rlaplace", "rs"), ...)
 }
@@ -21,7 +21,7 @@ one, then just take exponent of the generated data.}
 
 \item{nsim}{Number of series to generate (number of simulations to do).}
 
-\item{nSeries}{Number of series in each generated group of series.}
+\item{nvariate}{Number of series in each generated group of series.}
 
 \item{frequency}{Frequency of generated data. In cases of seasonal models
 must be greater than 1.}
@@ -34,8 +34,8 @@ the parameter is ignored. If vector is provided, then several parameters
 are used for different series.}
 
 \item{transition}{Transition matrix. This should have the size appropriate
-to the selected model and \code{nSeries}. e.g. if ETS(A,A,N) is selected
-and \code{nSeries=3}, then the transition matrix should be 6 x 6. In case
+to the selected model and \code{nvariate}. e.g. if ETS(A,A,N) is selected
+and \code{nvariate=3}, then the transition matrix should be 6 x 6. In case
 of damped trend, the phi parameter should be placed in the matrix manually.
 if \code{NULL}, then the default transition matrix for the selected type
 of model is used. If both \code{phi} and \code{transition} are provided,
@@ -43,7 +43,7 @@ then the value of \code{phi} is ignored.}
 
 \item{initial}{Vector of initial states of level and trend. The minimum
 length is one (in case of ETS(A,N,N), the initial is used for all the
-series), the maximum length is 2 x nSeries. If \code{NULL}, values are
+series), the maximum length is 2 x nvariate. If \code{NULL}, values are
 generated for each series.}
 
 \item{initialSeason}{Vector or matrix of initial states for seasonal
@@ -101,18 +101,18 @@ Function generates data using VES model as a data generating process.
 
 # Create 40 observations of quarterly data using AAA model with errors
 # from normal distribution
-\dontrun{VESAAA <- sim.ves(model="AAA",frequency=4,obs=40,nSeries=3,
+\dontrun{VESAAA <- sim.ves(model="AAA",frequency=4,obs=40,nvariate=3,
                    randomizer="rnorm",mean=0,sd=100)}
 
 # You can also use mvrnorm function from MASS package as randomizer,
 # but you need to provide mu and Sigma explicitly
-\dontrun{VESANN <- sim.ves(model="ANN",frequency=4,obs=40,nSeries=2,
+\dontrun{VESANN <- sim.ves(model="ANN",frequency=4,obs=40,nvariate=2,
                    randomizer="mvrnorm",mu=c(100,50),sigma=matrix(c(40,20,20,30),2,2))}
 
 # When generating the data with multiplicative model a more diligent definitiion
 # of parameters is needed. Here's an example with MMM model:
 
-VESMMM <- sim.ves("AAA", obs=120, nSeries=2, frequency=12, initial=c(10,0),
+VESMMM <- sim.ves("AAA", obs=120, nvariate=2, frequency=12, initial=c(10,0),
           initialSeason=runif(12,-1,1), persistence=c(0.06,0.05,0.2), mean=0, sd=0.03)
 VESMMM$data <- exp(VESMMM$data)
 
