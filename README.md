@@ -9,8 +9,9 @@ Here is the list of the included functions:
 
 1. ves - Vector Exponential Smoothing.
 2. vets - Vector ETS with PIC taxonomy.
-3. sim.ves - simulates data from VES.
-4. oves - occurrence state space vector exponential smoothing model.
+3. auto.vets - Automatic selection of restrictions for VETS.
+4. sim.ves - simulates data from VES.
+5. oves - occurrence state space vector exponential smoothing model.
 
 Available methods:
 
@@ -23,12 +24,15 @@ Available methods:
 7. modelType - type of the estimated model;
 8. nobs;
 9. nparam - number of the estimated parameters in the model;
-10. residuals - the residuals of the model (et in case of additive and log(1+et) for the multiplicative ones);
-11. plot - produces several plots for diagnostics purposes. See the documentation for plot.legion();
-12. print;
-13. sigma;
-14. simulate;
-15. summary;
+10. nvariate - number of series in the model;
+11. residuals - the residuals of the model (et in case of additive and log(1+et) for the multiplicative ones);
+12. rstandard, rstudent - standardised and studentised residuals;
+13. outlierdummy - extracts outliers in the model and creates dummy variables for them;
+14. plot - produces several plots for diagnostics purposes. See the documentation for plot.legion();
+15. print;
+16. sigma;
+17. simulate;
+18. summary;
 
 ## Installation
 

@@ -1,7 +1,7 @@
 ---
 title: "Cran Comments"
 author: "Ivan Svetunkov"
-date: "20 April 2021"
+date: "23 April 2021"
 output: html_document
 ---
 ## Version
@@ -52,9 +52,21 @@ PREPERROR with "Error: Bioconductor version '3.13' requires R version '4.1'; R v
 
 Everything is correct.
 
+>* checking installed package size ... NOTE
+>  installed size is  5.2Mb
+>  sub-directories of 1Mb or more:
+>    libs   4.4Mb
+
+Does not look important.
+
 ### Debian Linux, R-devel, GCC ASAN/UBSAN
 PREPERROR due to "ERROR: compilation failed for package ‘forecast‘". Not clear, what is wrong with forecast package.
 
+### Windows Server 2008 R2 SP1, R-devel, 32/64 bit
+>* checking package dependencies ... ERROR
+>Package suggested but not available: 'doMC'
+
+doMC is not available for Windows.
 
 ## Downstream dependencies
 This is a new package, so there are no reverse dependencies.

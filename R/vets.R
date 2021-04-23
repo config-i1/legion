@@ -164,7 +164,7 @@ utils::globalVariables(c("obsInSample","componentsCommonLevel","componentsCommon
 #'      initials="seasonal")
 #'
 #' # Automatic selection of ETS components
-#' vets(Y, model="PPP", h=10, holdout=TRUE, initials="seasonal")
+#' \dontrun{vets(Y, model="PPP", h=10, holdout=TRUE, initials="seasonal")}
 #'
 #' @importFrom stats setNames
 #' @importFrom utils tail

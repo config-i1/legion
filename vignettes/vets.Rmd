@@ -59,6 +59,13 @@ fitted(vetsModel)
 residuals(vetsModel)
 ```
 
+The forecasts can be produced using `forecast()` method:
+```{r}
+vetsForecast <- forecast(vetsModel, h=18, interval="prediction")
+par(mfcol=c(2,1))
+plot(vetsForecast)
+```
+
 The detailed explanation of the underlying model and possible restrictions are provided in @Svetunkov2021.
 
 ### References
