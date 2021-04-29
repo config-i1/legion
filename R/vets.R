@@ -164,7 +164,7 @@ utils::globalVariables(c("obsInSample","componentsCommonLevel","componentsCommon
 #'      initials="seasonal")
 #'
 #' # Automatic selection of ETS components
-#' \dontrun{vets(Y, model="PPP", h=10, holdout=TRUE, initials="seasonal")}
+#' \donttest{vets(Y, model="PPP", h=10, holdout=TRUE, initials="seasonal")}
 #'
 #' @importFrom stats setNames
 #' @importFrom utils tail
@@ -1400,6 +1400,7 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
             packs <- c(packs,nSeries+1);
         }
         parDefault <- par(no.readonly=TRUE);
+        on.exit(par(parDefault));
         for(j in 1:pages){
             par(mar=c(4,4,2,1),mfcol=c(perPage,1));
             for(i in packs[j]:(packs[j+1]-1)){
@@ -1439,7 +1440,6 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
                 abline(v=yForecastStart-yDeltat,col="red",lwd=2);
             }
         }
-        par(parDefault);
     }
 
     ##### Return values #####

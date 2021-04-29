@@ -604,6 +604,7 @@ plot.legion <- function(x, which=c(1,2,4,6), level=0.95, legend=FALSE,
         ellipsis <- list(...);
 
         parDefault <- par(no.readonly = TRUE);
+        on.exit(par(parDefault));
         statesNames <- c(colnames(x$states),
                          paste0("residuals of ",colnames(actuals(x))));
         x$states <- cbind(x$states,residuals(x));
@@ -635,7 +636,6 @@ plot.legion <- function(x, which=c(1,2,4,6), level=0.95, legend=FALSE,
             ellipsis$x <- x$states;
             do.call(plot, ellipsis);
         }
-        par(parDefault);
     }
 
     # Do plots
@@ -757,6 +757,7 @@ plot.oves <- function(x, ...){
 
     pages <- ceiling(nSeries / 5);
     parDefault <- par(no.readonly=TRUE);
+    on.exit(par(parDefault));
     for(j in 1:pages){
         par(mfcol=c(min(5,floor(nSeries/j)),1));
         for(i in 1:nSeries){
@@ -774,7 +775,6 @@ plot.oves <- function(x, ...){
             }
             abline(v=dataDeltat*(forecastStart[2]-2)+forecastStart[1],col="red",lwd=2);
         }
-        par(parDefault);
     }
 }
 

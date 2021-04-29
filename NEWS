@@ -1,4 +1,4 @@
-legion v0.1.0 (Release data: 2021-04-23)
+legion v0.1.0 (Release data: 2021-04-29)
 =======
 
 Changes:
@@ -21,3 +21,4 @@ Changes:
 * plot.legion() method now supports all plots.
 * forecast.legion() and related methods is now available.
 * ves() and vets() now work with zoo classes of data.
+* on.exit() restore par for plot functions.

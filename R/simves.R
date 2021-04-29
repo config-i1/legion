@@ -82,7 +82,7 @@ utils::globalVariables(c("mvrnorm"));
 #'
 #' # Create 40 observations of quarterly data using AAA model with errors
 #' # from normal distribution
-#' \dontrun{VESAAA <- sim.ves(model="AAA",frequency=4,obs=40,nvariate=3,
+#' \donttest{VESAAA <- sim.ves(model="AAA",frequency=4,obs=40,nvariate=3,
 #'                    randomizer="rnorm",mean=0,sd=100)}
 #'
 #' # You can also use mvrnorm function from MASS package as randomizer,

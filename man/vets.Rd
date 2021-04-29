@@ -231,7 +231,7 @@ vets(Y,model="MMdM",h=10,holdout=TRUE,parameters=c("l","t","s","d"),
      initials="seasonal")
 
 # Automatic selection of ETS components
-\dontrun{vets(Y, model="PPP", h=10, holdout=TRUE, initials="seasonal")}
+\donttest{vets(Y, model="PPP", h=10, holdout=TRUE, initials="seasonal")}
 
 }
 \references{
