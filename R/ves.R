@@ -260,14 +260,13 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
 
     ##### Calculation of scale #####
     scalerVES <- function(distribution="dnorm", Etype, obsInSample, other=NULL,
-                           errors, yFitted=NULL, normalizer=1){
-        if(Etype=="A"){
+                           errors, yFitted=NULL, normalizer=1, loss="likelihood"){
+        if(loss=="likelihood"){
             scaleValue <- (errors / normalizer) %*% t(errors / normalizer) / obsInSample;
             return(scaleValue*normalizer^2);
         }
-        # Do optimisation in this case
         else{
-            scaleValue <- errors %*% t(errors) / obsInSample;
+            scaleValue <- diag(rowSums(errors^2) / obsInSample);
             return(scaleValue);
         }
     }
@@ -294,25 +293,27 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
         # Calculate the loss
         if(loss=="likelihood"){
             scaleValue <- scalerVES("dnorm", Etype, otObs, NULL,
-                                    fitting$errors, NULL, normalizer=normalizer);
+                                     fitting$errors, NULL, normalizer=normalizer,
+                                     loss="likelihood");
 
             cfRes <- -sum(switch(Etype,
                                  "A"=dmvnormInternal(fitting$errors, 0, scaleValue, log=TRUE),
-                                 "M"=dmvnormInternal(fitting$errors, -0.5*diag(scaleValue), scaleValue, log=TRUE)-
-                                     colSums(log(yInSample)),
-                                 # This is needed for the oves() model
-                                 "L"=colSums(log(fitting$yfit))));
+                                 "M"=dmvnormInternal(fitting$errors, 0, scaleValue, log=TRUE)-
+                                     colSums(log(yInSample))));
         }
         else if(loss=="GV"){
             scaleValue <- scalerVES("dnorm", Etype, otObs, NULL,
-                                    fitting$errors, NULL, normalizer=normalizer);
+                                     fitting$errors, NULL, normalizer=normalizer,
+                                     loss="likelihood");
             cfRes <- suppressWarnings(log(det(scaleValue)) + nSeries * log(normalizer^2));
         }
         else if(loss=="diagonal"){
-            scaleValue <- diag(rowSums(fitting$errors^2) / obsInSample);
+            scaleValue <- scalerVES("dnorm", Etype, otObs, NULL,
+                                     fitting$errors, NULL, normalizer=normalizer,
+                                     loss="diagonal");
             cfRes <- -sum(switch(Etype,
                                  "A"=dmvnormInternal(fitting$errors, 0, scaleValue, log=TRUE),
-                                 "M"=dmvnormInternal(fitting$errors, -0.5*diag(scaleValue), scaleValue, log=TRUE)-
+                                 "M"=dmvnormInternal(fitting$errors, 0, scaleValue, log=TRUE)-
                                      colSums(log(yInSample))));
         }
         else{
@@ -1214,6 +1215,10 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
             }
             vesModels[[i]] <- estimatorVES(ParentEnvironment=environment());
         }
+        if(!silent){
+            cat("\n");
+        }
+
         # Prepare the return of the best model
         vesModelsICs <- sapply(vesModels,"[[","ICs");
         colnames(vesModelsICs) <- modelsPool;

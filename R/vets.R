@@ -754,25 +754,13 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
 
     ##### Calculation of scale #####
     scalerVETS <- function(distribution="dnorm", Etype, obsInSample, other=NULL,
-                           errors, yFitted=NULL, normalizer=1){
-        if(Etype=="A"){
+                           errors, yFitted=NULL, normalizer=1, loss="likelihood"){
+        if(loss=="likelihood"){
             scaleValue <- (errors / normalizer) %*% t(errors / normalizer) / obsInSample;
             return(scaleValue*normalizer^2);
         }
-        # Do optimisation in this case
         else{
-            scaleValue <- errors %*% t(errors) / obsInSample;
-            #### This does not help in maximisation of MLE
-            # A <- scaleValue[upper.tri(scaleValue,diag=TRUE)];
-            # ALower <- rep(-max(abs(A)),length(A));
-            # AUpper <- rep(max(abs(A)),length(A));
-            # res <- nloptr(A, scalerCF, lb=ALower, ub=AUpper,
-            #               opts=list(algorithm="NLOPT_LN_NELDERMEAD",
-            #                                          xtol_rel=1e-8, maxeval=500, print_level=0),
-            #               errors=errors, scaleValue=scaleValue);
-            # A[] <- res$solution;
-            # scaleValue[upper.tri(scaleValue,diag=TRUE)] <- A;
-            # scaleValue[lower.tri(scaleValue)] <- t(scaleValue)[lower.tri(scaleValue)];
+            scaleValue <- diag(rowSums(errors^2) / obsInSample);
             return(scaleValue);
         }
     }
@@ -802,23 +790,27 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
         # Calculate the loss
         if(loss=="likelihood"){
             scaleValue <- scalerVETS("dnorm", Etype, otObs, NULL,
-                                     fitting$errors, NULL, normalizer=normalizer);
+                                     fitting$errors, NULL, normalizer=normalizer,
+                                     loss="likelihood");
 
             cfRes <- -sum(switch(Etype,
                                  "A"=dmvnormInternal(fitting$errors, 0, scaleValue, log=TRUE),
-                                 "M"=dmvnormInternal(fitting$errors, -0.5*diag(scaleValue), scaleValue, log=TRUE)-
+                                 "M"=dmvnormInternal(fitting$errors, 0, scaleValue, log=TRUE)-
                                      colSums(log(yInSample))));
         }
         else if(loss=="GV"){
             scaleValue <- scalerVETS("dnorm", Etype, otObs, NULL,
-                                     fitting$errors, NULL, normalizer=normalizer);
+                                     fitting$errors, NULL, normalizer=normalizer,
+                                     loss="likelihood");
             cfRes <- suppressWarnings(log(det(scaleValue)) + nSeries * log(normalizer^2));
         }
         else if(loss=="diagonal"){
-            scaleValue <- diag(rowSums(fitting$errors^2) / obsInSample);
+            scaleValue <- scalerVETS("dnorm", Etype, otObs, NULL,
+                                     fitting$errors, NULL, normalizer=normalizer,
+                                     loss="diagonal");
             cfRes <- -sum(switch(Etype,
                                  "A"=dmvnormInternal(fitting$errors, 0, scaleValue, log=TRUE),
-                                 "M"=dmvnormInternal(fitting$errors, -0.5*diag(scaleValue), scaleValue, log=TRUE)-
+                                 "M"=dmvnormInternal(fitting$errors, 0, scaleValue, log=TRUE)-
                                      colSums(log(yInSample))));
         }
         else{
@@ -1087,6 +1079,10 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
             }
             vetsModels[[i]] <- estimatorVETS(ParentEnvironment=environment());
         }
+        if(!silent){
+            cat("\n");
+        }
+
         # Prepare the return of the best model
         vetsModelsICs <- sapply(vetsModels,"[[","ICs");
         colnames(vetsModelsICs) <- modelsPool;

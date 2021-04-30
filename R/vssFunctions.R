@@ -1203,32 +1203,6 @@ vssFitter <- function(...){
     }
     rownames(Sigma) <- colnames(Sigma) <- dataNames;
 
-    # Correct the sigma matrix
-    if(any(loss==c("likelihood","diagonal")) && Etype=="M"){
-        if(loss=="likelihood"){
-            A <- Sigma[upper.tri(Sigma,diag=TRUE)];
-            ALower <- rep(-max(abs(A))*1.1,length(A));
-            AUpper <- rep(max(abs(A))*1.1,length(A));
-        }
-        else{
-            A <- diag(Sigma);
-            ALower <- rep(-max(diag(abs(A)))*1.1,nSeries);
-            AUpper <- rep(max(abs(diag(A)))*1.1,nSeries);
-        }
-        res <- nloptr(A, scalerCF, lb=ALower, ub=AUpper,
-                      opts=list(algorithm="NLOPT_LN_NELDERMEAD",
-                                                 xtol_rel=1e-8, maxeval=500, print_level=0),
-                      errors=errors, scaleValue=Sigma, yInSampleSum=sum(log(yInSample)), loss=loss);
-        A[] <- res$solution;
-        if(loss=="likelihood"){
-            Sigma[upper.tri(Sigma,diag=TRUE)] <- A;
-            Sigma[lower.tri(Sigma)] <- t(Sigma)[lower.tri(Sigma)];
-        }
-        else{
-            diag(Sigma) <- A;
-        }
-    }
-
     assign("matVt",matVt,ParentEnvironment);
     assign("yFitted",yFitted,ParentEnvironment);
     assign("errors",errors,ParentEnvironment);

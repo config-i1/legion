@@ -1,4 +1,4 @@
-legion v0.1.0 (Release data: 2021-04-29)
+legion v0.1.0 (Release data: 2021-04-30)
 =======
 
 Changes:
@@ -12,7 +12,6 @@ Changes:
 * Parameter "silent" can now only be TRUE or FALSE.
 * auto.vets() function, selecting PIC elements via I->P->C.
 * plot() method for ves() and vets(). Currently only produces plots 1 and 4-7.
-* The MLE for Error="M" now involves optimising Sigma matrix after parameters estimation.
 * Fixed BICc and AICc for multivariate models.
 * loss="diagonal" now refers to likelihood maximisation, assuming that the series are independent.
 * auto.vets() now starts with the model with loss="diagonal", implying that covariances are all zero.
