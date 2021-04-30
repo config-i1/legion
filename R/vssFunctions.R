@@ -893,6 +893,11 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     ##### Loss function type #####
     loss <- match.arg(loss, c("likelihood","diagonal","trace"));
 
+    # Modify loss for the oves model
+    if(Etype=="L"){
+        loss[] <- "occurrence";
+    }
+
     # If it is likelihood, we also need to estimate the full covariance matrix
     if(loss=="likelihood"){
         nParamMax <- nParamMax + nSeries;

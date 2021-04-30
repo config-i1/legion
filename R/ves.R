@@ -316,6 +316,10 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
                                  "M"=dmvnormInternal(fitting$errors, 0, scaleValue, log=TRUE)-
                                      colSums(log(yInSample))));
         }
+        # Loss for the oves model
+        else if(loss=="occurrence"){
+            cfRes <- -sum(log(fitting$yfit[yInSample==1]));
+        }
         else{
             cfRes <- sum(rowSums(fitting$errors^2)) / obsInSample;
         }
