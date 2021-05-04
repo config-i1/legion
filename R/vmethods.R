@@ -1212,14 +1212,29 @@ forecast.legion <- function(object, h=10, #newdata=NULL, occurrence=NULL,
     # Create indices for the future
     if(any(yClasses=="ts")){
         # ts structure
-        yForecastStart <- time(actuals(object))[obsInSample]+deltat(actuals(object));
         yFrequency <- frequency(actuals(object));
-        yForecastIndex <- yIndex[obsInSample]+as.numeric(diff(tail(yIndex,2)))*c(1:h);
+        if(is.null(object$holdout)){
+            yForecastStart <- time(actuals(object))[obsInSample]+deltat(actuals(object));
+        }
+        else{
+            yForecastStart <- time(object$holdout)[1];
+        }
     }
     else{
         # zoo
         yIndex <- time(actuals(object));
-        yForecastIndex <- yIndex[obsInSample]+diff(tail(yIndex,2))*c(1:h);
+        if(is.null(object$holdout)){
+            yForecastIndex <- yIndex[obsInSample]+diff(tail(yIndex,2))*c(1:h);
+        }
+        else{
+            if(nrow(object$holdout)<=h){
+                yForecastIndex <- time(object$holdout)[1:h];
+            }
+            else{
+                yForecastIndex <- c(time(object$holdout), tail(time(object$holdout),1)+
+                                    as.numeric(diff(tail(yIndex,2)))*c(1:(nrow(object$holdout)-h)));
+            }
+        }
     }
     yNames <- colnames(actuals(object));
 
