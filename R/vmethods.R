@@ -1221,16 +1221,17 @@ forecast.legion <- function(object, h=10, #newdata=NULL, occurrence=NULL,
         yIndex <- time(actuals(object));
         yForecastIndex <- yIndex[obsInSample]+diff(tail(yIndex,2))*c(1:h);
     }
+    yNames <- colnames(actuals(object));
 
     #### Point forecasts ####
     if(any(yClasses=="ts")){
         yForecast <- ts(matrix(NA,h,nSeries,
-                               dimnames=list(NULL,paste0("Series_",1:nSeries))),
+                               dimnames=list(NULL,yNames)),
                         start=yForecastStart, frequency=yFrequency);
     }
     else{
         yForecast <- zoo(matrix(NA,h,nSeries,
-                                dimnames=list(NULL,paste0("Series_",1:nSeries))),
+                                dimnames=list(NULL,yNames)),
                          order.by=yForecastIndex);
     }
 
@@ -1270,12 +1271,12 @@ forecast.legion <- function(object, h=10, #newdata=NULL, occurrence=NULL,
             # Number of points in the ellipse
             PI <- array(NA, c(h,2*nPoints^(nSeries-1),nSeries),
                         dimnames=list(paste0("h",c(1:h)), NULL,
-                                      paste0("Series_",1:nSeries)));
+                                      yNames));
         }
         else{
             PI <- matrix(NA, nrow=h, ncol=nSeries*2,
                          dimnames=list(paste0("h",c(1:h)),
-                                       paste0("Series_",rep(c(1:nSeries),each=2),c("_lower","_upper"))));
+                                       paste0(rep(yNames,each=2),c("_lower","_upper"))));
         }
 
         # Array of final variance matrices
