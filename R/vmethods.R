@@ -1227,7 +1227,7 @@ forecast.legion <- function(object, h=10, #newdata=NULL, occurrence=NULL,
             yForecastIndex <- yIndex[obsInSample]+diff(tail(yIndex,2))*c(1:h);
         }
         else{
-            if(nrow(object$holdout)<=h){
+            if(nrow(object$holdout)>=h){
                 yForecastIndex <- time(object$holdout)[1:h];
             }
             else{
