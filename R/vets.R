@@ -760,7 +760,7 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
             return(scaleValue*normalizer^2);
         }
         else{
-            scaleValue <- diag(rowSums(errors^2) / obsInSample);
+            scaleValue <- diag(rowSums(errors^2)) / obsInSample;
             return(scaleValue);
         }
     }
