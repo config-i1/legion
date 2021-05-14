@@ -43,9 +43,10 @@ vetsModel <- auto.vets(Y, "PPP", h=18, holdout=TRUE, silent=FALSE)
 
 Some methods to consider when working with `vets()`:
 ```{r}
-par(mfcol=c(2,1))
+oldpar <- par(mfcol=c(2,1))
 plot(vetsModel,1)
 plot(vetsModel,7)
+par(oldpar)
 ```
 
 ```{r}
@@ -62,8 +63,9 @@ residuals(vetsModel)
 The forecasts can be produced using `forecast()` method:
 ```{r}
 vetsForecast <- forecast(vetsModel, h=18, interval="prediction")
-par(mfcol=c(2,1))
+oldpar <- par(mfcol=c(2,1))
 plot(vetsForecast)
+par(oldpar)
 ```
 
 The detailed explanation of the underlying model and possible restrictions are provided in @Svetunkov2021.

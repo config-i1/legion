@@ -60,8 +60,9 @@ ourForecast <- forecast(ourModel, h=18, interval="prediction")
 which can then be plotted (if needed):
 
 ```{r}
-par(mfcol=c(2,1))
+oldpar <- par(mfcol=c(2,1))
 plot(ourForecast)
+par(oldpar)
 ```
 
 Number of estimated parameters in the model can be extracted via `nparam()` method. However, when it comes to the calculation of the number of degrees of freedom in the model, this value is divided by the number of series [@Lutkepohl2005]. So both `ourModel$Sigma` and all the information criteria rely on the $df = T - k_m$, where $T$ is the number of observations and $k_m = \frac{k}{m}$ is the number of parameters $k$ per series ($m$ is the number of series).

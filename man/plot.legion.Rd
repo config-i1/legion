@@ -81,7 +81,6 @@ Currently only \code{which=c(1,4:7)} are supported.
 \examples{
 
 ourModel <- es(c(rnorm(50,100,10),rnorm(50,120,10)), "ANN", h=10)
-par(mfcol=c(3,4))
 plot(ourModel, c(1:11))
 plot(ourModel, 12)
 
