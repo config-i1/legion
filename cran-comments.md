@@ -1,13 +1,13 @@
 ---
 title: "Cran Comments"
 author: "Ivan Svetunkov"
-date: "13 May 2021"
+date: "15 May 2021"
 output: html_document
 ---
 ## Version
 This is an initial submission of ``legion`` package, v0.1.0.
 
-I have fixed all the issues outlined by Julia Haider.
+I have fixed all the issues outlined by Julia Haider and by Gregor Seyer.
 
 ## Test environments
 * local ubuntu 20.04, R 4.0.5
