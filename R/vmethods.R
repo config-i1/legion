@@ -1236,6 +1236,9 @@ forecast.legion <- function(object, h=10, #newdata=NULL, occurrence=NULL,
         }
     }
     yNames <- colnames(actuals(object));
+    if(is.null(yNames)){
+        yNames <- paste0("Series",1:nSeries);
+    }
 
     #### Point forecasts ####
     if(any(yClasses=="ts")){

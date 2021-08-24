@@ -1,3 +1,10 @@
+legion v0.1.1 (Release data: 2021-08-24)
+=======
+
+Bugfixes:
+* forecast.legion would not work correctly if variables did not have names.
+
+
 legion v0.1.0 (Release data: 2021-05-15)
 =======
 
