@@ -693,23 +693,23 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
         j <- 0;
         # alpha
         B[1:nParametersLevel] <- 0.1;
-        BLower[1:nParametersLevel] <- -5;
-        BUpper[1:nParametersLevel] <- 5;
+        BLower[1:nParametersLevel] <- switch(bounds,"u"=0,-5);
+        BUpper[1:nParametersLevel] <- switch(bounds,"u"=1,5);
         names(B)[1:nParametersLevel] <- paste0("alpha",c(1:nParametersLevel));
         j[] <- j+nParametersLevel;
         # beta
         if(modelIsTrendy){
             B[j+1:nParametersTrend] <- 0.05;
-            BLower[j+1:nParametersTrend] <- -5;
-            BUpper[j+1:nParametersTrend] <- 5;
+            BLower[j+1:nParametersTrend] <- switch(bounds,"u"=0,-5);
+            BUpper[j+1:nParametersTrend] <- switch(bounds,"u"=1,5);
             names(B)[j+1:nParametersTrend] <- paste0("beta",c(1:nParametersTrend));
             j[] <- j+nParametersTrend;
         }
         # gamma
         if(modelIsSeasonal){
             B[j+1:nParametersSeasonal] <- 0.05;
-            BLower[j+1:nParametersSeasonal] <- -5;
-            BUpper[j+1:nParametersSeasonal] <- 5;
+            BLower[j+1:nParametersSeasonal] <- switch(bounds,"u"=0,-5);
+            BUpper[j+1:nParametersSeasonal] <- switch(bounds,"u"=1,5);
             names(B)[j+1:nParametersSeasonal] <- paste0("gamma",c(1:nParametersSeasonal));
             j[] <- j+nParametersSeasonal;
         }
@@ -926,7 +926,7 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
         B[] <- res$solution;
 
         # This is just in case something went out of the bounds
-        if(any((B>=BList$BUpper),(B<=BList$BLower))){
+        if(any((B>BList$BUpper),(B<BList$BLower))){
             BList$BUpper[B>=BList$BUpper] <- B[B>=BList$BUpper] + 1;
             BList$BLower[B<=BList$BLower] <- B[B<=BList$BLower] - 1;
         }
