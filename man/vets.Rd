@@ -46,7 +46,13 @@ is constructed);
 covariances between the error terms are zero.
 \item \code{"trace"} - the trace of the covariance matrix of errors.
 The sum of variances is minimised in this case.
-}}
+\item Provided by user as a custom function of \code{actual}, \code{fitted} and
+\code{B}. Note that internally function transposes the data, so that \code{actual}
+and \code{fitted} contain observations in columns and series in rows.
+}
+An example of the latter option is:
+   \code{lossFunction <- function(actual,fitted,B){return(mean(abs(actual - fitted)))}}
+followed by \code{loss=lossFunction}.}
 
 \item{ic}{The information criterion used in the model selection procedure.}
 
@@ -157,6 +163,7 @@ for the number of degrees of freedom);
 \item \code{logLik} - The log-likelihood function;
 \item \code{lossValue} - The value of the loss function;
 \item \code{loss} - The type of the used loss function;
+\item \code{lossFunction} - The loss function if the custom was used in the process;
 \item \code{accuracy} - the values of the error measures. Currently not available.
 \item \code{FI} - Fisher information if user asked for it using \code{FI=TRUE}.
 }

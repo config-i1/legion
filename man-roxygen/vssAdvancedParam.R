@@ -8,7 +8,13 @@
 #' covariances between the error terms are zero.
 #' \item \code{"trace"} - the trace of the covariance matrix of errors.
 #' The sum of variances is minimised in this case.
+#' \item Provided by user as a custom function of \code{actual}, \code{fitted} and
+#' \code{B}. Note that internally function transposes the data, so that \code{actual}
+#' and \code{fitted} contain observations in columns and series in rows.
 #' }
+#' An example of the latter option is:
+#'    \code{lossFunction <- function(actual,fitted,B){return(mean(abs(actual - fitted)))}}
+#' followed by \code{loss=lossFunction}.
 #' @param bounds What type of bounds to use in the model estimation. The first
 #' letter can be used instead of the whole word. \code{"admissible"} means that the
 #' model stability is ensured, while \code{"usual"} means that the all the parameters

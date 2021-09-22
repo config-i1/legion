@@ -922,8 +922,13 @@ print.legion <- function(x, ...){
         cat("\n");
     }
 
-    cat("Information criteria:\n");
-    print(round(x$ICs,digits));
+    if(x$loss!="custom"){
+        cat("Information criteria:\n");
+        print(round(x$ICs,digits));
+    }
+    else{
+        cat("Information criteria are not available for the defined loss.\n");
+    }
 
     # if(interval){
     #     if(x$interval=="c"){

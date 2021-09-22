@@ -891,7 +891,14 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     }
 
     ##### Loss function type #####
-    loss <- match.arg(loss, c("likelihood","diagonal","trace"));
+    if(is.function(loss)){
+        lossFunction <- loss;
+        loss <- "custom";
+    }
+    else{
+        loss <- match.arg(loss, c("likelihood","diagonal","trace"));
+        lossFunction <- NULL;
+    }
 
     # Modify loss for the oves model
     if(Etype=="L"){
@@ -1119,6 +1126,7 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     }
 
     assign("loss",loss,ParentEnvironment);
+    assign("lossFunction",lossFunction,ParentEnvironment);
     assign("normalizer",normalizer,ParentEnvironment);
 
     assign("ic",ic,ParentEnvironment);

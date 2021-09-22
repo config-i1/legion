@@ -8,7 +8,7 @@ utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","
                          "CF","Etype","FI","ICs","Stype","Ttype","errors","h","holdout",
                          "initial","initialType","is.vsmooth.sim","lagsModel","lagsModelMax",
                          "level","matF","matVt","measures","nParam","normalizer","obsStates","ot",
-                         "transition","transitionEstimate","yInSample",
+                         "transition","transitionEstimate","yInSample","lossFunction",
                          "allowMultiplicative","modelDo","ICsAll",
                          "yClasses","yForecastStart","yInSampleIndex","yForecastIndex"));
 
@@ -179,6 +179,7 @@ utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","
 #' \item \code{logLik} - The log-likelihood function;
 #' \item \code{lossValue} - The value of the loss function;
 #' \item \code{loss} - The type of the used loss function;
+#' \item \code{lossFunction} - The loss function if the custom was used in the process;
 #' \item \code{accuracy} - the values of the error measures. Currently not available.
 #' \item \code{FI} - Fisher information if user asked for it using \code{FI=TRUE}.
 #' }
@@ -319,6 +320,12 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
         # Loss for the oves model
         else if(loss=="occurrence"){
             cfRes <- -sum(log(fitting$yfit[yInSample==1]));
+        }
+        # Custom loss
+        else if(loss=="custom"){
+            cfRes <- switch(Etype,
+                            "A"=lossFunction(actual=yInSample,fitted=fitting$yfit,B=B),
+                            "M"=lossFunction(actual=yInSample,fitted=exp(fitting$yfit),B=B));
         }
         else{
             cfRes <- sum(rowSums(fitting$errors^2)) / obsInSample;
@@ -1638,8 +1645,9 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
                   data=NA,fitted=yFitted,holdout=yHoldout,residuals=NA,Sigma=Sigma,
                   forecast=yForecast,
                   # PI=PI,interval=intervalType,level=level,
-                  ICs=ICs,ICsAll=ICsAll,logLik=logLik,lossValue=cfObjective,loss=loss,accuracy=errorMeasures,
-                  FI=FI);
+                  ICs=ICs,ICsAll=ICsAll,logLik=logLik,
+                  lossValue=cfObjective,loss=loss,lossFunction=lossFunction,
+                  accuracy=errorMeasures,FI=FI);
     # Produce proper objects and return them
     if(any(yClasses=="ts")){
         model$states <- ts(t(matVt), start=(time(data)[1] - yDeltat*lagsModelMax), frequency=yFrequency)

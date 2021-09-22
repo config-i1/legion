@@ -6,6 +6,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // vSimulatorWrap
 RcppExport SEXP vSimulatorWrap(SEXP arrayStates, SEXP arrayErrors, SEXP arrayF, SEXP arrayW, SEXP arrayG, SEXP modelLags);
 RcppExport SEXP _legion_vSimulatorWrap(SEXP arrayStatesSEXP, SEXP arrayErrorsSEXP, SEXP arrayFSEXP, SEXP arrayWSEXP, SEXP arrayGSEXP, SEXP modelLagsSEXP) {
