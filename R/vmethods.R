@@ -1184,7 +1184,7 @@ outlierdummy.legion <- function(object, level=0.999, type=c("rstandard","rstuden
 }
 
 #### Forecasts ####
-#' @importFrom greybox forecast
+#' @importFrom generics forecast
 #' @importFrom stats qchisq
 #' @export
 forecast.legion <- function(object, h=10, #newdata=NULL, occurrence=NULL,
