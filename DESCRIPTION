@@ -19,7 +19,7 @@ License: GPL (>=2)
 Depends:
     R (>= 3.5.0),
     greybox (>= 1.0.4),
-    smooth (>= 3.1.6)
+    smooth (>= 3.1.0)
 Imports:
     Rcpp (>= 0.12.3),
     stats,
