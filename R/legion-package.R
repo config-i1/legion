@@ -7,7 +7,7 @@
 #' included in the package:
 #' \itemize{
 #' \item \link[legion]{ves} - Vector Exponential Smoothing.
-#' \item \link[legion]{ves} - Vector ETS-PIC model.
+#' \item \link[legion]{vets} - Vector ETS-PIC model.
 #' \item \link[legion]{oves} - Multivariate occurrence ETS model.
 #' }
 #'
@@ -17,7 +17,7 @@
 #' @author Kandrika Pritularga
 #'
 #' Maintainer: Ivan Svetunkov <ivan@svetunkov.ru>
-#' @seealso \code{\link[greybox]{forecast}, \link[smooth]{es}, \link[smooth]{adam}}
+#' @seealso \code{\link[generics]{forecast}, \link[smooth]{es}, \link[smooth]{adam}}
 #'
 #' @template vssGeneralRef
 #' @template vssKeywords

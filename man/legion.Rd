@@ -13,7 +13,7 @@ Package contains functions for multivariate time series forecasting
 included in the package:
 \itemize{
 \item \link[legion]{ves} - Vector Exponential Smoothing.
-\item \link[legion]{ves} - Vector ETS-PIC model.
+\item \link[legion]{vets} - Vector ETS-PIC model.
 \item \link[legion]{oves} - Multivariate occurrence ETS model.
 }
 }
@@ -42,7 +42,7 @@ Series.
 }
 }
 \seealso{
-\code{\link[greybox]{forecast}, \link[smooth]{es}, \link[smooth]{adam}}
+\code{\link[generics]{forecast}, \link[smooth]{es}, \link[smooth]{adam}}
 }
 \author{
 Ivan Svetunkov
