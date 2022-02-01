@@ -1,6 +1,8 @@
 context("Tests for ves() function")
 
-Y <- cbind(Mcomp::M3$N2570$x,Mcomp::M3$N2571$x)
+Y <- ts(cbind(1000+0.5*c(1:100)+rnorm(100,0,10),
+              cbind(1000+1.5*c(1:100)+rnorm(100,0,10))),
+        frequency=12)
 
 # Basic VES check
 testModel <- suppressWarnings(ves(Y,"MMdM", silent=TRUE))
