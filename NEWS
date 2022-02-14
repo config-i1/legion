@@ -1,11 +1,11 @@
-legion v0.1.1 (Release data: 2022-01-31)
+legion v0.1.1 (Release data: 2022-02-14)
 =======
 
 Changes:
 * Usual bounds are now available in vets. This will make all parameters lie between 0 and 1.
 * Custom loss function for both ves() and vets().
 * We now import forecast from generics package, not from greybox.
-
+* Correct names of states that include original names of time series in vets().
 
 Bugfixes:
 * forecast.legion would not work correctly if variables did not have names.
