@@ -544,14 +544,14 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
             statesNames <- "level";
         }
         else{
-            statesNames <- rep("level",nSeries);
+            statesNames <- paste0(rep("level",nSeries),"_",dataNames);
         }
         if(modelIsTrendy){
             if(componentsCommonTrend){
                 statesNames <- c(statesNames,"trend");
             }
             else{
-                statesNames <- c(statesNames,rep("trend",nSeries));
+                statesNames <- c(statesNames,paste0(rep("trend",nSeries),"_",dataNames));
             }
         }
         if(modelIsSeasonal){
@@ -559,11 +559,10 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
                 statesNames <- c(statesNames,"seasonal");
             }
             else{
-                statesNames <- c(statesNames,rep("seasonal",nSeries));
+                statesNames <- c(statesNames,paste0(rep("seasonal",nSeries),"_",dataNames));
             }
         }
         # Give proper names to all matrices
-        statesNames <- paste0(statesNames,"_",dataNames);
         rownames(matVt) <- statesNames;
         rownames(matF) <- colnames(matF) <- statesNames;
         colnames(matW) <- rownames(matG) <- statesNames;
