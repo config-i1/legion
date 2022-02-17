@@ -36,11 +36,11 @@ Available methods:
 
 ## Installation
 
-<!-- The stable version of the package is available on CRAN, so you can install it by running:
-> install.packages("legion") -->
+The stable version of the package is available on CRAN, so you can install it by running:
+> install.packages("legion")
 
-A recent, development version, is available via github and can be installed using "devtools" in R. First, make sure that you have devtools:
-> if (!require("devtools")){install.packages("devtools")}
+A recent, development version, is available via github and can be installed using "remotes" in R. First, make sure that you have remotes:
+> if (!require("remotes")){install.packages("remotes")}
 
 and after that run:
-> devtools::install_github("config-i1/legion")
+> remotes::install_github("config-i1/legion")
