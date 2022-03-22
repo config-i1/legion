@@ -638,96 +638,87 @@ plot.legion <- function(x, which=c(1,2,4,6), level=0.95, legend=FALSE,
     }
 
     # Do plots
-    if(any(which==1)){
-        for(i in 1:nSeries){
-            plot1(x, as.vector(actuals(x)[,i]), as.vector(fitted(x)[,i]), i, ...);
+    for(j in which){
+        if(any(j==1)){
+            for(i in 1:nSeries){
+                plot1(x, as.vector(actuals(x)[,i]), as.vector(fitted(x)[,i]), i, ...);
+            }
         }
-    }
+        else if(any(j==2)){
+            # Get the residuals and statistic for outliers
+            errors <- rstandard(x);
+            outliers <- outlierdummy(x, level=level, type="rstandard");
+            statistic <- outliers$statistic;
 
-    if(any(which==2)){
-        # Get the residuals and statistic for outliers
-        errors <- rstandard(x);
-        outliers <- outlierdummy(x, level=level, type="rstandard");
-        statistic <- outliers$statistic;
-
-        for(i in 1:nSeries){
-            plot2(x, as.vector(fitted(x)[,i]), as.vector(errors[,i]), "Standardised", statistic, i, ...);
+            for(i in 1:nSeries){
+                plot2(x, as.vector(fitted(x)[,i]), as.vector(errors[,i]), "Standardised", statistic, i, ...);
+            }
         }
-    }
+        else if(any(j==3)){
+            # Get the residuals and statistic for outliers
+            errors <- rstudent(x);
+            outliers <- outlierdummy(x, level=level, type="rstudent");
+            statistic <- outliers$statistic;
 
-    if(any(which==3)){
-        # Get the residuals and statistic for outliers
-        errors <- rstudent(x);
-        outliers <- outlierdummy(x, level=level, type="rstudent");
-        statistic <- outliers$statistic;
-
-        for(i in 1:nSeries){
-            plot2(x, as.vector(fitted(x)[,i]), as.vector(errors[,i]), "Studentised", statistic, i, ...);
+            for(i in 1:nSeries){
+                plot2(x, as.vector(fitted(x)[,i]), as.vector(errors[,i]), "Studentised", statistic, i, ...);
+            }
         }
-    }
-
-    if(any(which==4)){
-        for(i in 1:nSeries){
-            plot3(x, as.vector(residuals(x)[,i]), as.vector(fitted(x)[,i]), i, ...);
+        else if(any(j==4)){
+            for(i in 1:nSeries){
+                plot3(x, as.vector(residuals(x)[,i]), as.vector(fitted(x)[,i]), i, ...);
+            }
         }
-    }
-
-    if(any(which==5)){
-        for(i in 1:nSeries){
-            plot3(x, as.vector(residuals(x)[,i]), as.vector(fitted(x)[,i]), i, type="squared", ...);
+        else if(any(j==5)){
+            for(i in 1:nSeries){
+                plot3(x, as.vector(residuals(x)[,i]), as.vector(fitted(x)[,i]), i, type="squared", ...);
+            }
         }
-    }
-
-    if(any(which==6)){
-        for(i in 1:nSeries){
-            plot4(x, as.vector(residuals(x)[,i]), i, ...);
+        else if(any(j==6)){
+            for(i in 1:nSeries){
+                plot4(x, as.vector(residuals(x)[,i]), i, ...);
+            }
         }
-    }
-
-    if(any(which==7)){
-        for(i in 1:nSeries){
-            plot5(x, actuals(x)[,i], fitted(x)[,i], x$holdout[,i], x$forecast[,i], x$PI[,i*2-1], x$PI[,i*2], ...);
+        else if(any(j==7)){
+            for(i in 1:nSeries){
+                plot5(x, actuals(x)[,i], fitted(x)[,i], x$holdout[,i], x$forecast[,i], x$PI[,i*2-1], x$PI[,i*2], ...);
+            }
         }
-    }
+        else if(any(j==8)){
+            # Get the residuals and statistic for outliers
+            errors <- rstandard(x);
+            outliers <- outlierdummy(x, level=level, type="rstandard");
+            statistic <- outliers$statistic;
 
-    if(any(which==8)){
-        # Get the residuals and statistic for outliers
-        errors <- rstandard(x);
-        outliers <- outlierdummy(x, level=level, type="rstandard");
-        statistic <- outliers$statistic;
-
-        for(i in 1:nSeries){
-            plot6(x, errors[,i], "Standardised", statistic, i, ...);
+            for(i in 1:nSeries){
+                plot6(x, errors[,i], "Standardised", statistic, i, ...);
+            }
         }
-    }
+        else if(any(j==9)){
+            # Get the residuals and statistic for outliers
+            errors <- rstudent(x);
+            outliers <- outlierdummy(x, level=level, type="rstudent");
+            statistic <- outliers$statistic;
 
-    if(any(which==9)){
-        # Get the residuals and statistic for outliers
-        errors <- rstudent(x);
-        outliers <- outlierdummy(x, level=level, type="rstudent");
-        statistic <- outliers$statistic;
-
-        for(i in 1:nSeries){
-            plot6(x, errors[,i], "Studentised", statistic, i, ...);
+            for(i in 1:nSeries){
+                plot6(x, errors[,i], "Studentised", statistic, i, ...);
+            }
         }
-    }
-
-    if(any(which==10)){
-        errors <- residuals(x);
-        for(i in 1:nSeries){
-            plot7(x, errors[,i], "acf", i, ...);
+        else if(any(j==10)){
+            errors <- residuals(x);
+            for(i in 1:nSeries){
+                plot7(x, errors[,i], "acf", i, ...);
+            }
         }
-    }
-
-    if(any(which==11)){
-        errors <- residuals(x);
-        for(i in 1:nSeries){
-            plot7(x, errors[,i], "pacf", i, ...);
+        else if(any(j==11)){
+            errors <- residuals(x);
+            for(i in 1:nSeries){
+                plot7(x, errors[,i], "pacf", i, ...);
+            }
         }
-    }
-
-    if(any(which==12)){
-        plot8(x, ...);
+        else if(any(j==12)){
+            plot8(x, ...);
+        }
     }
 }
 

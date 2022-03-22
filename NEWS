@@ -1,5 +1,8 @@
-legion v0.1.2 (Release data: 2022-02-15)
+legion v0.1.2 (Release data: 2022-03-22)
 =======
+
+Changes:
+* The order in which in plot.legion() now matters.
 
 Bugfixes:
 * Fixed a bug in dimnames for some vets() models.
