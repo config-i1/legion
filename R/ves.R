@@ -279,8 +279,9 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
                               nComponentsNonSeasonal, nComponentsAll, lagsModelMax);
 
         # Check the bounds
+        # Edit KFP: change symmetric to FALSE
         if(bounds=="a"){
-            eigenValues <- eigen(elements$matF - elements$matG %*% elements$matW, only.values=TRUE, symmetric=TRUE)$values;
+            eigenValues <- eigen(elements$matF - elements$matG %*% elements$matW, only.values=TRUE, symmetric=FALSE)$values;
             if(max(abs(eigenValues)>(1 + 1E-50))){
                 return(max(abs(eigenValues))*1E+100);
             }
