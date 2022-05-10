@@ -1,9 +1,10 @@
-legion v0.1.2 (Release data: 2022-05-10)
+legion v0.1.2 (Release data: 2022-05-11)
 =======
 
 Changes:
 * The order in which in plot.legion() now matters.
 * Allow estimating seasonal vets() on the short data (one season of data).
+* auto.vets() now does not check for common initial level and common level component. This is not practical.
 
 Bugfixes:
 * Fixed a bug in dimnames for some vets() models.
