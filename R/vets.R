@@ -1,7 +1,7 @@
 utils::globalVariables(c("obsInSample","componentsCommonLevel","componentsCommonSeasonal","componentsCommonTrend",
                          "initialValue","initialsCommonLevel","initialsCommonSeasonal","initialsCommonTrend",
                          "modelIsTrendy","nComponentsLevel","nComponentsSeasonal","nComponentsTrend",
-                         "nInitialsLevel","nInitialsSeasonal","nInitialsTrend",
+                         "nInitialsLevel","nInitialsSeasonal","nInitialsTrend","shortSample",
                          "nParametersDamped","nParametersLevel","nParametersSeasonal","nParametersTrend",
                          "parametersCommonDamped","parametersCommonLevel","parametersCommonSeasonal","parametersCommonTrend",
                          "allowMultiplicative","modelDo","ICsAll","cfObjective","lossFunction",
@@ -512,16 +512,28 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
         initialValue <- c(initialValueNew01, initialValueNew02);
 
         if(modelIsSeasonal){
-            # Matrix of linear trend and dummies for seasons
-            XValues <- rbind(rep(1,obsInSample),c(1:obsInSample),
-                             matrix(rep(diag(lagsModelMax)[-1,],ceiling(obsInSample/lagsModelMax)), lagsModelMax-1)[,1:obsInSample]);
+            if(modelIsTrendy && !shortSample){
+                # Matrix of linear trend and dummies for seasons
+                XValues <- rbind(rep(1,obsInSample),c(1:obsInSample),
+                                 matrix(rep(diag(lagsModelMax)[-1,],ceiling(obsInSample/lagsModelMax)),
+                                        lagsModelMax-1)[,1:obsInSample]);
+                initialSeasonValue <- (switch(Etype, "M"=log(yInSample), yInSample) %*%
+                                           t(XValues) %*% solve(XValues %*% t(XValues)))[,-2];
+            }
+            else{
+                # Matrix of dummies for seasons
+                XValues <- rbind(rep(1,obsInSample),
+                                 matrix(rep(diag(lagsModelMax)[-1,],ceiling(obsInSample/lagsModelMax)),
+                                        lagsModelMax-1)[,1:obsInSample]);
+                initialSeasonValue <- (switch(Etype, "M"=log(yInSample), yInSample) %*%
+                                           t(XValues) %*% solve(XValues %*% t(XValues)));
+            }
+
             # XValues <- rbind(c(1:obsInSample),
                              # matrix(rep(diag(lagsModelMax),ceiling(obsInSample/lagsModelMax)), lagsModelMax)[,1:obsInSample]);
             # initialSeasonValue <- ((switch(Etype, "M"=log(yInSample), yInSample)-
             #                             rowMeans(switch(Etype, "M"=log(yInSample), yInSample))) %*%
             #                             t(XValues) %*% solve(XValues %*% t(XValues)))[,-1];
-            initialSeasonValue <- (switch(Etype, "M"=log(yInSample), yInSample) %*%
-                                       t(XValues) %*% solve(XValues %*% t(XValues)))[,-2];
             initialSeasonValue[,-1] <- initialSeasonValue[,-1] + initialSeasonValue[,1];
             # Renormalise initials
             initialSeasonValue[] <- initialSeasonValue - rowMeans(initialSeasonValue);

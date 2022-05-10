@@ -276,6 +276,14 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
         nComponentsNonSeasonal <- 1 + (Ttype!="N")*1;
         nComponentsAll <- nComponentsNonSeasonal + modelIsSeasonal*1;
     }
+    shortSample <- FALSE;
+    if(lagsModelMax==obsInSample){
+        shortSample[] <- TRUE;
+    }
+    else if(lagsModelMax>obsInSample){
+        stop("The sample is to short to apply ", model, " model",
+             call.=FALSE);
+    }
 
     ##### ovesModel #####
     if(is.oves(occurrence)){
@@ -1087,6 +1095,7 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     assign("Ttype",Ttype,ParentEnvironment);
     assign("Stype",Stype,ParentEnvironment);
     assign("lagsModelMax",lagsModelMax,ParentEnvironment);
+    assign("shortSample",shortSample,ParentEnvironment);
     assign("modelIsTrendy",modelIsTrendy,ParentEnvironment);
     assign("modelIsSeasonal",modelIsSeasonal,ParentEnvironment);
     assign("allowMultiplicative",allowMultiplicative,ParentEnvironment);
