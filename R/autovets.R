@@ -59,8 +59,10 @@ auto.vets <- function(data, model="PPP", lags=c(frequency(data)),
         modelIsSeasonal <- Stype!="N";
 
         parametersToCheck <- c("l","t"[modelIsTrendy],"s"[modelIsSeasonal],"d"[modelIsTrendy]);
-        initialsToCheck <- c("l","t"[modelIsTrendy],"s"[modelIsSeasonal]);
-        componentsToCheck <- c("l","t"[modelIsTrendy],"s"[modelIsSeasonal]);
+        initialsToCheck <- c("t"[modelIsTrendy],"s"[modelIsSeasonal]);
+        componentsToCheck <- c("t"[modelIsTrendy],"s"[modelIsSeasonal]);
+        # initialsToCheck <- c("l","t"[modelIsTrendy],"s"[modelIsSeasonal]);
+        # componentsToCheck <- c("l","t"[modelIsTrendy],"s"[modelIsSeasonal]);
 
         return(list(modelIsTrendy=modelIsTrendy,modelIsSeasonal=modelIsSeasonal,
                     parameters=parametersToCheck,initials=initialsToCheck,components=componentsToCheck))
