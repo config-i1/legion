@@ -421,10 +421,8 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
                 else if(persistenceType=="d"){
                     persistenceLength <- nComponentsAll*nSeries^2;
                     if(bounds=="u"){
-                        BLower <- c(BLower,rep(-1,persistenceLength));
-                        BLower[seq(1, persistenceLength, nSeries+1)] <- 0
-                        BUpper <- c(BUpper,rep(0,persistenceLength));
-                        BUpper[seq(1, persistenceLength, nSeries+1)] <- 1
+                        BLower <- c(BLower,rep(0,persistenceLength));
+                        BUpper <- c(BUpper,rep(1,persistenceLength));
                     }
                     else{
                         BLower <- c(BLower,rep(-5,persistenceLength));
