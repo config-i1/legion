@@ -279,8 +279,9 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
                               nComponentsNonSeasonal, nComponentsAll, lagsModelMax);
 
         # Check the bounds
+        # Edit KFP: change symmetric to FALSE
         if(bounds=="a"){
-            eigenValues <- eigen(elements$matF - elements$matG %*% elements$matW, only.values=TRUE, symmetric=TRUE)$values;
+            eigenValues <- eigen(elements$matF - elements$matG %*% elements$matW, only.values=TRUE, symmetric=FALSE)$values;
             if(max(abs(eigenValues)>(1 + 1E-50))){
                 return(max(abs(eigenValues))*1E+100);
             }
@@ -390,28 +391,57 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
         if(seasonalType=="i"){
             #### Individual seasonality ####
             ### Persistence matrix
+            # Edit KFP: change the parameter space, make all persistence to have mean-reverting behaviour
+            # by forcing the off-diagonals to be negative so that the MA coefficient would be positive
+            # potentially works for VES(ANN) only for now - dependent persistence matrix
             if(persistenceEstimate){
                 if(persistenceType=="c"){
                     persistenceLength <- nComponentsAll;
+                    if(bounds=="u"){
+                        BLower <- c(BLower,rep(0,persistenceLength));
+                        BUpper <- c(BUpper,rep(1,persistenceLength));
+                    }
+                    else{
+                        BLower <- c(BLower,rep(-5,persistenceLength));
+                        BUpper <- c(BUpper,rep(5,persistenceLength));
+                    }
                 }
                 else if(persistenceType=="i"){
                     persistenceLength <- nComponentsAll*nSeries;
+                    if(bounds=="u"){
+                        BLower <- c(BLower,rep(0,persistenceLength));
+                        BUpper <- c(BUpper,rep(1,persistenceLength));
+                    }
+                    else{
+                        BLower <- c(BLower,rep(-5,persistenceLength));
+                        BUpper <- c(BUpper,rep(5,persistenceLength));
+                    }
                 }
+                # Edited by KFP
                 else if(persistenceType=="d"){
                     persistenceLength <- nComponentsAll*nSeries^2;
+                    if(bounds=="u"){
+                        BLower <- c(BLower,rep(0,persistenceLength));
+                        BUpper <- c(BUpper,rep(1,persistenceLength));
+                    }
+                    else{
+                        BLower <- c(BLower,rep(-5,persistenceLength));
+                        BUpper <- c(BUpper,rep(5,persistenceLength));
+                    }
                 }
                 else if(persistenceType=="s"){
                     persistenceLength <- (nComponentsAll-1)*nSeries+1;
+                    if(bounds=="u"){
+                        BLower <- c(BLower,rep(0,persistenceLength));
+                        BUpper <- c(BUpper,rep(1,persistenceLength));
+                    }
+                    else{
+                        BLower <- c(BLower,rep(-5,persistenceLength));
+                        BUpper <- c(BUpper,rep(5,persistenceLength));
+                    }
                 }
                 B <- c(B,rep(0.1,persistenceLength));
-                if(bounds=="u"){
-                    BLower <- c(BLower,rep(0,persistenceLength));
-                    BUpper <- c(BUpper,rep(1,persistenceLength));
-                }
-                else{
-                    BLower <- c(BLower,rep(-5,persistenceLength));
-                    BUpper <- c(BUpper,rep(5,persistenceLength));
-                }
+
                 BNames <- c(BNames,paste0("Persistence",c(1:persistenceLength)));
             }
 
