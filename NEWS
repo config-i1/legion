@@ -1,4 +1,4 @@
-legion v0.1.2 (Release data: 2022-05-11)
+legion v0.1.2 (Release data: 2022-10-13)
 =======
 
 Changes:
@@ -8,6 +8,7 @@ Changes:
 
 Bugfixes:
 * Fixed a bug in dimnames for some vets() models.
+* ves() and vets() would produce an error in case of h=1 due to drop of one of the dimensions by R, when extracting the holdout.
 
 
 legion v0.1.1 (Release data: 2022-02-14)

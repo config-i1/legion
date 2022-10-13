@@ -1516,7 +1516,7 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
     }
 
     if(!is.matrix(yForecast)){
-        yForecast <- as.matrix(yForecast,h,nSeries);
+        yForecast <- as.matrix(yForecast,nSeries,h);
     }
     if(any(yClasses=="ts")){
         yFitted <- ts(t(yFitted), start=yStart, frequency=yFrequency);
@@ -1544,10 +1544,10 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
     ##### Now let's deal with the holdout #####
     if(holdout){
         if(any(yClasses=="ts")){
-            yHoldout <- ts(data[(obsInSample+1):obsAll,], start=yForecastStart, frequency=yFrequency);
+            yHoldout <- ts(data[(obsInSample+1):obsAll,,drop=FALSE], start=yForecastStart, frequency=yFrequency);
         }
         else{
-            yHoldout <- zoo(data[(obsInSample+1):obsAll,], order.by=yForecastIndex);
+            yHoldout <- zoo(data[(obsInSample+1):obsAll,,drop=FALSE], order.by=yForecastIndex);
         }
         colnames(yHoldout) <- dataNames;
 

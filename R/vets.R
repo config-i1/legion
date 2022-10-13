@@ -1313,10 +1313,10 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
     ##### Now let's deal with the holdout #####
     if(holdout){
         if(any(yClasses=="ts")){
-            yHoldout <- ts(data[(obsInSample+1):obsAll,], start=yForecastStart, frequency=yFrequency);
+            yHoldout <- ts(data[(obsInSample+1):obsAll,,drop=FALSE], start=yForecastStart, frequency=yFrequency);
         }
         else{
-            yHoldout <- zoo(data[(obsInSample+1):obsAll,], order.by=yForecastIndex);
+            yHoldout <- zoo(data[(obsInSample+1):obsAll,,drop=FALSE], order.by=yForecastIndex);
         }
         colnames(yHoldout) <- dataNames;
 
