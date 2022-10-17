@@ -121,26 +121,30 @@ auto.vets <- function(data, model="PPP", lags=c(frequency(data)),
     initialsCombinations <- choose(length(initials),c(1:length(initials)));
     initialsCombinationNumber <- sum(initialsCombinations);
     initialsToCheck <- vector("list",initialsCombinationNumber);
-    for(i in 1:length(initialsCombinations)){
-        if(i==1){
-            initialsToCheck[1:initialsCombinations[1]] <- as.list(as.data.frame(combn(initials,i),stringsAsFactors=F));
-        }
-        else{
-            initialsToCheck[sum(initialsCombinations[1:(i-1)])+1:initialsCombinations[i]] <-
-                as.list(as.data.frame(combn(initials,i),stringsAsFactors=F));
+    if(length(initials)>0){
+        for(i in 1:length(initialsCombinations)){
+            if(i==1){
+                initialsToCheck[1:initialsCombinations[1]] <- as.list(as.data.frame(combn(initials,i),stringsAsFactors=F));
+            }
+            else{
+                initialsToCheck[sum(initialsCombinations[1:(i-1)])+1:initialsCombinations[i]] <-
+                    as.list(as.data.frame(combn(initials,i),stringsAsFactors=F));
+            }
         }
     }
     # List of all the combinations of components restrictions
     componentsCombinations <- choose(length(components),c(1:length(components)));
     componentsCombinationNumber <- sum(componentsCombinations);
     componentsToCheck <- vector("list",componentsCombinationNumber);
-    for(i in 1:length(componentsCombinations)){
-        if(i==1){
-            componentsToCheck[1:componentsCombinations[1]] <- as.list(as.data.frame(combn(components,i),stringsAsFactors=F));
-        }
-        else{
-            componentsToCheck[sum(componentsCombinations[1:(i-1)])+1:componentsCombinations[i]] <-
-                as.list(as.data.frame(combn(components,i),stringsAsFactors=F));
+    if(length(components)>0){
+        for(i in 1:length(componentsCombinations)){
+            if(i==1){
+                componentsToCheck[1:componentsCombinations[1]] <- as.list(as.data.frame(combn(components,i),stringsAsFactors=F));
+            }
+            else{
+                componentsToCheck[sum(componentsCombinations[1:(i-1)])+1:componentsCombinations[i]] <-
+                    as.list(as.data.frame(combn(components,i),stringsAsFactors=F));
+            }
         }
     }
 
