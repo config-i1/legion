@@ -208,6 +208,7 @@ utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","
 #' \donttest{ves(Y,model="MNN",h=10,holdout=TRUE,occurrence="l")}
 #'
 #' @importFrom smooth sowhat
+#' @importFrom greybox measures
 #' @export
 ves <- function(data, model="PPP", lags=c(frequency(data)),
                 persistence=c("common","individual","dependent"),
