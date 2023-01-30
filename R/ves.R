@@ -441,7 +441,7 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
                         BUpper <- c(BUpper,rep(5,persistenceLength));
                     }
                 }
-                B <- c(B,rep(0.1,persistenceLength));
+                B <- c(B,rep(1/persistenceLength,persistenceLength));
 
                 BNames <- c(BNames,paste0("Persistence",c(1:persistenceLength)));
             }

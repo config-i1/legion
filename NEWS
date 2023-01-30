@@ -1,4 +1,4 @@
-legion v0.1.2 (Release data: 2022-10-17)
+legion v0.1.2 (Release data: 2023-01-30)
 =======
 
 Changes:
@@ -11,6 +11,7 @@ Bugfixes:
 * ves() and vets() would produce an error in case of h=1 due to drop of one of the dimensions by R, when extracting the holdout.
 * Fix in auto.vets() for level models with no checks for initials and components.
 * measures() was not imported from greybox for some reason. Now it is.
+* Different initialisation of persistence matrix in ves(), so that it does not get stuck in the violation of stability condition.
 
 
 legion v0.1.1 (Release data: 2022-02-14)
