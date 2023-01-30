@@ -220,8 +220,8 @@ double vOptimiser(arma::mat const &matrixY, arma::mat &matrixV, arma::mat const 
     // bool const &multi, std::string const &CFtype, char const &fitterType,
     // arma::mat const &matrixX, arma::mat &matrixA, arma::mat const &matrixFX, arma::mat const &matrixGX,
     // # Make decomposition functions shut up!
-    std::ostream nullstream(0);
-    arma::arma_cerr_stream<char>(&nullstream);
+    // std::ostream nullstream(0);
+    // arma::arma_cerr_stream<char>(&nullstream);
 
     arma::uvec nonzeroes = find(matrixO>0);
     int obs = nonzeroes.n_rows;
