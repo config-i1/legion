@@ -13,6 +13,7 @@
 #'
 #' @name legion
 #' @docType package
+#' @aliases legion-package
 #' @author Ivan Svetunkov
 #' @author Kandrika Pritularga
 #'
