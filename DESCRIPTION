@@ -1,8 +1,8 @@
 Package: legion
 Type: Package
 Title: Forecasting Using Multivariate Models
-Version: 0.1.2
-Date: 2023-01-30
+Version: 0.1.3.41001
+Date: 2023-08-28
 Authors@R: c(person("Ivan", "Svetunkov", email = "ivan@svetunkov.ru", role = c("aut", "cre"),
                   comment="Lecturer at Centre for Marketing Analytics and Forecasting, Lancaster University, UK"),
              person("Kandrika Fadhlan", "Pritularga", email = "k.pritularga@lancaster.ac.uk", role = c("aut"),
@@ -13,8 +13,8 @@ Language: en-GB
 Description: Functions implementing multivariate state space models for purposes of time series analysis and forecasting.
              The focus of the package is on multivariate models, such as Vector Exponential Smoothing,
              Vector ETS (Error-Trend-Seasonal model) etc. It currently includes Vector Exponential
-             Smoothing (VES, de Silva et al., 2010, <doi:10.1177/1471082X0901000401>), Vector ETS and
-             simulation function for VES.
+             Smoothing (VES, de Silva et al., 2010, <doi:10.1177/1471082X0901000401>), Vector ETS (Svetunkov et al., 2023,
+             <doi:10.1016/j.ejor.2022.04.040>) and simulation function for VES.
 License: GPL (>=2)
 Depends:
     R (>= 3.5.0),
@@ -39,6 +39,6 @@ Suggests:
     doParallel,
     foreach
 VignetteBuilder: knitr
-RoxygenNote: 7.2.1
+RoxygenNote: 7.2.3
 Encoding: UTF-8
 Roxygen: list(old_usage = TRUE)

@@ -274,9 +274,10 @@ Springer-Verlag.
 Analysis. New introduction to Multiple Time Series Analysis. Berlin,
 Heidelberg: Springer Berlin Heidelberg.
 \doi{10.1007/978-3-540-27752-1}
-\item Chen H., Svetunkov I., Boylan J. (2021). A New Taxonomy for
-Vector Exponential Smoothing and Its Application to Seasonal Time
-Series.
+\item Svetunkov, I., Chen, H., & Boylan, J. E. (2023).
+A new taxonomy for vector exponential smoothing and its application
+to seasonal time series. European Journal of Operational Research,
+304(3), 964–980. \doi{10.1016/j.ejor.2022.04.040}
 }
 }
 \seealso{
