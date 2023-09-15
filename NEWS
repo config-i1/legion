@@ -1,3 +1,10 @@
+legion v0.2.0 (Release data: 2023-09-15)
+=======
+
+Changes:
+* Starting from v0.2.0, the legion package for R will be released under the LGPLv2.1 license. The source of the older version of the software under the GPL(>=2) is available here: https://github.com/config-i1/legion/releases/tag/v0.1.3.
+
+
 legion v0.1.3 (Release data: 2023-08-28)
 =======
 
