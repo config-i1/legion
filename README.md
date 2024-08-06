@@ -2,7 +2,6 @@
 [![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/legion)](https://cran.r-project.org/package=legion)
 [![Downloads](http://cranlogs.r-pkg.org/badges/legion)](https://cran.r-project.org/package=legion)
 [![R-CMD-check](https://github.com/config-i1/legion/actions/workflows/test.yml/badge.svg)](https://github.com/config-i1/legion/actions/workflows/test.yml)
-[![ko-fi](https://ivan.svetunkov.ru/ko-fi.png)](https://ko-fi.com/G2G51C4C4)
 
 The package _legion_ implements several multivariate models for purposes of forecasting.
 
