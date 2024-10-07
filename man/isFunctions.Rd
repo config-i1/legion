@@ -40,7 +40,7 @@ is.legion(ourModel)
 
 }
 \author{
-Ivan Svetunkov, \email{ivan@svetunkov.ru}
+Ivan Svetunkov, \email{ivan@svetunkov.com}
 }
 \keyword{ts}
 \keyword{univar}

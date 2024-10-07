@@ -1,8 +1,8 @@
 Package: legion
 Type: Package
 Title: Forecasting Using Multivariate Models
-Version: 0.2.0
-Date: 2023-09-15
+Version: 0.2.1.41001
+Date: 2024-10-07
 Authors@R: c(person("Ivan", "Svetunkov", email = "ivan@svetunkov.ru", role = c("aut", "cre"),
                   comment="Lecturer at Centre for Marketing Analytics and Forecasting, Lancaster University, UK"),
              person("Kandrika Fadhlan", "Pritularga", email = "k.pritularga@lancaster.ac.uk", role = c("aut"),
@@ -39,6 +39,6 @@ Suggests:
     doParallel,
     foreach
 VignetteBuilder: knitr
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.2
 Encoding: UTF-8
 Roxygen: list(old_usage = TRUE)

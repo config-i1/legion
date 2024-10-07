@@ -101,7 +101,7 @@ oves(Y, occurrence="l", probability="i")
 \code{\link[smooth]{oes}, \link[legion]{ves}}
 }
 \author{
-Ivan Svetunkov, \email{ivan@svetunkov.ru}
+Ivan Svetunkov, \email{ivan@svetunkov.com}
 }
 \keyword{models}
 \keyword{multivariate}

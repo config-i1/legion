@@ -284,7 +284,7 @@ to seasonal time series. European Journal of Operational Research,
 \code{\link[legion]{vets}, \link[smooth]{es}, \link[smooth]{adam}}
 }
 \author{
-Ivan Svetunkov, \email{ivan@svetunkov.ru}
+Ivan Svetunkov, \email{ivan@svetunkov.com}
 }
 \keyword{models}
 \keyword{multivariate}
