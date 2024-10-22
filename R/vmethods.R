@@ -1248,8 +1248,8 @@ forecast.legion <- function(object, h=10, #newdata=NULL, occurrence=NULL,
                          order.by=yForecastIndex);
     }
 
-    yForecast[] <- t(vForecasterWrap(matVt, matF, matW, nSeries, h,
-                                     Etype, Ttype, Stype, lagsModel));
+    yForecast[] <- t(vForecasterWrap(matVt, Matrix(matF, sparse=TRUE), Matrix(matW, sparse=TRUE),
+                                     nSeries, h, Etype, Ttype, Stype, lagsModel));
 
     if(cumulative){
         yForecast <- colSums(yForecast);

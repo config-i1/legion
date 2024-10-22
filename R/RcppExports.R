@@ -5,15 +5,11 @@ vSimulatorWrap <- function(arrayStates, arrayErrors, arrayF, arrayW, arrayG, mod
     .Call('_legion_vSimulatorWrap', PACKAGE = 'legion', arrayStates, arrayErrors, arrayF, arrayW, arrayG, modelLags)
 }
 
-vFitterWrap <- function(yt, matVt, matF, matw, matG, modellags, Etype, Ttype, Stype, ot) {
-    .Call('_legion_vFitterWrap', PACKAGE = 'legion', yt, matVt, matF, matw, matG, modellags, Etype, Ttype, Stype, ot)
+vFitterWrap <- function(matrixY, matrixV, matrixF, matrixW, matrixG, lags, E, T, S, matrixO) {
+    .Call('_legion_vFitterWrap', PACKAGE = 'legion', matrixY, matrixV, matrixF, matrixW, matrixG, lags, E, T, S, matrixO)
 }
 
-vForecasterWrap <- function(matVt, matF, matw, series, h, Etype, Ttype, Stype, modellags) {
-    .Call('_legion_vForecasterWrap', PACKAGE = 'legion', matVt, matF, matw, series, h, Etype, Ttype, Stype, modellags)
-}
-
-vOptimiserWrap <- function(yt, matVt, matF, matw, matG, modellags, Etype, Ttype, Stype, cfType, normalizer, bounds, ot, otObs) {
-    .Call('_legion_vOptimiserWrap', PACKAGE = 'legion', yt, matVt, matF, matw, matG, modellags, Etype, Ttype, Stype, cfType, normalizer, bounds, ot, otObs)
+vForecasterWrap <- function(matrixV, matrixF, matrixW, nSeries, hor, E, T, S, lags) {
+    .Call('_legion_vForecasterWrap', PACKAGE = 'legion', matrixV, matrixF, matrixW, nSeries, hor, E, T, S, lags)
 }
 

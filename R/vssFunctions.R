@@ -299,9 +299,9 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     ##### occurrence #####
     occurrence <- substring(occurrence[1],1,1);
     if(occurrence!="n"){
-        ot <- (yInSample!=0)*1;
+        ot <- Matrix((yInSample!=0)*1, sparse=TRUE);
         # Matrix of non-zero observations for the loss function
-        otObs <- diag(rowSums(ot));
+        otObs <- diag(rowSums(as.matrix(ot)));
         for(i in 1:nSeries){
             for(j in 1:nSeries){
                 if(i==j){
@@ -312,7 +312,7 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
         }
     }
     else{
-        ot <- matrix(1,nrow=nrow(yInSample),ncol=ncol(yInSample));
+        ot <- Matrix(matrix(1,nrow=nrow(yInSample),ncol=ncol(yInSample)), sparse=TRUE);
         otObs <- matrix(obsInSample,nSeries,nSeries);
         ovesModel <- NULL;
     }
@@ -1193,7 +1193,7 @@ vssFitter <- function(...){
     ParentEnvironment <- ellipsis[['ParentEnvironment']];
 
     fitting <- vFitterWrap(switch(Etype, "M"=log(yInSample), yInSample),
-                           matVt, matF, matW, matG,
+                           matVt, Matrix(matF, sparse=TRUE), Matrix(matW, sparse=TRUE), Matrix(matG, sparse=TRUE),
                            lagsModel, Etype, Ttype, Stype, ot);
     matVt[] <- fitting$matVt;
     yFitted[] <- fitting$yfit;
@@ -1201,9 +1201,9 @@ vssFitter <- function(...){
 
     if(Etype=="M"){
         yFitted <- exp(yFitted);
-        if(occurrence!="n"){
-            yFitted[ot==0] <- 0;
-        }
+        # if(occurrence!="n"){
+        #     yFitted[as.matrix(ot)==0] <- 0;
+        # }
     }
 
     # Division by nSeries gives the df per series, which agrees with Lutkepohl (2005), p.75
@@ -1250,7 +1250,8 @@ vssForecaster <- function(...){
     if(h>0){
         yForecast[] <- vForecasterWrap(matrix(matVt[,(obsInSample+1):(obsInSample+lagsModelMax)],
                                               ncol=lagsModelMax),
-                                     matF, matW, nSeries, h, Etype, Ttype, Stype, lagsModel);
+                                     Matrix(matF, sparse=TRUE), Matrix(matW, sparse=TRUE),
+                                     nSeries, h, Etype, Ttype, Stype, lagsModel);
     }
     else{
         yForecast[] <- NA;
@@ -1270,13 +1271,16 @@ vssForecaster <- function(...){
 
     if(occurrence!="n"){
         if(!occurrenceModelProvided){
-            ovesModel <- oves(ts(t(ot),frequency=yFrequency),
+            ovesModel <- oves(t(as.matrix(ot)),
                               occurrence=occurrence, h=h, holdout=FALSE,
                               probability="dependent", model=ovesModel);
         }
+        # Amend the fitted values and point forecast to represent expectations
+        yFitted[] <- yFitted * t(ovesModel$fitted);
         yForecast[] <- yForecast * t(ovesModel$forecast);
     }
 
+    assign("yFitted",yFitted,ParentEnvironment);
     assign("yForecast",yForecast,ParentEnvironment);
     assign("PI",PI,ParentEnvironment);
     assign("ovesModel",ovesModel,ParentEnvironment);

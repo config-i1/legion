@@ -290,7 +290,8 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
 
         # Fit the model
         fitting <- vFitterWrap(switch(Etype, "M"=log(yInSample), yInSample),
-                               elements$matVt, elements$matF, elements$matW, elements$matG,
+                               elements$matVt, Matrix(elements$matF, sparse=TRUE),
+                               Matrix(elements$matW, sparse=TRUE), Matrix(elements$matG, sparse=TRUE),
                                lagsModel, Etype, Ttype, Stype, ot);
 
         # Calculate the loss

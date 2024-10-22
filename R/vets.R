@@ -170,6 +170,7 @@ utils::globalVariables(c("obsInSample","componentsCommonLevel","componentsCommon
 #' @importFrom stats setNames
 #' @importFrom utils tail
 #' @importFrom zoo zoo
+#' @importFrom Matrix Matrix
 #' @rdname vets
 #' @export
 vets <- function(data, model="PPP", lags=c(frequency(data)),
@@ -790,7 +791,7 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
 
         # Check the bounds
         if(bounds=="a"){
-            eigenValues <- eigen(elements$matF - elements$matG %*% elements$matW, only.values=TRUE, symmetric=TRUE)$values;
+            eigenValues <- eigen(elements$matF - elements$matG %*% elements$matW, only.values=TRUE)$values;
             if(max(abs(eigenValues)>(1 + 1E-50))){
                 return(max(abs(eigenValues))*1E+100);
             }
@@ -798,7 +799,8 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
 
         # Fit the model
         fitting <- vFitterWrap(switch(Etype, "M"=log(yInSample), yInSample),
-                               elements$matVt, elements$matF, elements$matW, elements$matG,
+                               elements$matVt, Matrix(elements$matF, sparse=TRUE),
+                               Matrix(elements$matW, sparse=TRUE), Matrix(elements$matG, sparse=TRUE),
                                lagsModel, Etype, Ttype, Stype, ot);
 
         # Calculate the loss

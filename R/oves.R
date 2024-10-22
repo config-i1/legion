@@ -162,7 +162,7 @@ oves <- function(data, occurrence=c("logistic","none","fixed"),
     # Number of series in the matrix
     nSeries <- ncol(data);
 
-    if(is.null(ncol(data))){
+    if(is.null(nSeries)){
         stop("The provided data is not a matrix! Use oes() function instead!", call.=FALSE);
     }
     if(ncol(data)==1){

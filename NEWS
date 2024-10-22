@@ -1,5 +1,8 @@
-legion v0.2.1 (Release data: 2024-10-07)
+legion v0.2.1 (Release data: 2024-10-22)
 =======
+
+Changes:
+* We now use Matrix package for sparse matrix computations. Very useful for data with lots of series.
 
 Bugfixes:
 * Corrected the author details in the documentation.
