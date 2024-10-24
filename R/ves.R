@@ -282,7 +282,13 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
         # Check the bounds
         # Edit KFP: change symmetric to FALSE
         if(bounds=="a"){
-            eigenValues <- eigen(elements$matF - elements$matG %*% elements$matW, only.values=TRUE, symmetric=FALSE)$values;
+            # eigenValues <- eigen(elements$matF - elements$matG %*% elements$matW, only.values=TRUE, symmetric=FALSE)$values;
+            if(nComponentsAll>10){
+                eigenValues <- discounter(elements$matF, elements$matW, elements$matG, 5);
+            }
+            else{
+                eigenValues <- eigen(elements$matF - elements$matG %*% elements$matW, only.values=TRUE)$values;
+            }
             if(max(abs(eigenValues)>(1 + 1E-50))){
                 return(max(abs(eigenValues))*1E+100);
             }
@@ -621,10 +627,10 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
 
         ### Persistence matrix
         matG <- switch(seasonalType,
-                       "i" =  matrix(0,nSeries*nComponentsAll,nSeries),
-                       "c" = matrix(0,nSeries*nComponentsNonSeasonal+1,nSeries));
+                       "i" =  Matrix(0, nSeries*nComponentsAll, nSeries, sparse=TRUE),
+                       "c" = Matrix(0, nSeries*nComponentsNonSeasonal+1, nSeries, sparse=TRUE));
         if(!persistenceEstimate){
-            matG <- persistenceValue;
+            matG <- Matrix(persistenceValue, sparse=TRUE);
         }
 
         ### Damping parameter
@@ -665,17 +671,17 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
                                 setdiff(c(1:nSeries*nComponentsAll),c(1:nComponentsAll)+nComponentsAll*(i-1))] <- 0.1;
             }
         }
-        matF <- switch(seasonalType,
-                       "i"=transitionValue,
-                       "c"=rbind(cbind(transitionValue[-(c(1:nSeries)*nComponentsAll),
-                                                       -(c(1:nSeries)*nComponentsAll)],
-                                       0),
-                                 c(transitionValue[nComponentsAll*nSeries,
-                                                   -(c(1:nSeries)*nComponentsAll)],1)));
+        matF <- Matrix(switch(seasonalType,
+                              "i"=transitionValue,
+                              "c"=rbind(cbind(transitionValue[-(c(1:nSeries)*nComponentsAll),
+                                                              -(c(1:nSeries)*nComponentsAll)],
+                                              0),
+                                        c(transitionValue[nComponentsAll*nSeries,
+                                                          -(c(1:nSeries)*nComponentsAll)],1))), sparse=TRUE);
 
         ### Measurement matrix
         if(seasonalType=="i"){
-            matW <- matrix(0,nSeries,nSeries*nComponentsAll);
+            matW <- Matrix(0, nSeries, nSeries*nComponentsAll, sparse=TRUE);
             for(i in 1:nSeries){
                 matW[i,c(1:nComponentsAll)+nComponentsAll*(i-1)] <- 1;
             }
@@ -686,7 +692,7 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
             }
         }
         else{
-            matW <- matrix(0,nSeries,nSeries*nComponentsNonSeasonal+1);
+            matW <- Matrix(0, nSeries, nSeries*nComponentsNonSeasonal+1, sparse=TRUE);
             for(i in 1:nSeries){
                 matW[i,c(1:nComponentsNonSeasonal)+nComponentsNonSeasonal*(i-1)] <- 1;
             }
@@ -1669,8 +1675,8 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
 
     ##### Return values #####
     model <- list(model=modelname,timeElapsed=Sys.time()-startTime,
-                  states=NA,persistence=persistenceValue,transition=transitionValue,
-                  measurement=matW, phi=dampedValue, B=B,
+                  states=NA,persistence=as.matrix(persistenceValue),transition=as.matrix(transitionValue),
+                  measurement=as.matrix(matW), phi=dampedValue, B=B,
                   lagsAll=lagsModel,
                   initialType=initialType,initial=initialValue,initialSeason=initialSeasonValue,
                   nParam=parametersNumber, imodel=ovesModel,

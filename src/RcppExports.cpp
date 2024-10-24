@@ -27,6 +27,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// discounter
+arma::cx_vec discounter(arma::sp_mat const& matrixF, arma::sp_mat& matrixW, arma::sp_mat const& matrixG, int const& k);
+RcppExport SEXP _legion_discounter(SEXP matrixFSEXP, SEXP matrixWSEXP, SEXP matrixGSEXP, SEXP kSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::sp_mat const& >::type matrixF(matrixFSEXP);
+    Rcpp::traits::input_parameter< arma::sp_mat& >::type matrixW(matrixWSEXP);
+    Rcpp::traits::input_parameter< arma::sp_mat const& >::type matrixG(matrixGSEXP);
+    Rcpp::traits::input_parameter< int const& >::type k(kSEXP);
+    rcpp_result_gen = Rcpp::wrap(discounter(matrixF, matrixW, matrixG, k));
+    return rcpp_result_gen;
+END_RCPP
+}
 // vFitterWrap
 RcppExport SEXP vFitterWrap(arma::mat const& matrixY, arma::mat matrixV, arma::sp_mat& matrixF, arma::sp_mat& matrixW, arma::sp_mat& matrixG, arma::uvec& lags, char const& E, char const& T, char const& S, arma::sp_mat& matrixO);
 RcppExport SEXP _legion_vFitterWrap(SEXP matrixYSEXP, SEXP matrixVSEXP, SEXP matrixFSEXP, SEXP matrixWSEXP, SEXP matrixGSEXP, SEXP lagsSEXP, SEXP ESEXP, SEXP TSEXP, SEXP SSEXP, SEXP matrixOSEXP) {
@@ -69,6 +83,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_legion_vSimulatorWrap", (DL_FUNC) &_legion_vSimulatorWrap, 6},
+    {"_legion_discounter", (DL_FUNC) &_legion_discounter, 4},
     {"_legion_vFitterWrap", (DL_FUNC) &_legion_vFitterWrap, 10},
     {"_legion_vForecasterWrap", (DL_FUNC) &_legion_vForecasterWrap, 9},
     {NULL, NULL, 0}

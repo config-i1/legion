@@ -33,6 +33,19 @@ arma::vec vErrorValue(arma::vec const &vectorY, arma::vec const &vectorYFit, cha
     return returnedValue;
 }
 
+/* # Wrapper for fitter */
+// [[Rcpp::export]]
+arma::cx_vec discounter(arma::sp_mat const &matrixF, arma::sp_mat &matrixW, arma::sp_mat const &matrixG, int const &k){
+    arma::cx_vec eigval;
+    // If eigen decomposition works, return the values
+    // Otherwise return a large number
+    if(!arma::eigs_gen(eigval, matrixF - matrixG * matrixW, k)){
+        eigval.fill(1e+300);
+    };
+    return eigval;
+    // return arma::conv_to<arma::mat>::from(matrixF - matrixG * matrixW);
+}
+
 // Fitter for vector models
 List vFitter(arma::mat const &matrixY, arma::mat &matrixV, arma::sp_mat const &matrixF,
              arma::sp_mat &matrixW, arma::sp_mat const &matrixG,
