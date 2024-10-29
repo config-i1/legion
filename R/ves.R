@@ -276,33 +276,36 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
     # Function to check eigen values for VETS
     eigenChecker <- function(matF, matW, matG, nComponentsNonSeasonal, nComponentsAll, nComponentsSeasonal, modelIsSeasonal){
         if(modelIsSeasonal){
-            nonSeasonalIndices <- rep(1:nComponentsNonSeasonal,nSeries)+rep((c(1:nSeries)-1)*nComponentsAll,each=nComponentsNonSeasonal);
+            nonSeasonalIndices <- rep(1:nComponentsNonSeasonal,nSeries) +
+                rep((c(1:nSeries)-1)*nComponentsAll,each=nComponentsNonSeasonal);
             seasonalIndices <- (1:(nComponentsAll*nSeries))[!(1:(nComponentsAll*nSeries) %in% nonSeasonalIndices)];
             if(nComponentsAll>10){
                 # The eigenvalues for the non-seasonal part
                 eigenValues <- c(discounter(matF[nonSeasonalIndices,,drop=FALSE][,nonSeasonalIndices,drop=FALSE],
                                           matW[,nonSeasonalIndices,drop=FALSE],
-                                          matG[nonSeasonalIndices,,drop=FALSE], min(5,nSeries)),
+                                          matG[nonSeasonalIndices,,drop=FALSE], min(5,nSeries,nSeries/2)),
                 # The eigenvalues for the seasonal one
                                  discounter(matF[seasonalIndices,,drop=FALSE][,seasonalIndices,drop=FALSE],
                                             matW[,seasonalIndices,drop=FALSE],
-                                            matG[seasonalIndices,,drop=FALSE], min(5,nSeries)));
+                                            matG[seasonalIndices,,drop=FALSE], min(5,nSeries,nSeries/2)));
             }
             else{
                 # The eigenvalues for the non-seasonal part
                 eigenValues <- c(eigen(matF[nonSeasonalIndices,,drop=FALSE][,nonSeasonalIndices,drop=FALSE] -
-                                         matG[nonSeasonalIndices,,drop=FALSE] %*% matW[,nonSeasonalIndices,drop=FALSE],
+                                         matG[nonSeasonalIndices,,drop=FALSE] %*%
+                                           matW[,nonSeasonalIndices,drop=FALSE],
                                      only.values=TRUE)$values,
                 # The eigenvalues for the seasonal one
                                  eigen(matF[seasonalIndices,,drop=FALSE][,seasonalIndices,drop=FALSE] -
-                                           matG[seasonalIndices,,drop=FALSE] %*% matW[,seasonalIndices,drop=FALSE],
+                                           matG[seasonalIndices,,drop=FALSE] %*%
+                                           matW[,seasonalIndices,drop=FALSE],
                                        only.values=TRUE)$values)
             }
         }
         else{
             if(nComponentsAll>10){
                 # The eigenvalues for the non-seasonal part
-                eigenValues <- discounter(matF, matW, matG, min(5,nComponentsAll));
+                eigenValues <- discounter(matF, matW, matG, min(5,nSeries,nSeries/2));
             }
             else{
                 eigenValues <- eigen(matF - matG %*% matW, only.values=TRUE)$values;
