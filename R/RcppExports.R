@@ -5,6 +5,10 @@ vSimulatorWrap <- function(arrayStates, arrayErrors, arrayF, arrayW, arrayG, mod
     .Call('_legion_vSimulatorWrap', PACKAGE = 'legion', arrayStates, arrayErrors, arrayF, arrayW, arrayG, modelLags)
 }
 
+discounter <- function(matrixF, matrixW, matrixG, k) {
+    .Call('_legion_discounter', PACKAGE = 'legion', matrixF, matrixW, matrixG, k)
+}
+
 vFitterWrap <- function(matrixY, matrixV, matrixF, matrixW, matrixG, lags, E, T, S, matrixO) {
     .Call('_legion_vFitterWrap', PACKAGE = 'legion', matrixY, matrixV, matrixF, matrixW, matrixG, lags, E, T, S, matrixO)
 }

@@ -1193,7 +1193,7 @@ vssFitter <- function(...){
     ParentEnvironment <- ellipsis[['ParentEnvironment']];
 
     fitting <- vFitterWrap(switch(Etype, "M"=log(yInSample), yInSample),
-                           matVt, Matrix(matF, sparse=TRUE), Matrix(matW, sparse=TRUE), Matrix(matG, sparse=TRUE),
+                           matVt, matF, matW, matG,
                            lagsModel, Etype, Ttype, Stype, ot);
     matVt[] <- fitting$matVt;
     yFitted[] <- fitting$yfit;
@@ -1250,7 +1250,7 @@ vssForecaster <- function(...){
     if(h>0){
         yForecast[] <- vForecasterWrap(matrix(matVt[,(obsInSample+1):(obsInSample+lagsModelMax)],
                                               ncol=lagsModelMax),
-                                     Matrix(matF, sparse=TRUE), Matrix(matW, sparse=TRUE),
+                                     matF, matW,
                                      nSeries, h, Etype, Ttype, Stype, lagsModel);
     }
     else{

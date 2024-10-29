@@ -337,7 +337,7 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
         else{
             matGBlockGamma <- NULL;
         }
-        matG <- rbind(matGBlockAlpha, matGBlockBeta, matGBlockGamma);
+        matG <- Matrix(rbind(matGBlockAlpha, matGBlockBeta, matGBlockGamma), sparse=TRUE);
 
         if(damped){
             dampedValue <- 0.95;
@@ -440,9 +440,9 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
             matFBlock23 <- NULL;
             matFBlock32 <- NULL;
         }
-        matF <- rbind(cbind(matFBlock11,matFBlock12,matFBlock13,deparse.level=0),
-                      cbind(matFBlock21,matFBlock22,matFBlock23,deparse.level=0),
-                      cbind(matFBlock31,matFBlock32,matFBlock33,deparse.level=0));
+        matF <- Matrix(rbind(cbind(matFBlock11,matFBlock12,matFBlock13,deparse.level=0),
+                             cbind(matFBlock21,matFBlock22,matFBlock23,deparse.level=0),
+                             cbind(matFBlock31,matFBlock32,matFBlock33,deparse.level=0)), sparse=TRUE);
 
         #### Blocks for measurement matrix ####
         if(componentsCommonLevel){
@@ -473,7 +473,7 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
         else{
             matWBlock3 <- NULL;
         }
-        matW <- cbind(matWBlock1,matWBlock2,matWBlock3,deparse.level=0);
+        matW <- Matrix(cbind(matWBlock1,matWBlock2,matWBlock3,deparse.level=0), sparse=TRUE);
 
         #### Vector of states ####
         matVt <- matrix(NA, nComponentsAll, obsStates);
@@ -791,7 +791,19 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
 
         # Check the bounds
         if(bounds=="a"){
-            eigenValues <- eigen(elements$matF - elements$matG %*% elements$matW, only.values=TRUE)$values;
+            # eigenValues <- eigen(elements$matF - elements$matG %*% elements$matW, only.values=TRUE)$values;
+            # eigenValues <- eigen(discounter(Matrix(elements$matF, sparse=TRUE),
+            #                                 Matrix(elements$matW, sparse=TRUE),
+            #                                 Matrix(elements$matG, sparse=TRUE)),
+            #                      only.values=TRUE)$values;
+            # eigenValues <- eigen(discounter(elements$matF, elements$matW, elements$matG),
+            #                      only.values=TRUE)$values;
+            if(nComponentsAll>10){
+                eigenValues <- discounter(elements$matF, elements$matW, elements$matG, 5);
+            }
+            else{
+                eigenValues <- eigen(elements$matF - elements$matG %*% elements$matW, only.values=TRUE)$values;
+            }
             if(max(abs(eigenValues)>(1 + 1E-50))){
                 return(max(abs(eigenValues))*1E+100);
             }
@@ -799,8 +811,8 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
 
         # Fit the model
         fitting <- vFitterWrap(switch(Etype, "M"=log(yInSample), yInSample),
-                               elements$matVt, Matrix(elements$matF, sparse=TRUE),
-                               Matrix(elements$matW, sparse=TRUE), Matrix(elements$matG, sparse=TRUE),
+                               elements$matVt, elements$matF,
+                               elements$matW, elements$matG,
                                lagsModel, Etype, Ttype, Stype, ot);
 
         # Calculate the loss
@@ -1462,7 +1474,7 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
 
     ##### Return values #####
     model <- list(model=modelName,timeElapsed=Sys.time()-startTime,
-                  states=NA, persistence=matG, transition=matF, measurement=matW, B=B,
+                  states=NA, persistence=as.matrix(matG), transition=as.matrix(matF), measurement=as.matrix(matW), B=B,
                   lagsAll=lagsModel,
                   # initialType=initialType,initial=initialValue,initialSeason=initialSeasonValue,
                   nParam=parametersNumber, occurrence=ovesModel,
