@@ -273,6 +273,44 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
         }
     }
 
+    # Function to check eigen values for VETS
+    eigenChecker <- function(matF, matW, matG, nComponentsNonSeasonal, nComponentsAll, nComponentsSeasonal, modelIsSeasonal){
+        if(modelIsSeasonal){
+            nonSeasonalIndices <- rep(1:nComponentsNonSeasonal,nSeries)+rep((c(1:nSeries)-1)*nComponentsAll,each=nComponentsNonSeasonal);
+            seasonalIndices <- (1:(nComponentsAll*nSeries))[!(1:(nComponentsAll*nSeries) %in% nonSeasonalIndices)];
+            if(nComponentsAll>10){
+                # The eigenvalues for the non-seasonal part
+                eigenValues <- c(discounter(matF[nonSeasonalIndices,,drop=FALSE][,nonSeasonalIndices,drop=FALSE],
+                                          matW[,nonSeasonalIndices,drop=FALSE],
+                                          matG[nonSeasonalIndices,,drop=FALSE], min(5,nComponentsAll)),
+                # The eigenvalues for the seasonal one
+                                 discounter(matF[seasonalIndices,,drop=FALSE][,seasonalIndices,drop=FALSE],
+                                            matW[,seasonalIndices,drop=FALSE],
+                                            matG[seasonalIndices,,drop=FALSE], min(5,nComponentsAll)));
+            }
+            else{
+                # The eigenvalues for the non-seasonal part
+                eigenValues <- c(eigen(matF[nonSeasonalIndices,,drop=FALSE][,nonSeasonalIndices,drop=FALSE] -
+                                         matG[nonSeasonalIndices,,drop=FALSE] %*% matW[,nonSeasonalIndices,drop=FALSE],
+                                     only.values=TRUE)$values,
+                # The eigenvalues for the seasonal one
+                                 eigen(matF[seasonalIndices,,drop=FALSE][,seasonalIndices,drop=FALSE] -
+                                           matG[seasonalIndices,,drop=FALSE] %*% matW[,seasonalIndices,drop=FALSE],
+                                       only.values=TRUE)$values)
+            }
+        }
+        else{
+            if(nComponentsAll>10){
+                # The eigenvalues for the non-seasonal part
+                eigenValues <- discounter(matF, matW, matG, min(5,nComponentsAll));
+            }
+            else{
+                eigenValues <- eigen(matF - matG %*% matW, only.values=TRUE)$values;
+            }
+        }
+        return(eigenValues);
+    }
+
     ##### Cost Function for VES #####
     CF <- function(B, loss="likelihood", Etype="A", Ttype="N", damped=FALSE,
                    nComponentsNonSeasonal, nComponentsAll, lagsModelMax){
@@ -283,12 +321,15 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
         # Edit KFP: change symmetric to FALSE
         if(bounds=="a"){
             # eigenValues <- eigen(elements$matF - elements$matG %*% elements$matW, only.values=TRUE, symmetric=FALSE)$values;
-            if(nComponentsAll>10){
-                eigenValues <- discounter(elements$matF, elements$matW, elements$matG, 5);
-            }
-            else{
-                eigenValues <- eigen(elements$matF - elements$matG %*% elements$matW, only.values=TRUE)$values;
-            }
+            # if(nComponentsAll>10){
+            #     eigenValues <- discounter(elements$matF, elements$matW, elements$matG, 5);
+            # }
+            # else{
+            #     eigenValues <- eigen(elements$matF - elements$matG %*% elements$matW, only.values=TRUE)$values;
+            # }
+            eigenValues <- eigenChecker(elements$matF, elements$matW, elements$matG,
+                                        nComponentsNonSeasonal, nComponentsAll,
+                                        nComponentsSeasonal, modelIsSeasonal);
             if(max(abs(eigenValues)>(1 + 1E-50))){
                 return(max(abs(eigenValues))*1E+100);
             }
@@ -1613,12 +1654,13 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
     }
 
     ##### Print output #####
-    if(!silent){
-        if(any(abs(eigen(matF - matG %*% matW)$values)>(1 + 1E-10))){
-            warning(paste0("Model VES(",model,") is unstable! ",
-                           "Use a different value of 'bounds' parameter to address this issue!"),
-                    call.=FALSE);
-        }
+    eigenValues <- eigenChecker(matF, matW, matG,
+                                nComponentsNonSeasonal, nComponentsAll,
+                                nComponentsSeasonal, modelIsSeasonal)
+    if(any(abs(silent)>(1 + 1E-10))){
+        warning(paste0("Model VES(",model,") is unstable! ",
+                       "Use a different value of 'bounds' parameter to address this issue!"),
+                call.=FALSE);
     }
 
     ##### Make a plot #####

@@ -1,4 +1,4 @@
-legion v0.2.1 (Release data: 2024-10-24)
+legion v0.2.1 (Release data: 2024-10-29)
 =======
 
 Changes:
@@ -7,6 +7,7 @@ Changes:
 
 Bugfixes:
 * Corrected the author details in the documentation.
+* A fixe in the stability checks for the admissible bounds for vets and ves.
 
 
 legion v0.2.0 (Release data: 2023-09-15)
