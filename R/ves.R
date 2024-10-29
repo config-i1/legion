@@ -283,11 +283,11 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
                 # The eigenvalues for the non-seasonal part
                 eigenValues <- c(discounter(matF[nonSeasonalIndices,,drop=FALSE][,nonSeasonalIndices,drop=FALSE],
                                           matW[,nonSeasonalIndices,drop=FALSE],
-                                          matG[nonSeasonalIndices,,drop=FALSE], min(5,nSeries,nSeries/2)),
+                                          matG[nonSeasonalIndices,,drop=FALSE], min(5,floor(nSeries/2))),
                 # The eigenvalues for the seasonal one
                                  discounter(matF[seasonalIndices,,drop=FALSE][,seasonalIndices,drop=FALSE],
                                             matW[,seasonalIndices,drop=FALSE],
-                                            matG[seasonalIndices,,drop=FALSE], min(5,nSeries,nSeries/2)));
+                                            matG[seasonalIndices,,drop=FALSE], min(5,floor(nSeries/2))));
             }
             else{
                 # The eigenvalues for the non-seasonal part
@@ -305,7 +305,7 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
         else{
             if(nComponentsAll>10){
                 # The eigenvalues for the non-seasonal part
-                eigenValues <- discounter(matF, matW, matG, min(5,nSeries,nSeries/2));
+                eigenValues <- discounter(matF, matW, matG, min(5,floor(nSeries/2)));
             }
             else{
                 eigenValues <- eigen(matF - matG %*% matW, only.values=TRUE)$values;

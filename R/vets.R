@@ -787,11 +787,11 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
                 # The eigenvalues for the non-seasonal part
                 eigenValues <- c(discounter(matF[1:nComponentsNonSeasonal,1:nComponentsNonSeasonal,drop=FALSE],
                                             matW[,1:nComponentsNonSeasonal,drop=FALSE],
-                                            matG[1:nComponentsNonSeasonal,,drop=FALSE], min(5,nSeries,nSeries/2)),
+                                            matG[1:nComponentsNonSeasonal,,drop=FALSE], min(5,floor(nSeries/2))),
                                  # The eigenvalues for the seasonal one
                                  discounter(matF[-c(1:nComponentsNonSeasonal),-c(1:nComponentsNonSeasonal),drop=FALSE],
                                             matW[,-c(1:nComponentsNonSeasonal),drop=FALSE],
-                                            matG[-c(1:nComponentsNonSeasonal),,drop=FALSE], min(5,nSeries,nSeries/2)));
+                                            matG[-c(1:nComponentsNonSeasonal),,drop=FALSE], min(5,floor(nSeries/2))));
             }
             else{
                 eigenValues <- c(eigen(matF[1:nComponentsNonSeasonal,1:nComponentsNonSeasonal,drop=FALSE] -
@@ -806,7 +806,7 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
         }
         else{
             if(nComponentsAll>10){
-                eigenValues <- discounter(matF, matW, matG, min(5,nSeries));
+                eigenValues <- discounter(matF, matW, matG, min(5,floor(nSeries/2)));
             }
             else{
                 eigenValues <- eigen(matF - matG %*% matW, only.values=TRUE)$values;
