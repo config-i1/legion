@@ -1261,7 +1261,8 @@ forecast.legion <- function(object, h=10, #newdata=NULL, occurrence=NULL,
     PI <- NA;
     if(interval!="none"){
         nElements <- length(lagsModel);
-        df <- obsInSample - nParam;
+        # Number of degrees of freedom per series
+        df <- obsInSample - nParam/nSeries;
 
         # In case of individual we use either Z distribution or Chebyshev inequality
         if(interval=="prediction"){
