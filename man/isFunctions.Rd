@@ -34,9 +34,8 @@ function;
 }
 \examples{
 
-ourModel <- ves(cbind(rnorm(100,100,10),rnorm(100,100,10)))
-
-is.legion(ourModel)
+\donttest{ourModel <- ves(cbind(rnorm(100,100,10),rnorm(100,100,10)))
+is.legion(ourModel)}
 
 }
 \author{

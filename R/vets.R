@@ -157,12 +157,12 @@ utils::globalVariables(c("obsInSample","componentsCommonLevel","componentsCommon
 #' Y <- ts(cbind(rnorm(100,100,10),rnorm(100,75,8)),frequency=12)
 #'
 #' # The simplest model applied to the data with the default values
-#' vets(Y,model="ANN",h=10,holdout=TRUE)
+#' \donttest{vets(Y,model="ANN",h=10,holdout=TRUE)}
 #'
 #' # Multiplicative damped trend model with common parameters
 #' # and initial seasonal indices
-#' vets(Y,model="MMdM",h=10,holdout=TRUE,parameters=c("l","t","s","d"),
-#'      initials="seasonal")
+#' \donttest{vets(Y,model="MMdM",h=10,holdout=TRUE,parameters=c("l","t","s","d"),
+#'      initials="seasonal")}
 #'
 #' # Automatic selection of ETS components
 #' \donttest{vets(Y, model="PPP", h=10, holdout=TRUE, initials="seasonal")}
