@@ -4,9 +4,9 @@ Title: Forecasting Using Multivariate Models
 Version: 0.2.1
 Date: 2025-02-03
 Authors@R: c(person("Ivan", "Svetunkov", email = "ivan@svetunkov.com", role = c("aut", "cre"),
-                  comment="Lecturer at Centre for Marketing Analytics and Forecasting, Lancaster University, UK"),
+                  comment="Senior Lecturer, Centre for Marketing Analytics and Forecasting, Lancaster University, UK"),
              person("Kandrika Fadhlan", "Pritularga", email = "k.pritularga@lancaster.ac.uk", role = c("aut"),
-                  comment="Lecturer at Centre for Marketing Analytics and Forecasting, Lancaster University, UK"))
+                  comment="Lecturer, Centre for Marketing Analytics and Forecasting, Lancaster University, UK"))
 URL: https://github.com/config-i1/legion
 BugReports: https://github.com/config-i1/legion/issues
 Language: en-GB
