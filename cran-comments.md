@@ -4,6 +4,13 @@ author: "Ivan Svetunkov"
 date: "03 February 2025"
 output: html_document
 ---
+
+## Update
+I addressed the issue related to the computational time.
+
+As for the "Possibly misspelled words in DESCRIPTION", everything is fine, there is nothing misspelled.
+
+
 ## Version
 This is an initial submission of ``legion`` package, v0.2.1.
 
