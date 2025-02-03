@@ -1,18 +1,17 @@
 ---
 title: "Cran Comments"
 author: "Ivan Svetunkov"
-date: "30 January 2023"
+date: "03 February 2025"
 output: html_document
 ---
 ## Version
-This is an initial submission of ``legion`` package, v0.1.2.
+This is an initial submission of ``legion`` package, v0.2.1.
 
 
 ## Test environments
-* local ubuntu 22.04.1, R 4.2.2
+* local ubuntu 24.10, R 4.4.1
 * github actions
 * win-builder (devel and release)
-* rhub with rhub::check_for_cran() command
 
 
 ## R CMD check results
@@ -31,22 +30,5 @@ This is an initial submission of ``legion`` package, v0.1.2.
 doMC is not available for Windows.
 
 
-## rhub checks
-### Fedora Linux, R-devel, clang, gfortran
->Found the following (possibly) invalid DOIs:
->  DOI: 10.1177/1471082X0901000401
->    From: DESCRIPTION
->    Status: Service Unavailable
->    Message: 503
-
-DOI is correct, the paper is available online.
-
-### Windows Server 2022, R-devel, 32/64 bit
->* checking package dependencies ... ERROR
->Package suggested but not available: 'doMC'
-
-doMC is not available for Windows.
-
-
 ## Downstream dependencies
-This is a new package, so there are no reverse dependencies.
+There are no reverse dependencies.
