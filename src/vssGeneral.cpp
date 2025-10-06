@@ -49,8 +49,9 @@ arma::cx_vec discounter(arma::sp_mat const &matrixF, arma::sp_mat &matrixW, arma
 // Fitter for vector models
 List vFitter(arma::mat const &matrixY, arma::mat &matrixV, arma::sp_mat const &matrixF,
              arma::sp_mat &matrixW, arma::sp_mat const &matrixG,
-             arma::uvec &lags, char const &E, char const &T, char const &S, arma::sp_mat const &matrixO) {
-    /* matrixY has nrow = nSeries, ncol = obs
+             arma::uvec &lags, char const &E, char const &T, char const &S,
+             arma::sp_mat const &matrixO, bool const &backcast) {
+    /* matrixY has nrow = nSeries, ncol = obs 
      * matrixV has nrow = nSeries * nComponents, ncol = obs + maxlag
      * matrixW, matrixF, matrixG are nSeries * nComponents x nSeries * nComponents.
      * lags is a vector of lags of length nSeries * nComponents
@@ -63,11 +64,14 @@ List vFitter(arma::mat const &matrixY, arma::mat &matrixV, arma::sp_mat const &m
     // unsigned int nComponents = matrixV.n_rows / nSeries;
     unsigned int maxlag = max(lags);
     int lagsLength = lags.n_rows;
+    arma::uvec lagsModifier = lags;
+    arma::uvec lagsInternal = lags;
 
-    lags = lags * lagsLength;
+    // Modify lags to select specific cells of matVt
+    lagsInternal = lagsInternal * lagsLength;
 
     for(int i=0; i<lagsLength; i=i+1){
-        lags(i) = lags(i) + (lagsLength - i - 1);
+        lagsModifier(i) = lagsLength - i - 1;
     }
 
     arma::uvec lagrows(lagsLength, arma::fill::zeros);
@@ -76,27 +80,61 @@ List vFitter(arma::mat const &matrixY, arma::mat &matrixV, arma::sp_mat const &m
     arma::mat matrixE(nSeries, obs, arma::fill::zeros);
     // arma::mat bufferforat(matrixGX.n_rows);
 
+    unsigned int const nIterations = 2;
+
     if(E=='L'){
         matrixW.row(0).zeros();
     }
 
-    for (unsigned int i=maxlag; i<obs+maxlag; i=i+1) {
-        lagrows = (i+1) * lagsLength - lags - 1;
+    // Loop for the backcast
+    for (unsigned int j=1; j<=nIterations; j=j+1) {
+        for (unsigned int i=maxlag; i<obs+maxlag; i=i+1) {
+            lagrows = (i+1) * lagsLength - (lagsInternal + lagsModifier) - 1;
 
-        /* # Measurement equation and the error term */
-        matrixYfit.col(i-maxlag) = matrixO.col(i-maxlag) % vFittedValue(matrixW, matrixV(lagrows), E);
-        matrixE.col(i-maxlag) = vErrorValue(matrixY.col(i-maxlag), matrixYfit.col(i-maxlag), E);
-        // Substitute inf with zero. This might happen for occurrence model
-        matrixE.elem(find_nonfinite(matrixE)).fill(0);
+            /* # Measurement equation and the error term */
+            matrixYfit.col(i-maxlag) = matrixO.col(i-maxlag) % vFittedValue(matrixW, matrixV(lagrows), E);
+            matrixE.col(i-maxlag) = vErrorValue(matrixY.col(i-maxlag), matrixYfit.col(i-maxlag), E);
+            // Substitute inf with zero. This might happen for occurrence model
+            matrixE.elem(find_nonfinite(matrixE)).fill(0);
 
-        /* # Transition equation */
-        matrixV.col(i) = matrixF * matrixV(lagrows) + matrixG * matrixE.col(i-maxlag);
-    }
+            /* # Transition equation */
+            matrixV.col(i) = matrixF * matrixV(lagrows) + matrixG * matrixE.col(i-maxlag);
+        }
 
-    for (int i=obs+maxlag; i<obsall; i=i+1) {
-        lagrows = (i+1) * lagsLength - lags - 1;
-        matrixV.col(i) = matrixF * matrixV(lagrows);
-        // matrixA.col(i) = matrixFX * matrixA.col(i-1);
+        /* Fill in the tail in the state matrix */
+        for (int i=obs+maxlag; i<obsall; i=i+1) {
+            lagrows = (i+1) * lagsLength - lags - 1;
+            matrixV.col(i) = matrixF * matrixV(lagrows);
+            // matrixA.col(i) = matrixFX * matrixA.col(i-1);
+        }
+
+        ////// Backwards run
+        if(backcast && j<(nIterations)){
+            // Change the specific element in the state vector to negative
+            // This is harder to do universally for VES/VETS, but needs to be done at some point
+            // if(T=='A'){
+            //     profilesRecent(1) = -profilesRecent(1);
+            // }
+
+            for (int i=obs+maxlag-1; i>=maxlag; i=i-1) {
+                lagrows = (i+1) * lagsLength + lagsInternal - lagsModifier - 1;
+
+                /* # Measurement equation and the error term */
+                matrixYfit.col(i-maxlag) = matrixO.col(i-maxlag) % vFittedValue(matrixW, matrixV(lagrows), E);
+                matrixE.col(i-maxlag) = vErrorValue(matrixY.col(i-maxlag), matrixYfit.col(i-maxlag), E);
+                // Substitute inf with zero. This might happen for occurrence model
+                matrixE.elem(find_nonfinite(matrixE)).fill(0);
+
+                /* # Transition equation */
+                matrixV.col(i) = matrixF * matrixV(lagrows) + matrixG * matrixE.col(i-maxlag);
+            }
+
+            /* # Fill in the head of the matrices */
+            for (int i=maxlag-1; i>=0; i=i-1) {
+                lagrows = (i+1) * lagsLength + lagsInternal - lagsModifier - 1;
+                matrixV.col(i) = matrixF * matrixV(lagrows);
+            }
+        }
     }
 
     // , Named("matat") = matrixA
@@ -108,7 +146,8 @@ List vFitter(arma::mat const &matrixY, arma::mat &matrixV, arma::sp_mat const &m
 // [[Rcpp::export]]
 RcppExport SEXP vFitterWrap(arma::mat const &matrixY, arma::mat matrixV, arma::sp_mat &matrixF,
                             arma::sp_mat &matrixW, arma::sp_mat &matrixG,
-                            arma::uvec &lags, char const &E, char const &T, char const &S, arma::sp_mat &matrixO) {
+                            arma::uvec &lags, char const &E, char const &T, char const &S,
+                            arma::sp_mat &matrixO, bool const &backcast) {
 // SEXP matxt, SEXP matat, SEXP matFX, SEXP matGX,
     // NumericMatrix yt_n(yt);
     // arma::mat matrixY(yt_n.begin(), yt_n.nrow(), yt_n.ncol(), false);
@@ -147,7 +186,7 @@ RcppExport SEXP vFitterWrap(arma::mat const &matrixY, arma::mat matrixV, arma::s
     // NumericMatrix ot_n(ot);
     // arma::mat matrixO(ot_n.begin(), ot_n.nrow(), ot_n.ncol(), false);
 
-    return wrap(vFitter(matrixY, matrixV, matrixF, matrixW, matrixG, lags, E, T, S, matrixO));
+    return wrap(vFitter(matrixY, matrixV, matrixF, matrixW, matrixG, lags, E, T, S, matrixO, backcast));
 }
 
 

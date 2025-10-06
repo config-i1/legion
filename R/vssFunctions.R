@@ -1194,7 +1194,7 @@ vssFitter <- function(...){
 
     fitting <- vFitterWrap(switch(Etype, "M"=log(yInSample), yInSample),
                            matVt, matF, matW, matG,
-                           lagsModel, Etype, Ttype, Stype, ot);
+                           lagsModel, Etype, Ttype, Stype, ot, FALSE);
     matVt[] <- fitting$matVt;
     yFitted[] <- fitting$yfit;
     errors[] <- fitting$errors;

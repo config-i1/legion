@@ -1,3 +1,10 @@
+legion v0.2.2 (Release data: 2025-10-06)
+=======
+
+Changes:
+* Updated C++ code to support backcasting.
+
+
 legion v0.2.1 (Release data: 2025-02-03)
 =======
 

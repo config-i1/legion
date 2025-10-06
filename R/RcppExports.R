@@ -9,8 +9,8 @@ discounter <- function(matrixF, matrixW, matrixG, k) {
     .Call('_legion_discounter', PACKAGE = 'legion', matrixF, matrixW, matrixG, k)
 }
 
-vFitterWrap <- function(matrixY, matrixV, matrixF, matrixW, matrixG, lags, E, T, S, matrixO) {
-    .Call('_legion_vFitterWrap', PACKAGE = 'legion', matrixY, matrixV, matrixF, matrixW, matrixG, lags, E, T, S, matrixO)
+vFitterWrap <- function(matrixY, matrixV, matrixF, matrixW, matrixG, lags, E, T, S, matrixO, backcast) {
+    .Call('_legion_vFitterWrap', PACKAGE = 'legion', matrixY, matrixV, matrixF, matrixW, matrixG, lags, E, T, S, matrixO, backcast)
 }
 
 vForecasterWrap <- function(matrixV, matrixF, matrixW, nSeries, hor, E, T, S, lags) {

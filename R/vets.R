@@ -859,7 +859,7 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
         fitting <- vFitterWrap(switch(Etype, "M"=log(yInSample), yInSample),
                                elements$matVt, elements$matF,
                                elements$matW, elements$matG,
-                               lagsModel, Etype, Ttype, Stype, ot);
+                               lagsModel, Etype, Ttype, Stype, ot, FALSE);
 
         # Calculate the loss
         if(loss=="likelihood"){
