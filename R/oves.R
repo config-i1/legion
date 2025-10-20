@@ -82,11 +82,7 @@ oves <- function(data, occurrence=c("logistic","none","fixed"),
 # probability="i" - assume that ot[,1] is independent from ot[,2], but has similar dynamics;
 # probability="d" - assume that ot[,1] and ot[,2] are dependent, so that sum(P)=1;
 
-    occurrence <- substring(occurrence[1],1,1);
-    if(all(occurrence!=c("n","f","l"))){
-        warning(paste0("Unknown value of occurrence provided: '",occurrence,"'."));
-        occurrence <- "f";
-    }
+    occurrence <- match.arg(occurrence);
 
     ic <- ic[1];
 
@@ -102,37 +98,32 @@ oves <- function(data, occurrence=c("logistic","none","fixed"),
 
     if(is.null(probability)){
         warning("probability value is not specified. Switching to 'independent'.");
-        probability <- "i";
+        probability <- "independent";
     }
     else{
-        probability <- substr(probability[1],1,1);
+        probability <- match.arg(probability);
     }
 
     # There's no difference in probabilities when occurrence=="f" or "n". So use simpler one.
-    if((occurrence!="l") & probability=="d"){
-        probability <- "i";
+    if((occurrence!="logistic") & probability=="dependent"){
+        probability <- "independent";
     }
 
     if(is.null(persistence)){
-        if(probability=="d"){
-            persistence <- "c";
+        if(probability=="dependent"){
+            persistence <- "dependent";
         }
     }
     if(is.null(transition)){
-        if(probability=="d"){
-            transition <- "c";
-        }
-    }
-    if(is.null(phi)){
-        if(probability=="d"){
-            phi <- "c";
+        if(probability=="dependent"){
+            transition <- "dependent";
         }
     }
     if(!is.null(initial)){
         # If a numeric is provided in initial, check it
         if(is.numeric(initial)){
-            if((probability=="i" & length(initial)!=nSeries) |
-               (probability=="d" & length(initial)!=2^nSeries)){
+            if((probability=="independent" & length(initial)!=nSeries) |
+               (probability=="dependent" & length(initial)!=2^nSeries)){
                 warning("Wrong length of the initial vector");
                 initial <- NULL;
                 initialIsNumeric <- FALSE;
@@ -144,16 +135,16 @@ oves <- function(data, occurrence=c("logistic","none","fixed"),
         }
     }
     else{
-        if(probability=="d"){
+        if(probability=="dependent"){
             initial <- "i";
         }
         initialIsNumeric <- FALSE;
     }
-    if(is.null(initialSeason)){
-        if(probability=="d"){
-            initialSeason <- "c";
-        }
-    }
+    # if(is.null(initialSeason)){
+    #     if(probability=="dependent"){
+    #         initialSeason <- "c";
+    #     }
+    # }
 
     if(is.data.frame(data)){
         data <- as.matrix(data);
@@ -174,8 +165,8 @@ oves <- function(data, occurrence=c("logistic","none","fixed"),
         data[is.na(data)] <- 0;
     }
 
-    if(occurrence=="n"){
-        probability <- "n";
+    if(occurrence=="none"){
+        probability <- "none";
     }
 
     # Define obs, the number of observations of in-sample
@@ -206,7 +197,7 @@ oves <- function(data, occurrence=c("logistic","none","fixed"),
                                          c("nParamInternal","nParamXreg",
                                            "nParamIntermittent","nParamAll")));
 #### Fixed probability ####
-    if(occurrence=="f"){
+    if(occurrence=="fixed"){
         if(!initialIsNumeric){
             pFitted[,] <- rep(apply(ot,2,mean),each=obsInSample);
             pForecast[,] <- rep(pFitted[obsInSample,],each=h);
@@ -224,8 +215,8 @@ oves <- function(data, occurrence=c("logistic","none","fixed"),
         issModel <- NULL
     }
 #### Logistic probability ####
-    else if(occurrence=="l"){
-        if(probability=="i"){
+    else if(occurrence=="logistic"){
+        if(probability=="independent"){
             Etype <- ifelse(Etype=="M","A",Etype);
             Ttype <- ifelse(Ttype=="M","A",Ttype);
             Stype <- ifelse(Stype=="M","A",Stype);
@@ -238,10 +229,9 @@ oves <- function(data, occurrence=c("logistic","none","fixed"),
             initialValues <- list(NA);
             initialSeasonValues <- list(NA);
             persistenceValues <- list(NA);
-            occurrence <- switch(occurrence, "l"="odds-ratio", "f"="fixed", "n"="none");
             for(i in 1:nSeries){
-                issModel <- oes(ot[,i],occurrence=occurrence,ic=ic,h=h,model=model,persistence=persistence,
-                                     initial=initial,initialSeason=initialSeason,xreg=xreg,holdout=holdout);
+                issModel <- oes(ot[,i],occurrence=switch(occurrence, "logistic"="odds-ratio", "fixed"="fixed", "none"="none"),
+                                ic=ic,h=h,model=model,persistence=persistence, xreg=xreg,holdout=holdout);
                 pFitted[,i] <- issModel$fitted;
                 pForecast[,i] <- issModel$forecast;
                 states[[i]] <- issModel$states;
@@ -291,8 +281,8 @@ oves <- function(data, occurrence=c("logistic","none","fixed"),
             }
 
             otFull <- ts(otFull,start=dataStart,frequency=dataFreq);
-            issModel <- ves(otFull,model=model,persistence=persistence,transition=transition,phi=phi,
-                            initial=initial,initialSeason=initialSeason,ic=ic,h=h,xreg=xreg,holdout=holdout)
+            issModel <- ves(otFull,model=model,persistence=persistence,transition=transition,
+                            ic=ic,h=h,xreg=xreg,holdout=holdout)
 
             states <- issModel$states;
             errors <- issModel$residuals;

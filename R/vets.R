@@ -638,6 +638,7 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
         #### Blocks for dampening ####
         if(modelIsTrendy && damped){
             # Transition matrix
+            # Damped parameter in the level equations
             if(componentsCommonTrend){
                 if(componentsCommonLevel){
                     matF[1,nComponentsLevel+1] <- B[j+1:nParametersDamped];
@@ -645,6 +646,7 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
                 else{
                     matF[1:nComponentsLevel,nComponentsLevel+1] <- B[j+1:nParametersDamped];
                 }
+                # Damped parameter in the trend equations
                 matF[nComponentsLevel+1,nComponentsLevel+1] <- B[j+1:nParametersDamped];
             }
             else{
@@ -654,6 +656,7 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
                 else{
                     matF[1:nComponentsLevel,nComponentsLevel+1:nComponentsTrend] <- B[j+1:nParametersDamped]*diag(nComponentsTrend);
                 }
+                # Damped parameter in the trend equations
                 matF[nComponentsLevel+1:nComponentsTrend,nComponentsLevel+1:nComponentsTrend] <-
                     B[j+1:nParametersDamped]*diag(nComponentsTrend);
             }
@@ -708,23 +711,23 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
         j <- 0;
         # alpha
         B[1:nParametersLevel] <- 0.1;
-        BLower[1:nParametersLevel] <- switch(bounds,"u"=0,-5);
-        BUpper[1:nParametersLevel] <- switch(bounds,"u"=1,5);
+        BLower[1:nParametersLevel] <- switch(bounds,"usual"=0,-5);
+        BUpper[1:nParametersLevel] <- switch(bounds,"usual"=1,5);
         names(B)[1:nParametersLevel] <- paste0("alpha",c(1:nParametersLevel));
         j[] <- j+nParametersLevel;
         # beta
         if(modelIsTrendy){
             B[j+1:nParametersTrend] <- 0.05;
-            BLower[j+1:nParametersTrend] <- switch(bounds,"u"=0,-5);
-            BUpper[j+1:nParametersTrend] <- switch(bounds,"u"=1,5);
+            BLower[j+1:nParametersTrend] <- switch(bounds,"usual"=0,-5);
+            BUpper[j+1:nParametersTrend] <- switch(bounds,"usual"=1,5);
             names(B)[j+1:nParametersTrend] <- paste0("beta",c(1:nParametersTrend));
             j[] <- j+nParametersTrend;
         }
         # gamma
         if(modelIsSeasonal){
             B[j+1:nParametersSeasonal] <- 0.05;
-            BLower[j+1:nParametersSeasonal] <- switch(bounds,"u"=0,-5);
-            BUpper[j+1:nParametersSeasonal] <- switch(bounds,"u"=1,5);
+            BLower[j+1:nParametersSeasonal] <- switch(bounds,"usual"=0,-5);
+            BUpper[j+1:nParametersSeasonal] <- switch(bounds,"usual"=1,5);
             names(B)[j+1:nParametersSeasonal] <- paste0("gamma",c(1:nParametersSeasonal));
             j[] <- j+nParametersSeasonal;
         }
@@ -825,7 +828,7 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
                                nComponentsLevel, nComponentsTrend, nComponentsSeasonal);
 
         # Check the bounds
-        if(bounds=="a"){
+        if(bounds=="admissible"){
             # eigenValues <- eigen(elements$matF - elements$matG %*% elements$matW, only.values=TRUE)$values;
             # eigenValues <- eigen(discounter(Matrix(elements$matF, sparse=TRUE),
             #                                 Matrix(elements$matW, sparse=TRUE),

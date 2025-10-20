@@ -5,11 +5,10 @@
 \title{Vector Exponential Smoothing in SSOE state space model}
 \usage{
 ves(data, model = "PPP", lags = c(frequency(data)),
-  persistence = c("common", "individual", "dependent"),
-  transition = c("common", "individual", "dependent"), phi = c("common",
-  "individual"), initial = c("individual", "common"),
-  initialSeason = c("common", "individual"), loss = c("likelihood",
-  "diagonal", "trace"), ic = c("AICc", "AIC", "BIC", "BICc"), h = 10,
+  persistence = c("independent", "dependent"),
+  transition = c("independent", "dependent"), phi = NULL,
+  initial = c("optimal", "backcasting"), loss = c("likelihood", "diagonal",
+  "trace"), ic = c("AICc", "AIC", "BIC", "BICc"), h = 10,
   holdout = FALSE, occurrence = c("none", "fixed", "logistic"),
   bounds = c("admissible", "usual", "none"), silent = TRUE, ...)
 }
@@ -23,7 +22,7 @@ observations are in rows.}
 information criteria type.
 ATTENTION! ONLY PURE ADDITIVE AND PURE MULTIPLICATIVE MODELS ARE
 AVAILABLE!
-Pure multiplicative models are done as additive model applied to log(y).
+Pure multiplicative models are done as additive ones applied to log(y).
 
 Also \code{model} can accept a previously estimated VES model and use all its
 parameters.}
@@ -36,47 +35,29 @@ parameters. Can be:
 \item \code{"independent"} - each series has its own smoothing parameters
 and no interactions are modelled (all the other values in the matrix are set
 to zero);
-\item \code{"dependent"} - each series has its own smoothing parameters, but
+\item \code{"dependent"} - each series has its own smoothing parameters, and
 interactions between the series are modelled (the whole matrix is estimated);
-\item \code{"group"} each series has the same smoothing parameters for respective
-components (the values of smoothing parameters are repeated, all the other values
-in the matrix are set to zero).
-\item \code{"seasonal"} - each component has its own smoothing parameter, except
-for the seasonal one, which is common across the time series.
-\item provided by user as a vector or as a matrix. The value is used by the model.
-}
-You can also use the first letter instead of writing the full word.}
+\item provided by user as a vecor or a matrix.
+}}
 
 \item{transition}{Transition matrix \eqn{F}. Can be:
 \itemize{
 \item \code{"independent"} - each series has its own preset transition matrix
 and no interactions are modelled (all the other values in the matrix are set
 to zero);
-\item \code{"dependent"} - each series has its own transition matrix, but
+\item \code{"dependent"} - each series has its own transition matrix, and
 interactions between the series are modelled (the whole matrix is estimated). The
 estimated model behaves similar to VAR in this case;
-\item \code{"group"} each series has the same transition matrix for respective
-components (the values are repeated, all the other values in the matrix are set to
-zero).
 \item provided by user as a vector or as a matrix. The value is used by the model.
-}
-You can also use the first letter instead of writing the full word.}
+}}
 
-\item{phi}{In cases of damped trend this parameter defines whether the \eqn{phi}
-should be estimated separately for each series (\code{"individual"}) or for the whole
-set (\code{"common"}). If vector or a value is provided here, then it is used by the
+\item{phi}{If vector or a value is provided here, then it is used by the
 model.}
 
 \item{initial}{Can be either character or a vector / matrix of initial states.
-If it is character, then it can be \code{"individual"}, individual values of
-the initial non-seasonal components are used, or \code{"common"}, meaning that
-the initials for all the time series are set to be equal to the same value.
-If vector of states is provided, then it is automatically transformed into
-a matrix, assuming that these values are provided for the whole group.}
-
-\item{initialSeason}{Can be either character or a vector / matrix of initial
-states. Treated the same way as \code{initial}. This means that different time
-series may share the same initial seasonal component.}
+If it is character, then it can be \code{"optimal"}, or \code{"backcasting"}. The
+former means that the initial states will be estimated in the optimisation, while
+the latter means that they will be produced via backasting.}
 
 \item{loss}{Type of Loss Function used in optimization. \code{loss} can
 be:

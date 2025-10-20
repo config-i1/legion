@@ -5,34 +5,34 @@ Y <- ts(cbind(1000+0.5*c(1:100)+rnorm(100,0,10),
         frequency=12)
 
 # Basic VES check
-testModel <- suppressWarnings(ves(Y,"MMdM", silent=TRUE))
+testModel <- suppressWarnings(ves(Y,"MMdM", initial="back", silent=TRUE))
 test_that("Test VES(MMdM)", {
     expect_match(testModel$model, "MMdM")
 })
 
 # Reuse previous VES
 test_that("Reuse VES", {
-    expect_equal(ves(Y, model=testModel, silent=TRUE)$persistence, testModel$persistence)
+    expect_equal(ves(Y, model=testModel, initial="back", silent=TRUE)$persistence, testModel$persistence)
 })
 
-# Test VES with individual seasonality and persistence
-test_that("Test VES with individual seasonality and persistence", {
+# Test VES with individual persistence
+test_that("Test VES with individual persistence", {
     skip_on_cran()
-    testModel <- ves(Y,"MMdM", initialSeason="i", persistence="i", silent=TRUE)
-    expect_equal(length(coefficients(testModel)), 35)
+    testModel <- ves(Y,"MMdM", initial="opt", persistence="i", silent=TRUE)
+    expect_equal(length(coefficients(testModel)), 34)
 })
 
 # Test VES with grouped initials and dependent persistence
-test_that("Test VES with grouped initials and dependent persistence", {
+test_that("Test VES with dependent persistence", {
     skip_on_cran()
-    testModel <- ves(Y,"AAN", initial="c", persistence="d", silent=TRUE)
-    expect_equal(length(coefficients(testModel)), 10)
+    testModel <- ves(Y,"AAN", initial="back", persistence="d", silent=TRUE)
+    expect_equal(length(coefficients(testModel)), 8)
 })
 
 # Test VES with a trace cost function
 test_that("Test VES with a trace cost function", {
     skip_on_cran()
-    testModel <- ves(Y,"AAN", loss="t", silent=TRUE)
+    testModel <- ves(Y,"AAN", loss="t", initial="back", silent=TRUE)
     expect_match(testModel$loss, "trace")
 })
 

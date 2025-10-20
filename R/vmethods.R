@@ -726,10 +726,10 @@ plot.legion <- function(x, which=c(1,2,4,6), level=0.95, legend=FALSE,
 plot.oves <- function(x, ...){
     ellipsis <- list(...);
     occurrence <- x$occurrence
-    if(occurrence=="f"){
+    if(occurrence=="fixed"){
         occurrence <- "Fixed probability";
     }
-    else if(occurrence=="l"){
+    else if(occurrence=="logistic"){
         occurrence <- "Logistic probability";
     }
     else{
@@ -812,17 +812,17 @@ plot.legion.sim <- function(x, ...){
 #' @export
 print.oves <- function(x, ...){
 
-    if(x$probability=="i"){
+    if(x$probability=="independent"){
         occurrence <- "Independent ";
     }
-    else if(x$probability=="d"){
+    else if(x$probability=="dependent"){
         occurrence <- "Dependent ";
     }
 
-    if(x$occurrence=="l"){
+    if(x$occurrence=="logistic"){
         occurrence <- paste0(occurrence,"logistic probability");
     }
-    else if(x$occurrence=="f"){
+    else if(x$occurrence=="fixed"){
         occurrence <- paste0(occurrence,"fixed probability");
     }
     else{
@@ -863,17 +863,17 @@ print.legion <- function(x, ...){
     cat(paste0("Time elapsed: ",round(as.numeric(x$timeElapsed,units="secs"),digits)," seconds\n"));
     cat(paste0("Model estimated: ",x$model,"\n"));
     if(!is.null(x$occurrence)){
-        if(x$occurrence$probability=="i"){
+        if(x$occurrence$probability=="independent"){
             occurrence <- "Independent ";
         }
-        else if(x$occurrence$probability=="d"){
+        else if(x$occurrence$probability=="dependent"){
             occurrence <- "Dependent ";
         }
 
-        if(x$occurrence$occurrence=="l"){
+        if(x$occurrence$occurrence=="logistic"){
             occurrence <- paste0(occurrence,"logistic probability");
         }
-        else if(x$occurrence$occurrence=="f"){
+        else if(x$occurrence$occurrence=="fixed"){
             occurrence <- paste0(occurrence,"fixed probability");
         }
         else{

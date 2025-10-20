@@ -51,26 +51,26 @@ List vFitter(arma::mat const &matrixY, arma::mat &matrixV, arma::sp_mat const &m
              arma::sp_mat &matrixW, arma::sp_mat const &matrixG,
              arma::uvec &lags, char const &E, char const &T, char const &S,
              arma::sp_mat const &matrixO, bool const &backcast) {
-    /* matrixY has nrow = nSeries, ncol = obs 
+    /* matrixY has nrow = nSeries, ncol = obs
      * matrixV has nrow = nSeries * nComponents, ncol = obs + maxlag
      * matrixW, matrixF, matrixG are nSeries * nComponents x nSeries * nComponents.
      * lags is a vector of lags of length nSeries * nComponents
      * matrixX and matrixA are not defined yet.
      */
 
-    int obs = matrixY.n_cols;
-    int nSeries = matrixY.n_rows;
-    int obsall = matrixV.n_cols;
+    unsigned int obs = matrixY.n_cols;
+    unsigned int nSeries = matrixY.n_rows;
+    unsigned int obsall = matrixV.n_cols;
     // unsigned int nComponents = matrixV.n_rows / nSeries;
-    unsigned int maxlag = max(lags);
-    int lagsLength = lags.n_rows;
+    int maxlag = max(lags);
+    unsigned int lagsLength = lags.n_rows;
     arma::uvec lagsModifier = lags;
     arma::uvec lagsInternal = lags;
 
     // Modify lags to select specific cells of matVt
     lagsInternal = lagsInternal * lagsLength;
 
-    for(int i=0; i<lagsLength; i=i+1){
+    for(unsigned int i=0; i<lagsLength; i=i+1){
         lagsModifier(i) = lagsLength - i - 1;
     }
 
@@ -88,6 +88,15 @@ List vFitter(arma::mat const &matrixY, arma::mat &matrixV, arma::sp_mat const &m
 
     // Loop for the backcast
     for (unsigned int j=1; j<=nIterations; j=j+1) {
+
+        /* # Fill in (refine) the head of the matrices */
+        for (int i=0; i<maxlag; i=i+1) {
+            lagrows = (i+maxlag+1) * lagsLength - (lagsInternal + lagsModifier) - 1;
+            matrixV.col(i) = matrixF * matrixV(lagrows);
+            // This is needed to reproduce the head properly
+            matrixV.col(i+maxlag) = matrixV.col(i);
+        }
+
         for (unsigned int i=maxlag; i<obs+maxlag; i=i+1) {
             lagrows = (i+1) * lagsLength - (lagsInternal + lagsModifier) - 1;
 
@@ -102,19 +111,18 @@ List vFitter(arma::mat const &matrixY, arma::mat &matrixV, arma::sp_mat const &m
         }
 
         /* Fill in the tail in the state matrix */
-        for (int i=obs+maxlag; i<obsall; i=i+1) {
-            lagrows = (i+1) * lagsLength - lags - 1;
+        for (unsigned int i=obs+maxlag; i<obsall; i=i+1) {
+            lagrows = (i+1) * lagsLength - (lagsInternal + lagsModifier) - 1;
             matrixV.col(i) = matrixF * matrixV(lagrows);
-            // matrixA.col(i) = matrixFX * matrixA.col(i-1);
         }
 
         ////// Backwards run
         if(backcast && j<(nIterations)){
             // Change the specific element in the state vector to negative
-            // This is harder to do universally for VES/VETS, but needs to be done at some point
-            // if(T=='A'){
-            //     profilesRecent(1) = -profilesRecent(1);
-            // }
+            if(T!='N'){
+                matrixV.submat(nSeries-1,obs+maxlag,nSeries*2-1,obs+maxlag) =
+                    -matrixV.submat(nSeries-1,obs+maxlag,nSeries*2-1,obs+maxlag);
+            }
 
             for (int i=obs+maxlag-1; i>=maxlag; i=i-1) {
                 lagrows = (i+1) * lagsLength + lagsInternal - lagsModifier - 1;
@@ -133,6 +141,12 @@ List vFitter(arma::mat const &matrixY, arma::mat &matrixV, arma::sp_mat const &m
             for (int i=maxlag-1; i>=0; i=i-1) {
                 lagrows = (i+1) * lagsLength + lagsInternal - lagsModifier - 1;
                 matrixV.col(i) = matrixF * matrixV(lagrows);
+            }
+
+            // Change the specific element in the state vector to negative
+            if(T!='N'){
+                matrixV.submat(nSeries-1,0,nSeries*2-1,0) =
+                    -matrixV.submat(nSeries-1,0,nSeries*2-1,0);
             }
         }
     }

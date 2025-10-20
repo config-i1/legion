@@ -1,8 +1,10 @@
-legion v0.2.2 (Release data: 2025-10-06)
+legion v0.2.2 (Release data: 2025-10-20)
 =======
 
 Changes:
 * Updated C++ code to support backcasting.
+* ves() now only supports independent and dependent transition and persistence matrices. Also, the structure of objects has been changed to match vets().
+* ves() now supports backcasting for initialisation.
 
 
 legion v0.2.1 (Release data: 2025-02-03)
