@@ -120,8 +120,8 @@ List vFitter(arma::mat const &matrixY, arma::mat &matrixV, arma::sp_mat const &m
         if(backcast && j<(nIterations)){
             // Change the specific element in the state vector to negative
             if(T!='N'){
-                matrixV.submat(nSeries-1,obs+maxlag,nSeries*2-1,obs+maxlag) =
-                    -matrixV.submat(nSeries-1,obs+maxlag,nSeries*2-1,obs+maxlag);
+                matrixV.submat(nSeries,obs+maxlag,nSeries*2-1,obs+maxlag) =
+                    -matrixV.submat(nSeries,obs+maxlag,nSeries*2-1,obs+maxlag);
             }
 
             for (int i=obs+maxlag-1; i>=maxlag; i=i-1) {
@@ -145,8 +145,8 @@ List vFitter(arma::mat const &matrixY, arma::mat &matrixV, arma::sp_mat const &m
 
             // Change the specific element in the state vector to negative
             if(T!='N'){
-                matrixV.submat(nSeries-1,0,nSeries*2-1,0) =
-                    -matrixV.submat(nSeries-1,0,nSeries*2-1,0);
+                matrixV.submat(nSeries,0,nSeries*2-1,0) =
+                    -matrixV.submat(nSeries,0,nSeries*2-1,0);
             }
         }
     }

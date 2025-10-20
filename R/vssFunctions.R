@@ -738,6 +738,30 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
         initials <- substr(initials,1,1);
         # Defin common components
         components <- substr(components,1,1);
+
+        ##### * initials ####
+        initialValue <- initial;
+        initialEstimate <- TRUE;
+
+        if(is.null(initialValue)){
+            warning("Initial value is not selected. Switching to backcasting.");
+            initialType <- "backcasting";
+        }
+        else{
+            if(is.character(initialValue)){
+                initialType <- match.arg(initialValue, c("optimal","backcasting"));
+                initialValue <- NULL;
+                initialEstimate <- TRUE;
+            }
+            #### ! This needs to be a list with nonseasonal and seasonal or whatnot. Needs to be implemented ####
+            else if(!is.numeric(initialValue)){
+                warning(paste0("Initial vector is not numeric!\n",
+                               "Values of initial vector will be backcasted."),call.=FALSE);
+                initialValue <- NULL;
+                initialType <- "backcasting";
+                initialEstimate <- TRUE;
+            }
+        }
     }
 
     ##### Loss function type #####
@@ -944,6 +968,10 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
     assign("damped",damped,ParentEnvironment);
     assign("modelDo",modelDo,ParentEnvironment);
 
+    assign("initialValue",initialValue,ParentEnvironment);
+    assign("initialType",initialType,ParentEnvironment);
+    assign("initialEstimate",initialEstimate,ParentEnvironment);
+
     if(smoothType=="ves"){
         assign("persistenceValue",persistenceValue,ParentEnvironment);
         assign("persistenceType",persistenceType,ParentEnvironment);
@@ -955,10 +983,6 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
 
         assign("dampedValue",dampedValue,ParentEnvironment);
         assign("dampedEstimate",dampedEstimate,ParentEnvironment);
-
-        assign("initialValue",initialValue,ParentEnvironment);
-        assign("initialType",initialType,ParentEnvironment);
-        assign("initialEstimate",initialEstimate,ParentEnvironment);
     }
     else{
         assign("parameters",parameters,ParentEnvironment);
@@ -1026,7 +1050,7 @@ vssFitter <- function(...){
 
     fitting <- vFitterWrap(switch(Etype, "M"=log(yInSample), yInSample),
                            matVt, matF, matW, matG,
-                           lagsModel, Etype, Ttype, Stype, ot, FALSE);
+                           lagsModel, Etype, Ttype, Stype, ot, initialType=="backcasting");
     matVt[] <- fitting$matVt;
     yFitted[] <- fitting$yfit;
     errors[] <- fitting$errors;

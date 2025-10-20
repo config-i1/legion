@@ -192,7 +192,7 @@ utils::globalVariables(c("nParamMax","nComponentsAll","nComponentsNonSeasonal","
 ves <- function(data, model="PPP", lags=c(frequency(data)),
                 persistence=c("independent","dependent"),
                 transition=c("independent","dependent"), phi=NULL,
-                initial=c("optimal","backcasting"),
+                initial=c("backcasting","optimal"),
                 loss=c("likelihood","diagonal","trace"),
                 ic=c("AICc","AIC","BIC","BICc"), h=10, holdout=FALSE,
                 occurrence=c("none","fixed","logistic"),

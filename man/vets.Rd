@@ -14,10 +14,10 @@ auto.vets(data, model = "PPP", lags = c(frequency(data)),
 vets(data, model = "PPP", lags = c(frequency(data)),
   parameters = c("level", "trend", "seasonal", "damped"),
   initials = c("seasonal"), components = c("none"),
-  loss = c("likelihood", "diagonal", "trace"), ic = c("AICc", "AIC", "BIC",
-  "BICc"), h = 10, holdout = FALSE, occurrence = c("none", "fixed",
-  "logistic"), bounds = c("admissible", "usual", "none"), silent = TRUE,
-  ...)
+  initialisation = c("backcasting", "optimal"), loss = c("likelihood",
+  "diagonal", "trace"), ic = c("AICc", "AIC", "BIC", "BICc"), h = 10,
+  holdout = FALSE, occurrence = c("none", "fixed", "logistic"),
+  bounds = c("admissible", "usual", "none"), silent = TRUE, ...)
 }
 \arguments{
 \item{data}{The matrix with the data, where series are in columns and

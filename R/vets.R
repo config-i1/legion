@@ -176,6 +176,7 @@ utils::globalVariables(c("obsInSample","componentsCommonLevel","componentsCommon
 vets <- function(data, model="PPP", lags=c(frequency(data)),
                  parameters=c("level","trend","seasonal","damped"),
                  initials=c("seasonal"), components=c("none"),
+                 initialisation=c("backcasting","optimal"),
                  loss=c("likelihood","diagonal","trace"),
                  ic=c("AICc","AIC","BIC","BICc"), h=10, holdout=FALSE,
                  occurrence=c("none","fixed","logistic"),
@@ -211,6 +212,8 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
 
     # Add all the variables in ellipsis to current environment
     list2env(list(...),environment());
+
+    initial <- match.arg(initialisation);
 
     ##### Set environment for vssInput and make all the checks #####
     environment(vssInput) <- environment();
@@ -671,24 +674,26 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
             j[] <- j+nParametersDamped;
         }
 
-        k <- 0;
-        # Fill in level initials
-        matVt[1:nComponentsLevel,1:lagsModelMax] <- B[j+1:nInitialsLevel];
-        k[] <- k+nComponentsLevel;
-        j[] <- j+nInitialsLevel;
+        if(initialType=="optimal"){
+            k <- 0;
+            # Fill in level initials
+            matVt[1:nComponentsLevel,1:lagsModelMax] <- B[j+1:nInitialsLevel];
+            k[] <- k+nComponentsLevel;
+            j[] <- j+nInitialsLevel;
 
-        # Fill in trend initials
-        if(modelIsTrendy){
-            matVt[k+1:nComponentsTrend,1:lagsModelMax] <- B[j+1:nInitialsTrend];
-            k[] <- k+nComponentsTrend;
-            j[] <- j+nInitialsTrend;
-        }
+            # Fill in trend initials
+            if(modelIsTrendy){
+                matVt[k+1:nComponentsTrend,1:lagsModelMax] <- B[j+1:nInitialsTrend];
+                k[] <- k+nComponentsTrend;
+                j[] <- j+nInitialsTrend;
+            }
 
-        if(modelIsSeasonal){
-            matVt[k+1:nComponentsSeasonal,2:lagsModelMax] <- matrix(B[j+1:(nInitialsSeasonal*(lagsModelMax-1))],
-                                                                    nComponentsSeasonal,(lagsModelMax-1),byrow=TRUE);
-            # Normalise initials
-            matVt[k+1:nComponentsSeasonal,1] <- -rowSums(matVt[k+1:nComponentsSeasonal,2:lagsModelMax,drop=FALSE]);
+            if(modelIsSeasonal){
+                matVt[k+1:nComponentsSeasonal,2:lagsModelMax] <- matrix(B[j+1:(nInitialsSeasonal*(lagsModelMax-1))],
+                                                                        nComponentsSeasonal,(lagsModelMax-1),byrow=TRUE);
+                # Normalise initials
+                matVt[k+1:nComponentsSeasonal,1] <- -rowSums(matVt[k+1:nComponentsSeasonal,2:lagsModelMax,drop=FALSE]);
+            }
         }
 
         return(list(matVt=matVt,matF=matF,matG=matG,matW=matW));
@@ -705,7 +710,9 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
                                 initialValue, initialSeasonValue){
         # Smoothing parameters, Dampening parameter, initials
         BLower <- BUpper <- B <- rep(NA, nParametersLevel + nParametersTrend + nParametersSeasonal + nParametersDamped +
-                                         nInitialsLevel + nInitialsTrend + nInitialsSeasonal*(lagsModelMax-1));
+                                         (initialType=="optimal")*(nInitialsLevel +
+                                                                       nInitialsTrend +
+                                                                       nInitialsSeasonal*(lagsModelMax-1)));
 
         #### Smoothing and damped parameters ####
         j <- 0;
@@ -741,30 +748,32 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
         }
 
         #### Initials ####
-        # Initial level and trend
-        B[j+1:nInitialsLevel] <- initialValue[1:nInitialsLevel];
-        BLower[j+1:nInitialsLevel] <- -Inf;
-        BUpper[j+1:nInitialsLevel] <- Inf;
-        names(B)[j+1:nInitialsLevel] <- paste0("level",c(1:nInitialsLevel));
-        if(modelIsTrendy){
-            B[j+nInitialsLevel+1:nInitialsTrend] <- initialValue[nInitialsLevel+1:nInitialsTrend];
-            BLower[j+nInitialsLevel+1:nInitialsTrend] <- -Inf;
-            BUpper[j+nInitialsLevel+1:nInitialsTrend] <- Inf;
-            names(B)[j+nInitialsLevel+1:nInitialsTrend] <- paste0("trend",c(1:nInitialsTrend));
-            j[] <- j+nInitialsTrend;
-        }
-        j[] <- j+nInitialsLevel;
+        if(initialType=="optimal"){
+            # Initial level and trend
+            B[j+1:nInitialsLevel] <- initialValue[1:nInitialsLevel];
+            BLower[j+1:nInitialsLevel] <- -Inf;
+            BUpper[j+1:nInitialsLevel] <- Inf;
+            names(B)[j+1:nInitialsLevel] <- paste0("level",c(1:nInitialsLevel));
+            if(modelIsTrendy){
+                B[j+nInitialsLevel+1:nInitialsTrend] <- initialValue[nInitialsLevel+1:nInitialsTrend];
+                BLower[j+nInitialsLevel+1:nInitialsTrend] <- -Inf;
+                BUpper[j+nInitialsLevel+1:nInitialsTrend] <- Inf;
+                names(B)[j+nInitialsLevel+1:nInitialsTrend] <- paste0("trend",c(1:nInitialsTrend));
+                j[] <- j+nInitialsTrend;
+            }
+            j[] <- j+nInitialsLevel;
 
-        # Initial seasonal components
-        if(modelIsSeasonal){
-            # -1 is due to normalisation of seasonal states
-            B[j+1:(nInitialsSeasonal*(lagsModelMax-1))] <- t(initialSeasonValue);
-            BLower[j+1:(nInitialsSeasonal*(lagsModelMax-1))] <- -Inf;
-            BUpper[j+1:(nInitialsSeasonal*(lagsModelMax-1))] <- Inf;
-            names(B)[j+1:(nInitialsSeasonal*(lagsModelMax-1))] <- paste0(rep(paste0("seasonal",c(1:nInitialsSeasonal),"_"),
-                                                                             each=(lagsModelMax-1)),
-                                                                         c(1:(lagsModelMax-1)));
-            j[] <- j+nInitialsSeasonal*(lagsModelMax-1);
+            # Initial seasonal components
+            if(modelIsSeasonal){
+                # -1 is due to normalisation of seasonal states
+                B[j+1:(nInitialsSeasonal*(lagsModelMax-1))] <- t(initialSeasonValue);
+                BLower[j+1:(nInitialsSeasonal*(lagsModelMax-1))] <- -Inf;
+                BUpper[j+1:(nInitialsSeasonal*(lagsModelMax-1))] <- Inf;
+                names(B)[j+1:(nInitialsSeasonal*(lagsModelMax-1))] <- paste0(rep(paste0("seasonal",c(1:nInitialsSeasonal),"_"),
+                                                                                 each=(lagsModelMax-1)),
+                                                                             c(1:(lagsModelMax-1)));
+                j[] <- j+nInitialsSeasonal*(lagsModelMax-1);
+            }
         }
 
         return(list(B=B,BLower=BLower,BUpper=BUpper));
@@ -862,7 +871,7 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
         fitting <- vFitterWrap(switch(Etype, "M"=log(yInSample), yInSample),
                                elements$matVt, elements$matF,
                                elements$matW, elements$matG,
-                               lagsModel, Etype, Ttype, Stype, ot, FALSE);
+                               lagsModel, Etype, Ttype, Stype, ot, initialType=="backcasting");
 
         # Calculate the loss
         if(loss=="likelihood"){
@@ -965,6 +974,7 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
                                  nParametersLevel, nParametersTrend, nParametersSeasonal, nParametersDamped,
                                  initialsCommonLevel, initialsCommonTrend, initialsCommonSeasonal,
                                  initialValue, initialSeasonValue);
+
         if(is.null(B) && is.null(ub) && is.null(lb)){
             B <- BList$B;
 
@@ -1527,8 +1537,8 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
     ##### Return values #####
     model <- list(model=modelName,timeElapsed=Sys.time()-startTime,
                   states=NA, persistence=as.matrix(matG), transition=as.matrix(matF), measurement=as.matrix(matW), B=B,
-                  lagsAll=lagsModel,
-                  # initialType=initialType,initial=initialValue,initialSeason=initialSeasonValue,
+                  lagsAll=lagsModel, initialType=initialType, initial=initialValue,
+                  # initialSeason=initialSeasonValue,
                   nParam=parametersNumber, occurrence=ovesModel,
                   data=NA,fitted=yFitted,holdout=yHoldout,residuals=NA,Sigma=Sigma,
                   forecast=yForecast,
