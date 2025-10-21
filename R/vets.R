@@ -612,7 +612,8 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
             matG[1:nComponentsLevel,1:nSeries] <- B[1:nParametersLevel];
         }
         else{
-            matG[1:nComponentsLevel,1:nSeries] <- B[1:nParametersLevel]*diag(nSeries);
+            # matG[1:nComponentsLevel,1:nSeries] <- B[1:nParametersLevel]*diag(nSeries);
+            matG[cbind(1:nComponentsLevel,1:nSeries)] <- B[1:nParametersLevel];
         }
         j[] <- j+nParametersLevel;
         k[] <- k+nComponentsLevel;
@@ -622,7 +623,8 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
                 matG[k+1:nComponentsTrend,1:nSeries] <- B[j+1:nParametersTrend];
             }
             else{
-                matG[k+1:nComponentsTrend,1:nSeries] <- B[j+1:nParametersTrend]*diag(nSeries);
+                # matG[k+1:nComponentsTrend,1:nSeries] <- B[j+1:nParametersTrend]*diag(nSeries);
+                matG[cbind(k+1:nComponentsTrend,1:nSeries)] <- B[j+1:nParametersTrend];
             }
             j[] <- j+nParametersTrend;
             k[] <- k+nComponentsTrend;
@@ -633,7 +635,8 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
                 matG[k+1:nComponentsSeasonal,1:nSeries] <- B[j+1:nParametersSeasonal];
             }
             else{
-                matG[k+1:nComponentsSeasonal,1:nSeries] <- B[j+1:nParametersSeasonal]*diag(nSeries);
+                # matG[k+1:nComponentsSeasonal,1:nSeries] <- B[j+1:nParametersSeasonal]*diag(nSeries);
+                matG[cbind(k+1:nComponentsSeasonal,1:nSeries)] <- B[j+1:nParametersSeasonal];
             }
             j[] <- j+nParametersSeasonal;
         }
@@ -657,11 +660,16 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
                     matF[1,1+1:nComponentsTrend] <- B[j+1:nParametersDamped];
                 }
                 else{
-                    matF[1:nComponentsLevel,nComponentsLevel+1:nComponentsTrend] <- B[j+1:nParametersDamped]*diag(nComponentsTrend);
+                    # matF[1:nComponentsLevel,nComponentsLevel+1:nComponentsTrend] <-
+                    #     B[j+1:nParametersDamped]*diag(nComponentsTrend);
+                    matF[cbind(1:nComponentsLevel,nComponentsLevel+1:nComponentsTrend)] <-
+                        B[j+1:nParametersDamped];
                 }
                 # Damped parameter in the trend equations
-                matF[nComponentsLevel+1:nComponentsTrend,nComponentsLevel+1:nComponentsTrend] <-
-                    B[j+1:nParametersDamped]*diag(nComponentsTrend);
+                # matF[nComponentsLevel+1:nComponentsTrend,nComponentsLevel+1:nComponentsTrend] <-
+                #     B[j+1:nParametersDamped]*diag(nComponentsTrend);
+                matF[cbind(nComponentsLevel+1:nComponentsTrend,nComponentsLevel+1:nComponentsTrend)] <-
+                    B[j+1:nParametersDamped];
             }
 
             # Measurement matrix
@@ -669,7 +677,8 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
                 matW[1:nSeries,nComponentsLevel+1] <- B[j+1:nParametersDamped];
             }
             else{
-                matW[1:nSeries,nComponentsLevel+1:nSeries] <- B[j+1:nParametersDamped]*diag(nComponentsTrend);
+                # matW[1:nSeries,nComponentsLevel+1:nSeries] <- B[j+1:nParametersDamped]*diag(nComponentsTrend);
+                matW[cbind(1:nSeries,nComponentsLevel+1:nSeries)] <- B[j+1:nParametersDamped];
             }
             j[] <- j+nParametersDamped;
         }
@@ -792,41 +801,6 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
         }
     }
 
-    # Function to check eigen values for VETS
-    eigenChecker <- function(matF, matW, matG, nComponentsNonSeasonal, nComponentsAll, nComponentsSeasonal, modelIsSeasonal){
-        if(modelIsSeasonal){
-            if(nComponentsAll>10){
-                # The eigenvalues for the non-seasonal part
-                eigenValues <- c(discounter(matF[1:nComponentsNonSeasonal,1:nComponentsNonSeasonal,drop=FALSE],
-                                            matW[,1:nComponentsNonSeasonal,drop=FALSE],
-                                            matG[1:nComponentsNonSeasonal,,drop=FALSE], min(5,floor(nSeries/2))),
-                                 # The eigenvalues for the seasonal one
-                                 discounter(matF[-c(1:nComponentsNonSeasonal),-c(1:nComponentsNonSeasonal),drop=FALSE],
-                                            matW[,-c(1:nComponentsNonSeasonal),drop=FALSE],
-                                            matG[-c(1:nComponentsNonSeasonal),,drop=FALSE], min(5,floor(nSeries/2))));
-            }
-            else{
-                eigenValues <- c(eigen(matF[1:nComponentsNonSeasonal,1:nComponentsNonSeasonal,drop=FALSE] -
-                                           matG[1:nComponentsNonSeasonal,,drop=FALSE] %*%
-                                           matW[,1:nComponentsNonSeasonal,drop=FALSE],
-                                       only.values=TRUE)$values,
-                                 eigen(matF[-c(1:nComponentsNonSeasonal),-c(1:nComponentsNonSeasonal),drop=FALSE] -
-                                           matG[-c(1:nComponentsNonSeasonal),,drop=FALSE] %*%
-                                           matW[,-c(1:nComponentsNonSeasonal),drop=FALSE],
-                                       only.values=TRUE)$values);
-            }
-        }
-        else{
-            if(nComponentsAll>10){
-                eigenValues <- discounter(matF, matW, matG, min(5,floor(nSeries/2)));
-            }
-            else{
-                eigenValues <- eigen(matF - matG %*% matW, only.values=TRUE)$values;
-            }
-        }
-        return(eigenValues);
-    }
-
     ##### Cost Function for VETS #####
     CF <- function(B, loss="likelihood", Etype="A"){
         elements <- fillerVETS(matVt, matF, matG, matW, B,
@@ -838,30 +812,9 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
 
         # Check the bounds
         if(bounds=="admissible"){
-            # eigenValues <- eigen(elements$matF - elements$matG %*% elements$matW, only.values=TRUE)$values;
-            # eigenValues <- eigen(discounter(Matrix(elements$matF, sparse=TRUE),
-            #                                 Matrix(elements$matW, sparse=TRUE),
-            #                                 Matrix(elements$matG, sparse=TRUE)),
-            #                      only.values=TRUE)$values;
-            # eigenValues <- eigen(discounter(elements$matF, elements$matW, elements$matG),
-            #                      only.values=TRUE)$values;
-            # if(nComponentsAll>10){
-            #     # The eigenvalues for the non-seasonal part
-            #     eigenValues <- discounter(elements$matF[1:nComponentsNonSeasonal,1:nComponentsNonSeasonal,drop=FALSE],
-            #                               elements$matW[,1:nComponentsNonSeasonal],
-            #                               elements$matG[1:nComponentsNonSeasonal,], min(5,nComponentsAll));
-            #     if(modelIsSeasonal){
-            #         # The eigenvalues for the seasonal one
-            #         eigenValues <- discounter(elements$matF[-c(1:nComponentsNonSeasonal),-c(1:nComponentsNonSeasonal),drop=FALSE],
-            #                                   elements$matW[,-c(1:nComponentsNonSeasonal)],
-            #                                   elements$matG[-c(1:nComponentsNonSeasonal),], min(5,nComponentsSeasonal));
-            #     }
-            # }
-            # else{
-            #     eigenValues <- eigen(elements$matF - elements$matG %*% elements$matW, only.values=TRUE)$values;
-            # }
             eigenValues <- eigenChecker(elements$matF, elements$matW, elements$matG,
-                                        nComponentsNonSeasonal, nComponentsAll, nComponentsSeasonal, modelIsSeasonal);
+                                        nComponentsNonSeasonal, nComponentsAll,
+                                        nComponentsSeasonal, modelIsSeasonal, nSeries);
             if(max(abs(eigenValues)>(1 + 1E-50))){
                 return(max(abs(eigenValues))*1E+100);
             }
@@ -871,7 +824,8 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
         fitting <- vFitterWrap(switch(Etype, "M"=log(yInSample), yInSample),
                                elements$matVt, elements$matF,
                                elements$matW, elements$matG,
-                               lagsModel, Etype, Ttype, Stype, ot, initialType=="backcasting");
+                               lagsModel, Etype, Ttype, Stype, ot,
+                               initialType=="backcasting", nComponentsTrend);
 
         # Calculate the loss
         if(loss=="likelihood"){
@@ -961,6 +915,7 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
         environment(initialiserVETS) <- environment();
         environment(logLikVETS) <- environment();
         environment(CF) <- environment();
+        environment(eigenChecker) <- environment();
 
         list2env(architectorVETS(Etype, Ttype, Stype, damped, nSeries, lags),environment());
         elements <- creatorVETS();
@@ -1475,7 +1430,7 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
     ##### Print output #####
     eigenValues <- eigenChecker(matF, matW, matG,
                                 nComponentsNonSeasonal, nComponentsAll,
-                                nComponentsSeasonal, modelIsSeasonal);
+                                nComponentsSeasonal, modelIsSeasonal, nSeries);
     if(any(abs(eigenValues)>(1 + 1E-10))){
         warning(paste0("Model VETS(",model,") is unstable! ",
                        "Use a different value of 'bounds' parameter to address this issue!"),

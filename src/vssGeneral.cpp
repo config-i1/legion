@@ -50,7 +50,8 @@ arma::cx_vec discounter(arma::sp_mat const &matrixF, arma::sp_mat &matrixW, arma
 List vFitter(arma::mat const &matrixY, arma::mat &matrixV, arma::sp_mat const &matrixF,
              arma::sp_mat &matrixW, arma::sp_mat const &matrixG,
              arma::uvec &lags, char const &E, char const &T, char const &S,
-             arma::sp_mat const &matrixO, bool const &backcast) {
+             arma::sp_mat const &matrixO, bool const &backcast,
+             unsigned int const &nComponentsTrend) {
     /* matrixY has nrow = nSeries, ncol = obs
      * matrixV has nrow = nSeries * nComponents, ncol = obs + maxlag
      * matrixW, matrixF, matrixG are nSeries * nComponents x nSeries * nComponents.
@@ -161,7 +162,8 @@ List vFitter(arma::mat const &matrixY, arma::mat &matrixV, arma::sp_mat const &m
 RcppExport SEXP vFitterWrap(arma::mat const &matrixY, arma::mat matrixV, arma::sp_mat &matrixF,
                             arma::sp_mat &matrixW, arma::sp_mat &matrixG,
                             arma::uvec &lags, char const &E, char const &T, char const &S,
-                            arma::sp_mat &matrixO, bool const &backcast) {
+                            arma::sp_mat &matrixO, bool const &backcast,
+                            unsigned int const &nComponentsTrend) {
 // SEXP matxt, SEXP matat, SEXP matFX, SEXP matGX,
     // NumericMatrix yt_n(yt);
     // arma::mat matrixY(yt_n.begin(), yt_n.nrow(), yt_n.ncol(), false);
@@ -200,7 +202,11 @@ RcppExport SEXP vFitterWrap(arma::mat const &matrixY, arma::mat matrixV, arma::s
     // NumericMatrix ot_n(ot);
     // arma::mat matrixO(ot_n.begin(), ot_n.nrow(), ot_n.ncol(), false);
 
-    return wrap(vFitter(matrixY, matrixV, matrixF, matrixW, matrixG, lags, E, T, S, matrixO, backcast));
+    return wrap(vFitter(matrixY, matrixV, matrixF,
+                        matrixW, matrixG,
+                        lags, E, T, S,
+                        matrixO, backcast,
+                        nComponentsTrend));
 }
 
 

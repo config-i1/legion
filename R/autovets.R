@@ -8,6 +8,7 @@ utils::globalVariables(c("parameters","initials","components"))
 #' @rdname vets
 #' @export
 auto.vets <- function(data, model="PPP", lags=c(frequency(data)),
+                      initialisation=c("backcasting","optimal"),
                       loss=c("likelihood","diagonal","trace"),
                       ic=c("AICc","AIC","BIC","BICc"), h=10, holdout=FALSE,
                       occurrence=c("none","fixed","logistic"),
@@ -84,6 +85,7 @@ auto.vets <- function(data, model="PPP", lags=c(frequency(data)),
     vetsCall$initials <- "none";
     vetsCall$components <- "none";
     vetsCall$loss <- loss;
+    vetsCall$initialisation <- initialisation;
     # Use diagonal in order to be able to select something
     if(loss=="likelihood"){
         vetsCall$loss <- "diagonal";
@@ -267,6 +269,14 @@ auto.vets <- function(data, model="PPP", lags=c(frequency(data)),
                    "), ",ic," is: ", round(ICBest,3),"\n"));
     }
 
+    if(vetsCall$initials=="none"){
+        componentsToCheck <- NULL;
+    }
+    else{
+        componentsToCheck <- vetsCall$initials;
+    }
+    componentsCombinationNumber <- length(componentsToCheck);
+
     if(!silent){
         cat("Testing parameters restrictions... ");
     }
@@ -311,36 +321,41 @@ auto.vets <- function(data, model="PPP", lags=c(frequency(data)),
     if(!silent){
         cat("Testing components restrictions... ");
     }
-    if(!parallel){
-        # Test the models with initials restrictions
-        for(i in 1:componentsCombinationNumber){
-            if(!silent){
-                if(i>1){
-                    cat(paste0(rep("\b",nchar(round((i-1)/componentsCombinationNumber,2)*100)+1),collapse=""));
+    if(componentsCombinationNumber>0){
+        if(!parallel){
+            # Test the models with initials restrictions
+            for(i in 1:componentsCombinationNumber){
+                if(!silent){
+                    if(i>1){
+                        cat(paste0(rep("\b",nchar(round((i-1)/componentsCombinationNumber,2)*100)+1),collapse=""));
+                    }
+                    cat(round(i/componentsCombinationNumber,2)*100,"\b%");
                 }
-                cat(round(i/componentsCombinationNumber,2)*100,"\b%");
-            }
 
-            vetsCall$components <- componentsToCheck[[i]];
-            vetsModels[[j]] <- do.call("vets",vetsCall);
-            j[] <- j+1;
+                vetsCall$components <- componentsToCheck[[i]];
+                vetsModels[[j]] <- do.call("vets",vetsCall);
+                j[] <- j+1;
+            }
         }
-    }
-    else{
-        vetsModels[1+initialsCombinationNumber+parametersCombinationNumber+1:componentsCombinationNumber] <-
-            foreach::`%dopar%`(foreach::foreach(i=1:componentsCombinationNumber),{
-            vetsCall$components <- componentsToCheck[[i]];
-            return(do.call("vets",vetsCall));
-        })
-    }
-    # Find the model with the lowest IC from the new ones
-    vetsICsComponents <- sapply(vetsModels[1+initialsCombinationNumber+parametersCombinationNumber+
-                                               1:componentsCombinationNumber],"[[","ICs")[ic,];
-    jBestComponents <- which.min(vetsICsComponents);
-    if(vetsICsComponents[jBestComponents]<ICBest){
-        jBest <- jBestComponents+1+initialsCombinationNumber+parametersCombinationNumber;
-        ICBest <- vetsICsComponents[jBestComponents];
-        vetsCall$components <- componentsToCheck[[jBestComponents]];
+        else{
+            vetsModels[1+initialsCombinationNumber+parametersCombinationNumber+1:componentsCombinationNumber] <-
+                foreach::`%dopar%`(foreach::foreach(i=1:componentsCombinationNumber),{
+                    vetsCall$components <- componentsToCheck[[i]];
+                    return(do.call("vets",vetsCall));
+                })
+        }
+        # Find the model with the lowest IC from the new ones
+        vetsICsComponents <- sapply(vetsModels[1+initialsCombinationNumber+parametersCombinationNumber+
+                                                   1:componentsCombinationNumber],"[[","ICs")[ic,];
+        jBestComponents <- which.min(vetsICsComponents);
+        if(vetsICsComponents[jBestComponents]<ICBest){
+            jBest <- jBestComponents+1+initialsCombinationNumber+parametersCombinationNumber;
+            ICBest <- vetsICsComponents[jBestComponents];
+            vetsCall$components <- componentsToCheck[[jBestComponents]];
+        }
+        else{
+            vetsCall$components <- "none";
+        }
     }
     else{
         vetsCall$components <- "none";

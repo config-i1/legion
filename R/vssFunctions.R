@@ -544,7 +544,7 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
         }
         else{
             if(is.character(initialValue)){
-                initialType <- match.arg(initialValue, c("optimal","backcasting"));
+                initialType <- match.arg(initialValue, c("backcasting","optimal"));
                 initialValue <- NULL;
                 initialEstimate <- TRUE;
             }
@@ -1041,6 +1041,45 @@ scalerCF <- function(A, errors, scaleValue, yInSampleSum, loss){
     else{
         return(-sum(dmvnormInternal(errors, -0.5*diag(scaleValue), scaleValue, log=TRUE))+yInSampleSum);
     }
+}
+
+##### Eigenvalues checker #####
+# Function to check eigenvalues for VETS/VES
+eigenChecker <- function(matF, matW, matG,
+                         nComponentsNonSeasonal, nComponentsAll,
+                         nComponentsSeasonal, modelIsSeasonal, nSeries){
+    # discounter() is the C++ function that works fast for sparse matrices
+    # But it cannot handle small matrices of 2x2 dimensions.
+    eigenValues <- NULL;
+    # The eigenvalues for the non-seasonal part
+    if(nComponentsNonSeasonal>2){
+        eigenValues <- discounter(matF[1:nComponentsNonSeasonal,1:nComponentsNonSeasonal,drop=FALSE],
+                                  matW[,1:nComponentsNonSeasonal,drop=FALSE],
+                                  matG[1:nComponentsNonSeasonal,,drop=FALSE], min(5,floor(nSeries/2)));
+    }
+    else{
+        eigenValues <- eigen(matF[1:nComponentsNonSeasonal,1:nComponentsNonSeasonal,drop=FALSE] -
+                                 matG[1:nComponentsNonSeasonal,,drop=FALSE] %*%
+                                 matW[,1:nComponentsNonSeasonal,drop=FALSE],
+                             only.values=TRUE)$values
+    }
+    # The eigenvalues for the seasonal part
+    if(modelIsSeasonal){
+        if(nComponentsSeasonal>2){
+            eigenValues <- c(eigenValues,
+                             discounter(matF[-c(1:nComponentsNonSeasonal),-c(1:nComponentsNonSeasonal),drop=FALSE],
+                                        matW[,-c(1:nComponentsNonSeasonal),drop=FALSE],
+                                        matG[-c(1:nComponentsNonSeasonal),,drop=FALSE], min(5,floor(nSeries/2))));
+        }
+        else{
+            eigenValues <- c(eigenValues,
+                             eigen(matF[-c(1:nComponentsNonSeasonal),-c(1:nComponentsNonSeasonal),drop=FALSE] -
+                                       matG[-c(1:nComponentsNonSeasonal),,drop=FALSE] %*%
+                                       matW[,-c(1:nComponentsNonSeasonal),drop=FALSE],
+                                   only.values=TRUE)$values);
+        }
+    }
+    return(eigenValues);
 }
 
 ##### *vssFitter function* #####

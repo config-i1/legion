@@ -25,6 +25,7 @@ require(legion)
 
 We will use to time series from the M3 united in a vector:
 ```{r form_the_vector, message=FALSE, warning=FALSE}
+set.seed(41)
 Y <- ts(cbind(1000+0.5*c(1:100)+rnorm(100,0,10),
               cbind(1000+1.5*c(1:100)+rnorm(100,0,10))),
         frequency=12);
