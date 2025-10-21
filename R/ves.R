@@ -275,7 +275,9 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
         fitting <- vFitterWrap(switch(Etype, "M"=log(yInSample), yInSample),
                                elements$matVt, elements$matF,
                                elements$matW, elements$matG,
-                               lagsModel, Etype, Ttype, Stype, ot, initialType=="backcasting");
+                               lagsModel, Etype, Ttype, Stype,
+                               ot, initialType=="backcasting",
+                               nComponentsTrend);
 
         # Calculate the loss
         if(loss=="likelihood"){
@@ -1114,6 +1116,8 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
     environment(fillerVES) <- environment();
     environment(vssFitter) <- environment();
     environment(vssForecaster) <- environment();
+
+    nComponentsTrend <- nSeries;
 
     ##### Fit the model and produce forecast #####
     list2env(callerVES(silent=silent),environment());

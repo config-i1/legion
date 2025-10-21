@@ -1089,7 +1089,9 @@ vssFitter <- function(...){
 
     fitting <- vFitterWrap(switch(Etype, "M"=log(yInSample), yInSample),
                            matVt, matF, matW, matG,
-                           lagsModel, Etype, Ttype, Stype, ot, initialType=="backcasting");
+                           lagsModel, Etype, Ttype, Stype,
+                           ot, initialType=="backcasting",
+                           nComponentsTrend);
     matVt[] <- fitting$matVt;
     yFitted[] <- fitting$yfit;
     errors[] <- fitting$errors;

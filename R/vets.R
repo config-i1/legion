@@ -103,6 +103,8 @@ utils::globalVariables(c("obsInSample","componentsCommonLevel","componentsCommon
 #' The order is not important, and the first letters can be used instead of the full
 #' words. Please, note that making components common automatically sets the
 #' respective \code{initials} common as well.
+#' @param initialisation The same as \code{initial} for ves and functions from the
+#' smooth package. Can be either \code{"optimal"} or \code{"backcasting"}.
 #' @param ... Other non-documented parameters. For example \code{FI=TRUE} will
 #' make the function also produce Fisher Information matrix, which then can be
 #' used to calculated variances of smoothing parameters and initial states of

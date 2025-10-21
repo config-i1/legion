@@ -13,22 +13,25 @@ test_that("Test VETS(MMdM)", {
 # Test VES with everything individual
 test_that("Test VES with all individual", {
     skip_on_cran()
-    testModel <- vets(Y,"MMdM", parameters="none", initials="none", components="none", silent=TRUE)
-    expect_equal(length(coefficients(testModel)), 34)
+    testModel <- vets(Y,"MMdM", parameters="none", initials="none",
+                      components="none", silent=TRUE)
+    expect_equal(nparam(testModel), 11)
 })
 
 # Test VES with common seasonal and persistence
 test_that("Test VETS with common seasonal and persistence", {
     skip_on_cran()
-    testModel <- vets(Y,"MMdM", components=c("seasonal"), parameters=c("l","t","s"), silent=TRUE)
-    expect_equal(length(coefficients(testModel)), 20)
+    testModel <- vets(Y,"MMdM", components=c("seasonal"),
+                      parameters=c("l","t","s"), silent=TRUE)
+    expect_equal(nparam(testModel), 8)
 })
 
 # Test VETS with common initials
 test_that("Test VETS with common initials", {
     skip_on_cran()
-    testModel <- vets(Y,"AAN", initials=c("l","t"), parameters="none", silent=TRUE)
-    expect_equal(length(coefficients(testModel)), 6)
+    testModel <- vets(Y,"AAN", initials=c("l","t"),
+                      parameters="none", silent=TRUE)
+    expect_equal(nparam(testModel), 7)
 })
 
 # Test VETS with a trace cost function

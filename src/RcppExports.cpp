@@ -42,8 +42,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // vFitterWrap
-RcppExport SEXP vFitterWrap(arma::mat const& matrixY, arma::mat matrixV, arma::sp_mat& matrixF, arma::sp_mat& matrixW, arma::sp_mat& matrixG, arma::uvec& lags, char const& E, char const& T, char const& S, arma::sp_mat& matrixO, bool const& backcast);
-RcppExport SEXP _legion_vFitterWrap(SEXP matrixYSEXP, SEXP matrixVSEXP, SEXP matrixFSEXP, SEXP matrixWSEXP, SEXP matrixGSEXP, SEXP lagsSEXP, SEXP ESEXP, SEXP TSEXP, SEXP SSEXP, SEXP matrixOSEXP, SEXP backcastSEXP) {
+RcppExport SEXP vFitterWrap(arma::mat const& matrixY, arma::mat matrixV, arma::sp_mat& matrixF, arma::sp_mat& matrixW, arma::sp_mat& matrixG, arma::uvec& lags, char const& E, char const& T, char const& S, arma::sp_mat& matrixO, bool const& backcast, unsigned int const& nComponentsTrend);
+RcppExport SEXP _legion_vFitterWrap(SEXP matrixYSEXP, SEXP matrixVSEXP, SEXP matrixFSEXP, SEXP matrixWSEXP, SEXP matrixGSEXP, SEXP lagsSEXP, SEXP ESEXP, SEXP TSEXP, SEXP SSEXP, SEXP matrixOSEXP, SEXP backcastSEXP, SEXP nComponentsTrendSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -58,7 +58,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< char const& >::type S(SSEXP);
     Rcpp::traits::input_parameter< arma::sp_mat& >::type matrixO(matrixOSEXP);
     Rcpp::traits::input_parameter< bool const& >::type backcast(backcastSEXP);
-    rcpp_result_gen = Rcpp::wrap(vFitterWrap(matrixY, matrixV, matrixF, matrixW, matrixG, lags, E, T, S, matrixO, backcast));
+    Rcpp::traits::input_parameter< unsigned int const& >::type nComponentsTrend(nComponentsTrendSEXP);
+    rcpp_result_gen = Rcpp::wrap(vFitterWrap(matrixY, matrixV, matrixF, matrixW, matrixG, lags, E, T, S, matrixO, backcast, nComponentsTrend));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -85,7 +86,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_legion_vSimulatorWrap", (DL_FUNC) &_legion_vSimulatorWrap, 6},
     {"_legion_discounter", (DL_FUNC) &_legion_discounter, 4},
-    {"_legion_vFitterWrap", (DL_FUNC) &_legion_vFitterWrap, 11},
+    {"_legion_vFitterWrap", (DL_FUNC) &_legion_vFitterWrap, 12},
     {"_legion_vForecasterWrap", (DL_FUNC) &_legion_vForecasterWrap, 9},
     {NULL, NULL, 0}
 };
