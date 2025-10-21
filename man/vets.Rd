@@ -37,6 +37,9 @@ parameters.}
 
 \item{lags}{The lags of the model. Needed for seasonal models.}
 
+\item{initialisation}{The same as \code{initial} for ves and functions from the
+smooth package. Can be either \code{"optimal"} or \code{"backcasting"}.}
+
 \item{loss}{Type of Loss Function used in optimization. \code{loss} can
 be:
 \itemize{
