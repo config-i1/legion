@@ -8,7 +8,7 @@ ves(data, model = "PPP", lags = c(frequency(data)),
   persistence = c("independent", "dependent"),
   transition = c("independent", "dependent"), phi = NULL,
   initial = c("backcasting", "optimal"), loss = c("likelihood", "diagonal",
-  "trace"), ic = c("AICc", "AIC", "BIC", "BICc"), h = 10,
+  "trace", "log-trace"), ic = c("AICc", "AIC", "BIC", "BICc"), h = 10,
   holdout = FALSE, occurrence = c("none", "fixed", "logistic"),
   bounds = c("admissible", "usual", "none"), silent = TRUE, ...)
 }

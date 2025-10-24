@@ -7,6 +7,7 @@ Changes:
 * New parameter in vets() - initialisation, which is the same as initial in all the other functions (e.g. from smooth).
 * ves() and vets() now supports backcasting for initialisation.
 * Backasting is now the default initialisation in both ves() and vets().
+* New type of loss in ves() and vets() - loss="log-trace". This one makes sure that variances are comparable and are minimised similarly.
 
 Bugfixes:
 * discounter() in C++ would sometimes return wrong large values. We now do scaling of the discount matrix first to help it get to better solution fast.

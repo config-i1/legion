@@ -770,7 +770,7 @@ vssInput <- function(smoothType=c("ves","vets"),ParentEnvironment,...){
         loss <- "custom";
     }
     else{
-        loss <- match.arg(loss, c("likelihood","diagonal","trace"));
+        loss <- match.arg(loss, c("likelihood","diagonal","trace","log-trace"));
         lossFunction <- NULL;
     }
 

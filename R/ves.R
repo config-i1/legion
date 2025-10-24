@@ -193,7 +193,7 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
                 persistence=c("independent","dependent"),
                 transition=c("independent","dependent"), phi=NULL,
                 initial=c("backcasting","optimal"),
-                loss=c("likelihood","diagonal","trace"),
+                loss=c("likelihood","diagonal","trace","log-trace"),
                 ic=c("AICc","AIC","BIC","BICc"), h=10, holdout=FALSE,
                 occurrence=c("none","fixed","logistic"),
                 bounds=c("admissible","usual","none"),
@@ -308,6 +308,9 @@ ves <- function(data, model="PPP", lags=c(frequency(data)),
         # Loss for the oves model
         else if(loss=="occurrence"){
             cfRes <- -sum(log(fitting$yfit[yInSample==1]));
+        }
+        else if(loss=="log-trace"){
+            cfRes <- sum(log(rowSums(fitting$errors^2))) / obsInSample;
         }
         # Custom loss
         else if(loss=="custom"){

@@ -16,8 +16,8 @@ vets(data, model = "PPP", lags = c(frequency(data)),
   parameters = c("level", "trend", "seasonal", "damped"),
   initials = c("seasonal"), components = c("none"),
   initialisation = c("backcasting", "optimal"), loss = c("likelihood",
-  "diagonal", "trace"), ic = c("AICc", "AIC", "BIC", "BICc"), h = 10,
-  holdout = FALSE, occurrence = c("none", "fixed", "logistic"),
+  "diagonal", "trace", "log-trace"), ic = c("AICc", "AIC", "BIC", "BICc"),
+  h = 10, holdout = FALSE, occurrence = c("none", "fixed", "logistic"),
   bounds = c("admissible", "usual", "none"), silent = TRUE, ...)
 }
 \arguments{

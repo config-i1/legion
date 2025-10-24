@@ -179,7 +179,7 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
                  parameters=c("level","trend","seasonal","damped"),
                  initials=c("seasonal"), components=c("none"),
                  initialisation=c("backcasting","optimal"),
-                 loss=c("likelihood","diagonal","trace"),
+                 loss=c("likelihood","diagonal","trace","log-trace"),
                  ic=c("AICc","AIC","BIC","BICc"), h=10, holdout=FALSE,
                  occurrence=c("none","fixed","logistic"),
                  bounds=c("admissible","usual","none"),
@@ -798,8 +798,8 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
             return(scaleValue*normalizer^2);
         }
         else{
-            scaleValue <- diag(rowSums(errors^2)) / obsInSample;
-            return(scaleValue);
+            scaleValue <- diag(rowSums((errors/normalizer)^2)) / obsInSample;
+            return(scaleValue*normalizer^2);
         }
     }
 
@@ -854,6 +854,9 @@ vets <- function(data, model="PPP", lags=c(frequency(data)),
                                  "A"=dmvnormInternal(fitting$errors, 0, scaleValue, log=TRUE),
                                  "M"=dmvnormInternal(fitting$errors, 0, scaleValue, log=TRUE)-
                                      colSums(log(yInSample))));
+        }
+        else if(loss=="log-trace"){
+            cfRes <- sum(log(rowSums(fitting$errors^2))) / obsInSample;
         }
         # Custom loss
         else if(loss=="custom"){
