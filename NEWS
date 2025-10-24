@@ -1,4 +1,4 @@
-legion v0.2.2 (Release data: 2025-10-20)
+legion v0.2.2 (Release data: 2025-10-24)
 =======
 
 Changes:
@@ -7,6 +7,9 @@ Changes:
 * New parameter in vets() - initialisation, which is the same as initial in all the other functions (e.g. from smooth).
 * ves() and vets() now supports backcasting for initialisation.
 * Backasting is now the default initialisation in both ves() and vets().
+
+Bugfixes:
+* discounter() in C++ would sometimes return wrong large values. We now do scaling of the discount matrix first to help it get to better solution fast.
 
 
 legion v0.2.1 (Release data: 2025-02-03)
